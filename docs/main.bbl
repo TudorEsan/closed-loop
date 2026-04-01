@@ -1,0 +1,37 @@
+\newcommand{\etalchar}[1]{$^{#1}$}
+\begin{thebibliography}{KWvHM19}
+
+\bibitem[{eFe}16]{eFestivals2016}
+{eFestivals}.
+\newblock Download festival scraps on site cashless only payment system.
+\newblock \url{https://www.efestivals.co.uk/news/16/160301h.shtml}, 2016.
+\newblock Online; accessed 2026.
+
+\bibitem[KWvHM19]{Kleppmann2019}
+Martin Kleppmann, Adam Wiggins, Peter van Hardenberg, and Mark McGranaghan.
+\newblock Local-first software: you own your data, in spite of the cloud.
+\newblock In {\em Proceedings of ACM Onward! 2019}, pages 154--178, 2019.
+
+\bibitem[Rie11]{Ries2011}
+Eric Ries.
+\newblock {\em The Lean Startup}.
+\newblock Crown Business, New York, 2011.
+
+\bibitem[SBH24]{Schomburgk2024}
+Lachlan Schomburgk, Alessandro Belli, and Arvid O.~I. Hoffmann.
+\newblock Less cash, more splash? {A} meta-analysis on the cashless effect.
+\newblock {\em Journal of Retailing}, 100(3):382--403, 2024.
+
+\bibitem[SJL{\etalchar{+}}13]{Shafiq2013}
+Muhammad~Zubair Shafiq, Lusheng Ji, Alex~X. Liu, Jeffrey Pang, Shobha
+  Venkataraman, and Jia Wang.
+\newblock A first look at cellular network performance during crowded events.
+\newblock In {\em Proceedings of the ACM SIGMETRICS 2013}, pages 17--28, 2013.
+
+\bibitem[{Tap}24]{Tappit2024}
+{Tappit}.
+\newblock {RFID} cashless payments for events.
+\newblock \url{https://tappit.com/pay/rfid}, 2024.
+\newblock Online; accessed 2026.
+
+\end{thebibliography}
