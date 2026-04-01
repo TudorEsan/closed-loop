@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.26 (TeX Live 2024) (preloaded format=pdflatex 2024.3.24)  2 MAR 2026 09:37
+This is pdfTeX, Version 3.141592653-2.6-1.40.26 (TeX Live 2024) (preloaded format=pdflatex 2024.3.24)  30 MAR 2026 17:01
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -383,13 +383,31 @@ LaTeX Font Info:    External font `cmex10' loaded for size
 (Font)              <8> on input line 3.
 LaTeX Font Info:    External font `cmex10' loaded for size
 (Font)              <6> on input line 3.
-)
+ [2
+
+]
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 14.49998pt, for example:
+(fancyhdr)                \setlength{\headheight}{14.49998pt}.
+(fancyhdr)                You might also make \topmargin smaller to compensate:
+
+(fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
+
+[3])
 \tf@toc=\write4
 \openout4 = `main.toc'.
 
- [2
 
-] (./chapters/chapter1_introduction.tex
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 14.49998pt, for example:
+(fancyhdr)                \setlength{\headheight}{14.49998pt}.
+(fancyhdr)                You might also make \topmargin smaller to compensate:
+
+(fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
+
+[4] (./chapters/chapter1_introduction.tex
 Chapter 1.
 
 Underfull \hbox (badness 10000) in paragraph at lines 4--5
@@ -446,11 +464,7 @@ Overfull \hbox (1.79816pt too wide) in paragraph at lines 58--59
 ix, Weezevent, and Glownet
  []
 
-
-LaTeX Warning: Reference `chap:background' on page 6 undefined on input line 60
-.
-
-) (./main.bbl
+) (./chapters/chapter2.tex
 
 Package fancyhdr Warning: \headheight is too small (12.0pt): 
 (fancyhdr)                Make it at least 14.49998pt, for example:
@@ -460,38 +474,194 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 (fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
 
 [6]
-LaTeX Font Info:    Trying to load font information for OT1+pcr on input line 7
-.
- (/usr/local/texlive/2024/texmf-dist/tex/latex/psnfss/ot1pcr.fd
+Chapter 2.
+
+Overfull \hbox (35.99796pt too wide) in paragraph at lines 11--12
+[]\OT1/ppl/m/n/12 A closed-loop sys-tem is fun-da-men-tally dif-fer-ent. As de-
+scribed by SDK.finance [[]],
+ []
+
+[7
+
+]
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 14.49998pt, for example:
+(fancyhdr)                \setlength{\headheight}{14.49998pt}.
+(fancyhdr)                You might also make \topmargin smaller to compensate:
+
+(fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
+
+[8]
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 14.49998pt, for example:
+(fancyhdr)                \setlength{\headheight}{14.49998pt}.
+(fancyhdr)                You might also make \topmargin smaller to compensate:
+
+(fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
+
+[9]
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 14.49998pt, for example:
+(fancyhdr)                \setlength{\headheight}{14.49998pt}.
+(fancyhdr)                You might also make \topmargin smaller to compensate:
+
+(fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
+
+[10]
+Overfull \hbox (20.2326pt too wide) in paragraph at lines 49--50
+\OT1/ppl/m/n/12 pay-ment so-lu-tions for fes-ti-vals and events. Com-pa-nies li
+ke Tap-pit, In-tel-li-tix, Weezevent,
+ []
+
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 14.49998pt, for example:
+(fancyhdr)                \setlength{\headheight}{14.49998pt}.
+(fancyhdr)                You might also make \topmargin smaller to compensate:
+
+(fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
+
+[11]
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 14.49998pt, for example:
+(fancyhdr)                \setlength{\headheight}{14.49998pt}.
+(fancyhdr)                You might also make \topmargin smaller to compensate:
+
+(fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
+
+[12]
+Overfull \hbox (6.70917pt too wide) in paragraph at lines 70--71
+\OT1/ppl/m/n/12 demon-strated a man-in-the-middle at-tack on the EMV pro-to-col
+ where a de-vice placed
+ []
+
+) (./chapters/chapter3_technologies.tex
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 14.49998pt, for example:
+(fancyhdr)                \setlength{\headheight}{14.49998pt}.
+(fancyhdr)                You might also make \topmargin smaller to compensate:
+
+(fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
+
+[13]
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 14.49998pt, for example:
+(fancyhdr)                \setlength{\headheight}{14.49998pt}.
+(fancyhdr)                You might also make \topmargin smaller to compensate:
+
+(fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
+
+[14]
+Chapter 3.
+) (./chapters/chapter4_architecture.tex [15
+
+]
+Chapter 4.
+) (./chapters/chapter5_implementation.tex [16
+
+]
+Overfull \vbox (42.95233pt too high) has occurred while \output is active []
+
+
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 14.49998pt, for example:
+(fancyhdr)                \setlength{\headheight}{14.49998pt}.
+(fancyhdr)                You might also make \topmargin smaller to compensate:
+
+(fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
+
+[17]
+Chapter 5.
+) (./chapters/chapter6_security.tex [18
+
+]
+Overfull \vbox (42.95233pt too high) has occurred while \output is active []
+
+
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 14.49998pt, for example:
+(fancyhdr)                \setlength{\headheight}{14.49998pt}.
+(fancyhdr)                You might also make \topmargin smaller to compensate:
+
+(fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
+
+[19]
+Chapter 6.
+) (./chapters/chapter7_discussion.tex [20
+
+]
+Chapter 7.
+) (./chapters/chapter8_conclusions.tex [21
+
+]
+Chapter 8.
+) (./main.bbl [22
+
+]
+LaTeX Font Info:    Trying to load font information for OT1+pcr on input line 1
+2.
+
+(/usr/local/texlive/2024/texmf-dist/tex/latex/psnfss/ot1pcr.fd
 File: ot1pcr.fd 2001/06/04 font definitions for OT1/pcr.
 )
-Underfull \hbox (badness 3724) in paragraph at lines 5--9
+Underfull \hbox (badness 2221) in paragraph at lines 10--14
 \OT1/ppl/m/n/12 ment sys-tem.  []$\OT1/pcr/m/n/12 https : / / www . efestivals 
 . co . uk / news / 16 /
  []
 
-) [7
+[23
 
-] (./main.aux)
+]
+Underfull \hbox (badness 1783) in paragraph at lines 59--66
+[]\OT1/ppl/m/n/12 SDK.finance.  Closed-loop pay-ment sys-tems: Def-i-ni-tion, b
+en-
+ []
+
+
+Underfull \hbox (badness 7081) in paragraph at lines 59--66
+\OT1/ppl/m/n/12 e-fits, and busi-ness cases.  []$\OT1/pcr/m/n/12 https : / / sd
+k . finance / blog /
+ []
+
+
+Overfull \hbox (127.06763pt too wide) in paragraph at lines 59--66
+\OT1/pcr/m/n/12 closed-[]loop-[]payment-[]systems-[]definition-[]benefits-[]and
+-[]business-[]cases/$[]\OT1/ppl/m/n/12 ,
+ []
+
+)
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 14.49998pt, for example:
+(fancyhdr)                \setlength{\headheight}{14.49998pt}.
+(fancyhdr)                You might also make \topmargin smaller to compensate:
+
+(fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
+
+[24] (./main.aux)
  ***********
 LaTeX2e <2023-11-01> patch level 1
 L3 programming layer <2024-02-20>
  ***********
-
-
-LaTeX Warning: There were undefined references.
-
 Package rerunfilecheck Info: File `main.out' has not changed.
-(rerunfilecheck)             Checksum: D3E42D6BD58941987C7DF1D0FD50EE00;570.
+(rerunfilecheck)             Checksum: E46ED2C22AEE6A096C58478B4D924761;12958.
  ) 
 Here is how much of TeX's memory you used:
- 10465 strings out of 474116
- 166170 string characters out of 5743682
- 1935187 words of memory out of 5000000
- 32661 multiletter control sequences out of 15000+600000
- 570210 words of font info for 64 fonts, out of 8000000 for 9000
+ 10790 strings out of 474116
+ 172360 string characters out of 5743682
+ 1941187 words of memory out of 5000000
+ 32860 multiletter control sequences out of 15000+600000
+ 571626 words of font info for 67 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 90i,11n,93p,1484b,484s stack positions out of 10000i,1000n,20000p,200000b,200000s
+ 90i,11n,93p,2065b,590s stack positions out of 10000i,1000n,20000p,200000b,200000s
 </usr/local/texlive/2024/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb
 ></usr/local/texlive/2024/texmf-dist/fonts/type1/public/amsfonts/cm/cmr12.pfb><
 /usr/local/texlive/2024/texmf-dist/fonts/type1/public/amsfonts/cm/cmr8.pfb></us
@@ -500,10 +670,10 @@ texlive/2024/texmf-dist/fonts/type1/urw/palatino/uplb8a.pfb></usr/local/texlive
 /2024/texmf-dist/fonts/type1/urw/palatino/uplr8a.pfb></usr/local/texlive/2024/t
 exmf-dist/fonts/type1/urw/palatino/uplr8a.pfb></usr/local/texlive/2024/texmf-di
 st/fonts/type1/urw/palatino/uplri8a.pfb>
-Output written on main.pdf (11 pages, 133967 bytes).
+Output written on main.pdf (30 pages, 179066 bytes).
 PDF statistics:
- 142 PDF objects out of 1000 (max. 8388607)
- 111 compressed objects within 2 object streams
- 22 named destinations out of 1000 (max. 500000)
- 41 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 664 PDF objects out of 1000 (max. 8388607)
+ 609 compressed objects within 7 object streams
+ 126 named destinations out of 1000 (max. 500000)
+ 665 words of extra memory for PDF output out of 10000 (max. 10000000)
 

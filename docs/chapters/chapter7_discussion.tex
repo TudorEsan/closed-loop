@@ -1,0 +1,42 @@
+\chapter{Discussion}
+\label{chap:discussion}
+
+% Brief intro: reflecting on what was built, what works, and what could be better
+
+\section{Design Trade-offs}
+\label{sec:trade-offs}
+
+% Online-default vs offline-first: why we chose this approach
+% Simplicity vs resilience: the modular offline extension keeps the core simple
+% Consistency vs availability during offline periods (CAP trade-off in practice)
+% Centralized wallet vs card-stored balance: pros and cons
+
+\section{Comparison with Existing Solutions}
+\label{sec:comparison}
+
+% How our approach compares to commercial providers (Tappit, Intellitix, etc.)
+% RFID wristband systems vs mobile app approach
+% What we do better, what commercial systems do better
+% The open architecture advantage: documented, extensible, not proprietary
+
+\section{Limitations}
+\label{sec:limitations-discussion}
+
+% What the current MVP does not cover
+% Single-event scope: not tested across multiple concurrent events
+% Offline duration: the system assumes short outages, not hours of downtime
+% NFC hardware dependency and device compatibility
+% No peer-to-peer transfers between consumers
+% Load testing: theoretical vs real-world performance
+% The refund flow: how unused credits are returned after the event
+
+\section{Further Improvements}
+\label{sec:further-improvements}
+
+% What would need to happen for a production deployment
+% Advanced fraud detection and anomaly monitoring
+% Multi-event support and tenant isolation
+% Better offline strategies: local mesh networking between terminals
+% Analytics dashboard for real-time event insights
+% Integration with other festival systems (access control, scheduling)
+% Vendor settlement and payout automation

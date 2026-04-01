@@ -1,0 +1,119 @@
+\chapter{Implementation}
+\label{chap:implementation}
+
+% Brief intro: what was implemented as the MVP, what was left out
+
+\section{Payment Service}
+\label{sec:payment-service}
+
+% The core backend service handling all money movement
+
+\subsection{Wallet Engine}
+\label{subsec:wallet-engine}
+
+% Wallet model: each user and vendor has a wallet with a balance
+% Credit and debit operations
+% Atomic balance updates using PostgreSQL transactions
+% Preventing negative balances in online mode
+
+\subsection{Stripe Integration}
+\label{subsec:stripe-integration}
+
+% How wallet top-ups work
+% Payment Intents flow: create intent, confirm, webhook callback
+% Handling Stripe webhooks: idempotency, retry logic
+% Error handling: what happens when Stripe fails mid-transaction
+
+\subsection{Transaction Processing}
+\label{subsec:transaction-processing}
+
+% The lifecycle of a payment transaction
+% Online flow: consumer initiates, server validates balance, debits consumer, credits vendor
+% Response times and latency considerations
+
+\section{Core Service}
+\label{sec:core-service}
+
+% The administrative backend
+
+\subsection{Vendor Management}
+\label{subsec:vendor-management}
+
+% CRUD operations for vendors
+% Assigning vendors to events
+% Vendor onboarding flow
+
+\subsection{Product and Stock Management}
+\label{subsec:product-management}
+
+% Product catalog per vendor
+% Pricing, categories
+% Stock tracking (if implemented)
+
+\subsection{User Management}
+\label{subsec:user-management}
+
+% User registration and authentication
+% Role-based access: consumer, vendor, admin
+% Profile management
+
+\subsection{Event Management}
+\label{subsec:event-management}
+
+% Creating and configuring events
+% Associating vendors and products with an event
+% Event lifecycle: setup, active, closed
+
+\section{Database Design}
+\label{sec:database-design}
+
+% PostgreSQL schema overview
+% Key tables: users, wallets, transactions, vendors, products, events
+% Entity-relationship diagram
+% Indexes and query optimization for high-throughput transaction processing
+% Redis usage: what gets cached and why
+
+\section{Client Applications}
+\label{sec:client-apps}
+
+% Implementation details for each app
+
+\subsection{Consumer App}
+\label{subsec:consumer-app}
+
+% React Native implementation
+% Screens: home/balance, top-up, QR code display, NFC tap, transaction history
+% State management approach
+% How the app communicates with the backend
+
+\subsection{Vendor App}
+\label{subsec:vendor-app}
+
+% React Native implementation
+% Screens: accept payment (scan QR / NFC), product selection, sales overview
+% Offline mode: local transaction queue, connectivity indicator
+% How queued transactions are displayed and managed
+
+\subsection{Admin Dashboard}
+\label{subsec:admin-dashboard}
+
+% Web application (React or similar)
+% Pages: event overview, vendor list, transaction monitoring, reports
+% Real-time data via WebSockets or polling
+
+\section{Offline Transaction Queue}
+\label{sec:offline-queue}
+
+% How the vendor app stores transactions locally when offline
+% Data structure and local storage mechanism
+% Queue size limits and overflow handling
+% Visual feedback to the vendor: pending sync count, last sync time
+
+\section{Sync Protocol}
+\label{sec:sync-protocol}
+
+% Step-by-step: what happens when a vendor terminal reconnects
+% Authentication and session validation
+% Uploading the local queue to the backend
+% Server-side processing: validation, conflict detection, balance updates
+% Confirmation back to the terminal: which transactions were accepted, which had issues

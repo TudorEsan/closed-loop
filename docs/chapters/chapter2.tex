@@ -1,58 +1,171 @@
 \chapter{Background and Related Work}
 \label{chap:background}
 
-% TODO: Fill in with actual content
+This chapter provides the theoretical and practical background needed to understand the design decisions we make later in the thesis. We start by looking at closed-loop payment systems, which is the category our system falls into, and then move on to the architectural patterns that deal with offline operation and distributed data. We also review the existing commercial solutions for festival payments and discuss the academic literature on conflict resolution in distributed systems. The goal is to give the reader enough context to understand why we made the choices we did, and what alternatives we considered along the way.
 
 \section{Closed-Loop Payment Systems}
 \label{sec:closed-loop}
 
+Before going into the technical details, it is worth clarifying what we mean by a closed-loop payment system, since this concept is at the core of our architecture. In the payment industry, there are basically two types of systems: open-loop and closed-loop. An open-loop system is what most people use every day without thinking about it. When you pay with a Visa or Mastercard, the transaction goes through a network of banks, card schemes, and processors that connect merchants to customers across the entire world. The money flows through multiple intermediaries, each taking a small fee, and the whole thing relies on a global infrastructure that has been built over decades.
+
+A closed-loop system is fundamentally different. As described by SDK.finance~\cite{SDKFinance2024}, ``closed-loop payment systems are financial arrangements that confine transactions to a specific network or ecosystem.'' In a closed-loop, the issuer and the acquirer are the same entity, which means a single operator controls the entire flow of money within a defined perimeter. Think of it like this: you load credits into the system, you spend those credits at authorized points, and whatever you did not spend, you can get back as a refund. The money never leaves the operator's ecosystem during the transaction itself. The operator has full control over the rules, the fees, the authorization logic, and most importantly for our use case, the infrastructure.
+
+There are several reasons why closed-loop systems are so attractive for festival environments, and the network situation is just one of them. The first and most obvious reason is the connectivity problem we discussed in Chapter~\ref{chap:introduction}. A festival is already a place where the network is going to have a bad time, so depending on external payment networks like Visa or Mastercard that need to reach authorization servers on the other side of the world is just asking for trouble. With a closed-loop system, all the authorization logic lives inside the operator's own infrastructure, so when the network has issues the system only needs to talk to itself.
+
+The second reason is fees. Open-loop payment processing is not cheap. Every time someone pays with a credit or debit card, the merchant pays an interchange fee to the card issuer, a scheme fee to the card network, and a processing fee to the payment processor. For a small transaction like buying a beer at a festival, these fees can eat up a significant percentage of the sale. In a closed-loop system, the operator cuts out all these intermediaries. There is no interchange fee, no scheme fee, and no processor taking a cut of every transaction. The only point where external fees apply is when money enters the system through a top-up, which involves Stripe or another payment provider, but even then, almoast always these topup fees are lower due to negotiatiosn with the payment provider (that is most likely a strategic partner). Once the money is inside the closed loop, every subsequent transaction is free for the operator. For a festival processing tens of thousands of small transactions per day, this adds up to serious savings.
+
+The third reason is perhaps the most interesting one, and it has to do with regulation. In the European Union, handling electronic money is a regulated activity that requires an e-money license under the Electronic Money Directive (EMD2)~\cite{EMD2009}. Getting an e-money license is an expensive and time-consuming process that involves capital requirements, compliance obligations, and ongoing regulatory oversight. However, many festival payment systems operate in something of a regulatory gray area by using tokens or credits instead of displaying actual currency values. The idea is that when an attendee tops up their wristband or app, they are not depositing money into an electronic wallet in the regulatory sense. Instead, they are purchasing prepaid tokens that can be redeemed at participating vendors within the festival. This distinction matters because prepaid instruments issued for use within a limited network of service providers can fall under an exemption in the Payment Services Directive (PSD2)~\cite{PSD2015}, specifically the limited network exclusion. Under this exemption, if the payment instrument can only be used to acquire goods or services within a limited network of providers (like the vendors inside a festival), the operator may not need a full e-money or payment institution license. This is also why many festival systems show balances in ``tokens'' or ``credits'' rather than in euros or dollars. Displaying the balance as ``50 tokens'' instead of ``50 EUR'' reinforces the narrative that these are not electronic money but rather prepaid vouchers for a specific set of services. Of course, this is a simplification and the legal situation varies by jurisdiction. Some regulators have taken a stricter view, and operators who process large volumes may still need to register or obtain a limited license. But the point is that the closed-loop, token-based model gives festival operators a much simpler regulatory path compared to running a full open-loop payment service.
+
+The fourth reason is control. In a closed-loop system, the festival operator decides everything: transaction limits, refund policies, spending restrictions, which vendors are authorized, and how the settlement process works. There is no card scheme telling you what you can and cannot do. This level of control is particularly valuable for events where the operator needs to manage the entire economy, from how much people can top up to how refunds are handled after the festival ends. And the most important reason, of course, taking a percentage cut out of all the transactions inside the event without having to trust that vendors are honest, given that the only way to make a payment is through the operator's own system
+
+Of course, there is one moment where the closed-loop system has to interact with the outside world, and that is when real money enters the system. When an attendee tops up their wallet, actual euros or dollars need to move from their bank account into the festival operator's account. This part requires an external payment provider like Stripe and an active internet connection. But once the money is inside the closed loop, all subsequent transactions are internal and can, in principle, be processed without any external dependency.
+
+To understand where our system fits in the bigger picture, it helps to look at three existing categories of closed-loop payment systems that have dealt with similar challenges: transit cards, campus and event tokens, and the EMV offline authorization model.
+
 \subsection{Transit Card Systems}
 \label{subsec:transit-cards}
+
+Transit card systems are probably the most successful example of closed-loop payments that work without constant connectivity. If you have ever used public transport in a major city, chances are you have used one. Examples include Suica in Tokyo, Oyster in London, or Octopus in Hong Kong. These systems have been around for decades, processing millions of transactions per day, and they offer some valuable lessons for anyone trying to build a payment system that needs to work fast and reliably.
+
+The basic idea behind all of them is similar, at least in their original implementations. Shirakawa~\cite{Shirakawa2002} describes how Suica's FeliCa chip handles fare deduction locally at the gate through encrypted read-write operations, without needing a network round-trip. Chau and Poon~\cite{Chau2003} similarly describe Octopus as a ``rechargeable contactless stored value smart card,'' meaning the balance lives on the chip itself. In both cases, the terminal communicates directly with the card, checks the balance, deducts the amount, and writes the updated balance back. FeliCa chips can complete this entire process in under 0.1 seconds. That said, these systems are not purely offline. Transaction logs are collected from terminals and uploaded to central servers periodically for reconciliation, fraud detection, and reporting. And newer versions, like the Suica 2.0 platform, have started moving fare calculation to a central server while still using the card chip for local read-write operations at the gate.
+
+Suica is a good example to look at in detail. Launched by JR East in 2001, it was one of the first large-scale contactless payment systems in the world. Shirakawa~\cite{Shirakawa2002} describes how the system was designed to handle the rush hour crowds at Tokyo's train stations, where gates need to process passengers at a rate of about one person per second. The key to achieving this speed was keeping the authorization logic entirely local: the gate reads the card, checks the balance, deducts the fare, and opens. No network round-trip required. The card uses a Sony FeliCa chip that supports encrypted read and write operations, and the entire transaction is completed in a single tap.
+
+Octopus in Hong Kong follows a similar model but expanded the use case beyond transit. As Chau and Poon~\cite{Chau2003} document, Octopus evolved from a pure transit card into a general-purpose stored-value card accepted at convenience stores, restaurants, parking garages, and even vending machines. By the early 2000s, it had over 11 million cards in circulation in a city of 7 million people, which gives you an idea of how widely adopted it became. The interesting thing about Octopus from our perspective is that it demonstrated that a closed-loop, card-stored-balance system could scale beyond its original domain while maintaining fast transaction times.
+
+Now, what can we learn from these systems for our festival payment architecture? The first lesson is that speed matters a lot. Transit systems proved that sub-second transactions are not just nice to have, they are a hard requirement when you are processing large volumes of people who do not want to wait. At a festival, the same principle applies: nobody wants to stand in line for two minutes waiting for a payment to go through when they just want a beer.
+
+The second lesson is about where the balance lives. Transit cards store the balance on the card chip, which is what makes offline operation possible. In our system, we take a different approach because our ``cards'' are actually smartphones running an app. We cannot write balances directly to a phone's NFC chip the way Suica writes to a FeliCa chip. Instead, the authoritative balance lives on the server, and during offline periods, vendor terminals work with cached snapshots of recent balances. This is a fundamental architectural difference that introduces its own set of challenges, which we will discuss in detail in Chapter~\ref{chap:architecture}.
+
+The third lesson is about the limitations of the transit model. Transit systems operate in a highly controlled environment: the terminals are fixed, maintained by professionals, connected to a private network, and the usage patterns are predictable. A festival is messier. Vendor terminals are mobile devices carried by staff, the network is a temporary Wi-Fi setup in a field, and usage patterns spike unpredictably during meal breaks or between performances. So while transit systems show that offline closed-loop payments are possible, their specific solutions do not transfer directly to our context.
 
 \subsection{Campus Cards and Festival Tokens}
 \label{subsec:campus-cards}
 
+Moving closer to our actual problem domain, campus card systems and festival token systems represent another category of closed-loop payments. University campus cards have been around for a long time and they work on a similar principle: students load money onto their card and use it to pay at the cafeteria, the library, the vending machines, and sometimes even the campus bookstore. The system is closed because it only works within the university's ecosystem, and the university controls the entire infrastructure.
+
+What makes campus cards relevant to our work is that they face some of the same challenges we face, just at a smaller scale. The campus network might go down, the card readers need to keep working, and the transactions need to be fast because students are impatient, just like festival attendees. Many campus card systems solve this by storing the balance on the card itself, similar to transit systems. But some newer implementations have moved to server-side balances with local caching, which is closer to what we are doing.
+
+Festival tokens and RFID wristband systems are even more directly relevant. Over the past decade, a whole industry has grown up around providing cashless payment solutions for festivals and events. Companies like Tappit, Intellitix, Weezevent, and Glownet have deployed their systems at hundreds of events worldwide. The typical setup works like this: attendees receive an RFID wristband when they enter the festival. They load credits onto the wristband using cash top-up stations or an online portal before the event. At each vendor point, there is a handheld terminal that reads the wristband, deducts the purchase amount, and writes the new balance back to the chip. It is essentially the same model as transit cards, adapted for the festival context.
+
+These systems have proven that cashless festivals are commercially viable. As mentioned in Chapter~\ref{chap:introduction}, Tappit reports that RFID systems reduce transaction times by up to 80 percent compared to cash and increase average spending by about 22 percent~\cite{Tappit2024}. The speed improvement comes from eliminating the need to count cash and make change. The spending increase is attributed to the psychological effect of not physically handing over money, which is consistent with the broader academic literature on cashless payment behavior~\cite{Schomburgk2024}.
+
+However, there are some significant limitations to the RFID wristband approach that motivated us to explore a different path. First, the RFID chips used in most festival wristbands have very limited storage and processing capability. They can store a balance and maybe a transaction counter, but they cannot run complex logic. This means that all the intelligence has to be in the terminal, and the terminal needs to handle things like transaction validation, balance updates, and security checks. If the terminal loses connectivity to the backend and its local cache is stale or incomplete, it has a problem.
+
+Second, and this is the bigger issue, many of these RFID systems rely on MIFARE Classic chips, which have well-documented security vulnerabilities. Garcia et al.~\cite{Garcia2008} demonstrated practical attacks against MIFARE Classic's proprietary CRYPTO1 cipher, showing that the encryption could be broken and the card contents cloned or modified. For a payment system, this is a serious problem because it means that a sufficiently motivated attacker could tamper with their balance. More modern chips like MIFARE DESFire have addressed these vulnerabilities, but they are more expensive, and many festival deployments still use the older technology to keep costs down.
+
+Third, the architectures of these commercial systems are proprietary and essentially undocumented. There is no published academic analysis of how Tappit or Intellitix handle offline operation, conflict resolution, or balance reconciliation. This makes it hard to learn from their design decisions or to identify best practices. All we have are the occasional failure reports, like the Download Festival incident mentioned in Chapter~\ref{chap:introduction}, which tell us what went wrong but not how things were supposed to work.
+
+Our approach differs from the RFID wristband model in a fundamental way: instead of storing balances on a physical token, we use smartphones as the consumer device. The balance lives on the server (or in a cached snapshot during offline operation), and payments are made by scanning a QR code or tapping via NFC between the consumer's phone and the vendor's device. This gives us more flexibility in terms of what we can do on the consumer side (showing balance, transaction history, top-up from the app), but it also means we lose the simplicity of having the balance physically stored on the payment token.
+
 \subsection{EMV and Offline Authorization}
 \label{subsec:emv}
+
+The EMV standard, named after its original creators Europay, Mastercard, and Visa, is the technology behind the chip cards that most people carry in their wallets. While EMV is an open-loop standard designed for the global payment network, it includes a mechanism for offline transaction authorization that is worth understanding because it addresses a similar problem to ours: how do you authorize a payment when you cannot reach the authorization server?
+
+The way EMV offline authorization works is through a set of risk parameters stored on the card chip. The card knows its own balance limits, the maximum amount for a single offline transaction, the maximum number of offline transactions allowed before the card must go online, and the total cumulative amount that can be spent offline. When a merchant terminal cannot reach the bank's authorization server, it can still approve transactions by checking these parameters locally. If the transaction falls within the allowed limits, it gets approved offline. If it exceeds them, the terminal declines the transaction or forces an online authorization attempt.
+
+This is a clever approach because it distributes the risk. The card issuer decides how much offline risk they are willing to accept for each cardholder, and those limits are baked into the card at the time of issuance. A premium cardholder might have higher offline limits than a basic cardholder. The merchant also has some say in this: their terminal can have its own floor limit below which it will always accept transactions without going online.
+
+However, there is a well-known problem with EMV offline authorization: the system trusts the card to honestly report its own state. Murdoch et al.~\cite{Murdoch2010} demonstrated a man-in-the-middle attack on the EMV protocol where a device placed between the card and the terminal could trick the terminal into believing that a PIN had been correctly verified when it had not. While this specific attack targets the PIN verification rather than the offline balance logic, it illustrates a broader point: any system where the authorization decision depends on data stored on a device in the user's possession is vulnerable to tampering if the security of that device is compromised.
+
+For our system, the EMV offline model offers both inspiration and a warning. On the inspiration side, the idea of using spending limits to control offline risk is directly applicable. We implement something similar: during offline periods, vendor terminals enforce a maximum transaction amount and a maximum total offline spend per consumer, which limits the potential damage from double-spending or stale balance snapshots. On the warning side, the EMV experience shows that offline authorization always involves a trade-off between availability and security. The more you allow offline, the more risk you accept. Our system handles this by keeping offline periods as short as possible and treating offline mode as a temporary fallback rather than a primary operating mode.
 
 \section{Offline-First Architecture Patterns}
 \label{sec:offline-first}
 
+% Overview: the spectrum from online-only to offline-first
+% Where our system sits on that spectrum (online-default with offline fallback)
+
 \subsection{Local-First Software}
 \label{subsec:local-first}
+
+% Kleppmann et al. local-first principles
+% The idea that the local device holds the primary copy
+% How this applies (and does not apply) to payment systems
+% Cite: Kleppmann2019
 
 \subsection{Conflict-Free Replicated Data Types (CRDTs)}
 \label{subsec:crdts}
 
+% What CRDTs are, how they guarantee convergence without coordination
+% G-Counters, PN-Counters, and why balances are tricky
+% The problem: money is a conserved quantity, not a simple counter
+% Cite: Shapiro2011, Kleppmann2017json
+
 \subsection{Event Sourcing and CQRS}
 \label{subsec:event-sourcing}
+
+% Event sourcing: storing every state change as an immutable event
+% CQRS: separating read and write models
+% Why event sourcing fits offline transaction logging naturally
+% Cite: Fowler2005, Young2010
 
 \subsection{Edge Computing}
 \label{subsec:edge-computing}
 
-\section{Existing Festival and Event Payment Solutions}
-\label{sec:existing-solutions}
-
-\subsection{Major Commercial Providers}
-\label{subsec:commercial-providers}
-
-\subsection{Known Limitations and Failure Cases}
-\label{subsec:limitations}
-
-\subsection{The Academic Gap}
-\label{subsec:academic-gap}
+% Moving computation closer to the data source
+% How vendor terminals act as edge nodes in our architecture
+% Cite: Shi2016
 
 \section{Conflict Resolution in Distributed Systems}
 \label{sec:conflict-resolution}
 
+% Why this matters: terminals operating independently during offline periods
+
 \subsection{The CAP Theorem}
 \label{subsec:cap-theorem}
+
+% Brewer's conjecture: Consistency, Availability, Partition tolerance
+% Our system chooses AP during network partitions (availability over consistency)
+% Cite: Brewer2000, Gilbert2002
 
 \subsection{Eventual Consistency}
 \label{subsec:eventual-consistency}
 
+% What eventual consistency means in practice
+% Amazon Dynamo as a real-world example
+% How our reconciliation protocol achieves eventual consistency
+% Cite: Vogels2009, DeCandia2007
+
 \subsection{Logical and Vector Clocks}
 \label{subsec:vector-clocks}
 
-\subsection{Application to Payment Systems}
-\label{subsec:application-payments}
+% Lamport timestamps and happened-before relation
+% Vector clocks for tracking causal ordering across terminals
+% How we use timestamps to order offline transactions during sync
+% Cite: Lamport1978, Fidge1988, Mattern1989
+
+\subsection{Optimistic Replication}
+\label{subsec:optimistic-replication}
+
+% Allow replicas to diverge, reconcile later
+% Coda file system, Bayou as early examples
+% Direct parallel to our offline terminals processing independently
+% Cite: Saito2005, Kistler1992, Terry1995
+
+\section{Existing Festival and Event Payment Solutions}
+\label{sec:existing-solutions}
+
+% Overview of the commercial landscape
+
+\subsection{Major Commercial Providers}
+\label{subsec:commercial-providers}
+
+% Tappit, Intellitix, Weezevent, Glownet
+% What they offer: RFID wristbands, NFC, mobile wallets
+% Their architectures are proprietary and undocumented
+
+\subsection{Known Limitations and Failure Cases}
+\label{subsec:limitations}
+
+% Download Festival 2015: first major UK cashless festival, system crashed
+% Danish Nets outage 2024
+% Common failure patterns: network dependency, single points of failure
+
+\subsection{The Academic Gap}
+\label{subsec:academic-gap}
+
+% Transit systems are well studied, commercial festival systems are not
+% No documented open architecture for festival payment systems
+% This is the gap we are trying to fill

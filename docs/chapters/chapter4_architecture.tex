@@ -1,0 +1,109 @@
+\chapter{System Architecture}
+\label{chap:architecture}
+
+% Overview paragraph: high-level description of the architecture
+
+\section{High-Level Overview}
+\label{sec:high-level-overview}
+
+% System diagram: cloud backend, private Wi-Fi network, vendor terminals, consumer phones
+% The three main components: cloud services, on-site network, client applications
+% Data flow: how a transaction moves through the system
+
+\section{Cloud Infrastructure}
+\label{sec:cloud-infrastructure}
+
+% Where the backend runs (cloud provider)
+% Services: Payment Service, Core Service
+% Database layer: PostgreSQL for persistence, Redis for caching
+% API gateway and routing
+
+\subsection{Payment Service}
+\label{subsec:payment-service-arch}
+
+% Responsible for: wallet operations, transaction processing, Stripe integration
+% Stateless design, relies on PostgreSQL for state
+
+\subsection{Core Service}
+\label{subsec:core-service-arch}
+
+% Responsible for: vendor management, product catalog, user accounts, event configuration
+% Admin operations, CRUD endpoints
+
+\section{On-Site Network Deployment}
+\label{sec:onsite-network}
+
+% The dedicated private Wi-Fi network at the festival venue
+% Why a private network instead of relying on cellular
+% Network topology: access points, coverage zones, redundancy
+% How vendor terminals and consumer phones connect
+
+\section{Client Applications}
+\label{sec:client-apps-arch}
+
+% Overview of the three apps and their roles
+
+\subsection{Consumer App}
+\label{subsec:consumer-app-arch}
+
+% React Native mobile app for attendees
+% Features: wallet top-up, QR/NFC payment, transaction history, balance view
+
+\subsection{Vendor App}
+\label{subsec:vendor-app-arch}
+
+% React Native app for merchants
+% Features: accept payments, manage products, view sales, offline queue
+
+\subsection{Admin Dashboard}
+\label{subsec:admin-dashboard-arch}
+
+% Web-based dashboard for event organizers
+% Features: event setup, vendor management, real-time monitoring, reports
+
+\section{Offline Resilience Strategy}
+\label{sec:offline-resilience}
+
+% When and why the system switches to offline mode
+% Detection: how a terminal knows it has lost connectivity
+% What works offline (payments) and what does not (top-ups)
+
+\subsection{Local Balance Snapshots}
+\label{subsec:balance-snapshots}
+
+% Vendor terminals cache recent wallet balances
+% How snapshots are taken and how stale they can get
+% Risk: snapshot may not reflect recent spending at other terminals
+
+\subsection{Transaction Queuing}
+\label{subsec:transaction-queuing}
+
+% Transactions stored locally on the vendor device
+% Queue structure: timestamp, consumer ID, amount, vendor ID, status
+% Ordering and idempotency considerations
+
+\section{Synchronization and Reconciliation}
+\label{sec:sync-reconciliation}
+
+% What happens when connectivity is restored
+
+\subsection{Batch Upload Protocol}
+\label{subsec:batch-upload}
+
+% Terminal uploads queued transactions to the cloud backend
+% Server processes them in timestamp order
+% Conflict detection: balance underflows, duplicate transactions
+
+\subsection{Conflict Resolution}
+\label{subsec:conflict-resolution-impl}
+
+% What happens when offline spending exceeds the actual balance
+% Strategies: accept the loss, flag for manual review, partial rollback
+% The trade-off: availability during the event vs perfect consistency
+
+\subsection{Balance Reconciliation}
+\label{subsec:balance-reconciliation}
+
+% Recalculating the authoritative balance after sync
+% Notifying affected consumers and vendors
+% Audit trail: every transaction is logged, nothing is silently dropped

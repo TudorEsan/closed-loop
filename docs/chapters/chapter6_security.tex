@@ -1,0 +1,56 @@
+\chapter{Security Considerations}
+\label{chap:security}
+
+% Brief intro: why security is especially important for a payment system
+% The unique threat model of a festival environment
+
+\section{Authentication and Authorization}
+\label{sec:auth}
+
+% How users, vendors, and admins authenticate
+% JWT tokens, session management
+% Role-based access control: who can do what
+% Token expiration and refresh strategy
+
+\section{Wallet Integrity and Double-Spend Prevention}
+\label{sec:double-spend}
+
+% The core security challenge of the system
+
+\subsection{Online Mode}
+\label{subsec:double-spend-online}
+
+% PostgreSQL transactions ensure atomic balance updates
+% Serializable isolation or row-level locking
+% No double-spend possible when the server is the single source of truth
+
+\subsection{Offline Mode}
+\label{subsec:double-spend-offline}
+
+% The problem: multiple terminals can approve transactions independently
+% Why full double-spend prevention is impossible without connectivity
+% Mitigation strategies: spending limits, balance snapshot freshness
+% Accepting controlled risk during short offline windows
+
+\section{Offline Trust Model}
+\label{sec:offline-trust}
+
+% What the system trusts during offline operation
+% Vendor terminals are trusted devices (registered and authenticated)
+% Consumer identity verification: how do we know the QR/NFC is legitimate
+% Replay attack prevention: transaction IDs, timestamps, nonces
+
+\section{Stripe and Payment Security}
+\label{sec:stripe-security}
+
+% PCI compliance: Stripe handles card data, we never see it
+% Webhook signature verification
+% Preventing fraudulent top-ups
+
+\section{Data Protection}
+\label{sec:data-protection}
+
+% What personal data the system stores
+% Encryption at rest and in transit (HTTPS, TLS)
+% GDPR considerations (if applicable)
+% Data retention and deletion policies
