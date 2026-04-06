@@ -1,0 +1,42 @@
+services:
+    simple-nest-api:
+        container_name: simple-nest-api
+        build: .
+        ports:
+            - "3000:3000"
+        environment:
+            - DATABASE_URL=postgresql://postgres:simple-nest-api@simple-nest-api-db:5432/simple-nest-api-db
+        depends_on:
+            simple-nest-api-db:
+                condition: service_healthy
+        networks:
+            - network
+        restart: unless-stopped
+    simple-nest-api-db:
+        container_name: simple-nest-api-db
+        image: postgres:15-alpine
+        environment:
+            - POSTGRES_USER=postgres
+            - POSTGRES_PASSWORD=simple-nest-api
+            - POSTGRES_DB=simple-nest-api-db
+            - POSTGRES_INITDB_ARGS=--auth-host=scram-sha-256
+        ports:
+            - "5432:5432"
+        volumes:
+            - db_data:/var/lib/postgresql/data
+            - ./init-db:/docker-entrypoint-initdb.d
+        networks:
+            - network
+        restart: unless-stopped
+        healthcheck:
+            test: ["CMD-SHELL", "pg_isready -U postgres -d simple-nest-api-db"]
+            interval: 10s
+            timeout: 5s
+            retries: 5
+            start_period: 30s
+networks:
+    network:
+        driver: bridge
+
+volumes:
+    db_data:
