@@ -28,15 +28,6 @@ export class EventResponseDto {
   @ApiProperty({ description: 'Token to currency exchange rate' })
   tokenCurrencyRate: string;
 
-  @ApiPropertyOptional({ description: 'Maximum transaction amount' })
-  maxTransactionAmount: number | null;
-
-  @ApiPropertyOptional({ description: 'Maximum offline spending limit' })
-  maxOfflineSpend: number | null;
-
-  @ApiProperty({ description: 'Default commission rate for vendors' })
-  defaultCommissionRate: string;
-
   @ApiProperty({ description: 'Event start date' })
   startDate: string;
 

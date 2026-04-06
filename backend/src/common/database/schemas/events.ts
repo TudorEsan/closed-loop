@@ -12,9 +12,6 @@ export const events = pgTable('events', {
   status: eventStatusEnum('status').notNull().default('draft'),
   currency: varchar('currency', { length: 3 }).notNull().default('EUR'),
   tokenCurrencyRate: decimal('token_currency_rate', { precision: 10, scale: 4 }).notNull(),
-  maxTransactionAmount: integer('max_transaction_amount'),
-  maxOfflineSpend: integer('max_offline_spend'),
-  defaultCommissionRate: decimal('default_commission_rate', { precision: 5, scale: 2 }).notNull().default('0'),
   startDate: date('start_date').notNull(),
   endDate: date('end_date').notNull(),
   timezone: varchar('timezone', { length: 50 }).notNull().default('Europe/Bucharest'),
@@ -27,5 +24,4 @@ export const events = pgTable('events', {
   index('events_dates_idx').on(table.startDate, table.endDate),
   check('events_dates_check', sql`${table.startDate} < ${table.endDate}`),
   check('events_token_rate_check', sql`${table.tokenCurrencyRate} > 0`),
-  check('events_commission_check', sql`${table.defaultCommissionRate} >= 0 AND ${table.defaultCommissionRate} <= 100`),
 ]);

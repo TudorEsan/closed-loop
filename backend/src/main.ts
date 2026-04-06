@@ -3,7 +3,7 @@ import 'module-alias/register';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ConfigService } from '@nestjs/config';
-import { ValidationPipe, VersioningType } from '@nestjs/common';
+import { ValidationPipe } from '@nestjs/common';
 import { swaggerHelpers } from '@common/config/configurations/swagger.config';
 import { OpenAPIObject, SwaggerModule } from '@nestjs/swagger';
 import { toNodeHandler } from 'better-auth/node';
@@ -54,15 +54,17 @@ async function bootstrap() {
     credentials: true,
   });
 
-  // Mount Better Auth directly on Express, bypassing NestJS global prefix
-  // Must be mounted at root so Better Auth receives the full /api/auth/* path
-  app.use(toNodeHandler(auth));
+  // Mount Better Auth only on /api/auth paths, so it does not intercept other routes
+  const betterAuthHandler = toNodeHandler(auth);
+  app.use((req, res, next) => {
+    if (req.url?.startsWith('/api/auth')) {
+      betterAuthHandler(req, res).catch(next);
+    } else {
+      next();
+    }
+  });
 
   app.setGlobalPrefix(`api/v${apiVersion}`);
-  app.enableVersioning({
-    type: VersioningType.URI,
-    defaultVersion: apiVersion,
-  });
   app.useGlobalPipes(
     new ValidationPipe({
       transform: true,

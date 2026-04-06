@@ -21,8 +21,8 @@ import { EventsModule } from './modules/events/events.module';
     }),
     AuthModule,
     UsersModule,
-    VendorsModule,
     EventsModule,
+    VendorsModule,
   ],
   controllers: [],
   providers: [

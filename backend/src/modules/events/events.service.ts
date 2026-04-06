@@ -55,11 +55,6 @@ export class EventsService {
         organizerId: userId,
         currency: dto.currency ?? 'EUR',
         tokenCurrencyRate: String(dto.tokenCurrencyRate),
-        maxTransactionAmount: dto.maxTransactionAmount,
-        maxOfflineSpend: dto.maxOfflineSpend,
-        defaultCommissionRate: dto.defaultCommissionRate
-          ? String(dto.defaultCommissionRate)
-          : '0',
         startDate: dto.startDate,
         endDate: dto.endDate,
         timezone: dto.timezone ?? 'Europe/Bucharest',
@@ -202,12 +197,6 @@ export class EventsService {
     if (dto.currency !== undefined) updateData.currency = dto.currency;
     if (dto.tokenCurrencyRate !== undefined)
       updateData.tokenCurrencyRate = String(dto.tokenCurrencyRate);
-    if (dto.maxTransactionAmount !== undefined)
-      updateData.maxTransactionAmount = dto.maxTransactionAmount;
-    if (dto.maxOfflineSpend !== undefined)
-      updateData.maxOfflineSpend = dto.maxOfflineSpend;
-    if (dto.defaultCommissionRate !== undefined)
-      updateData.defaultCommissionRate = String(dto.defaultCommissionRate);
     if (dto.startDate !== undefined) updateData.startDate = dto.startDate;
     if (dto.endDate !== undefined) updateData.endDate = dto.endDate;
     if (dto.timezone !== undefined) updateData.timezone = dto.timezone;

@@ -9,9 +9,6 @@ export type Event = {
   status: EventStatus;
   currency: string;
   tokenCurrencyRate: string;
-  maxTransactionAmount: number | null;
-  maxOfflineSpend: number | null;
-  defaultCommissionRate: string;
   startDate: string;
   endDate: string;
   timezone: string;
@@ -25,9 +22,6 @@ export type CreateEventDto = {
   description?: string;
   currency?: string;
   tokenCurrencyRate: number;
-  maxTransactionAmount?: number;
-  maxOfflineSpend?: number;
-  defaultCommissionRate?: number;
   startDate: string;
   endDate: string;
   timezone?: string;

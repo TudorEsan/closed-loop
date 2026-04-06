@@ -5,7 +5,6 @@ import {
   IsOptional,
   IsNumber,
   Min,
-  Max,
   MaxLength,
   IsDateString,
 } from 'class-validator';
@@ -36,31 +35,6 @@ export class CreateEventDto {
   @IsNumber()
   @Min(0.0001)
   tokenCurrencyRate: number;
-
-  @ApiPropertyOptional({
-    description: 'Maximum transaction amount in tokens',
-  })
-  @IsOptional()
-  @IsNumber()
-  @Min(1)
-  maxTransactionAmount?: number;
-
-  @ApiPropertyOptional({
-    description: 'Maximum offline spending limit in tokens',
-  })
-  @IsOptional()
-  @IsNumber()
-  @Min(1)
-  maxOfflineSpend?: number;
-
-  @ApiPropertyOptional({
-    description: 'Default commission rate for vendors (0-100)',
-  })
-  @IsOptional()
-  @IsNumber()
-  @Min(0)
-  @Max(100)
-  defaultCommissionRate?: number;
 
   @ApiProperty({ description: 'Event start date (ISO 8601)' })
   @IsDateString()

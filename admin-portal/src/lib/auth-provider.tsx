@@ -18,7 +18,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const { data: session, isPending } = useSession();
 
   const value: AuthContextType = {
-    user: session?.user as User | null,
+    user: (session?.user as unknown as User) ?? null,
     isLoading: isPending,
     isAuthenticated: !!session?.user,
   };
