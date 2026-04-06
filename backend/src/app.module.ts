@@ -4,6 +4,12 @@ import { DrizzleModule } from '@common/database/drizzle.module';
 import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
 import { ThrottlerConfigService } from '@common/config/services/throttler-config.service';
 import { APP_GUARD } from '@nestjs/core';
+import { AuthModule } from './modules/auth/auth.module';
+import { UsersModule } from './modules/users/users.module';
+import { AuthGuard } from '@common/guards/auth.guard';
+import { RolesGuard } from '@common/guards/roles.guard';
+import { VendorsModule } from './modules/vendors/vendors.module';
+import { EventsModule } from './modules/events/events.module';
 
 @Module({
   imports: [
@@ -13,12 +19,24 @@ import { APP_GUARD } from '@nestjs/core';
       imports: [ConfigModule],
       useClass: ThrottlerConfigService,
     }),
+    AuthModule,
+    UsersModule,
+    VendorsModule,
+    EventsModule,
   ],
   controllers: [],
   providers: [
     {
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: AuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard,
     },
   ],
 })
