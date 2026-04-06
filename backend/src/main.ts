@@ -1,3 +1,4 @@
+import '@common/config/env';
 import 'module-alias/register';
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
@@ -5,13 +6,15 @@ import { ConfigService } from '@nestjs/config';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { swaggerHelpers } from '@common/config/configurations/swagger.config';
 import { OpenAPIObject, SwaggerModule } from '@nestjs/swagger';
+import { toNodeHandler } from 'better-auth/node';
+import { auth } from '@common/auth/auth';
+import type { NestExpressApplication } from '@nestjs/platform-express';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
   const configService = app.get(ConfigService);
-  // ========================
+
   // App config
-  // ========================
   const port = configService.get<number>('app.port', { infer: true }) as number;
   const apiVersion = configService.get<string>('app.apiVersion', {
     infer: true,
@@ -19,9 +22,8 @@ async function bootstrap() {
   const isProduction = configService.get<boolean>('app.isProduction', {
     infer: true,
   }) as boolean;
-  // ========================
+
   // CORS config
-  // ========================
   const allowedOrigins = configService.get<string | string[]>(
     'app.allowedOrigins',
     {
@@ -49,7 +51,13 @@ async function bootstrap() {
 
   app.enableCors({
     origin: allowedOrigins,
+    credentials: true,
   });
+
+  // Mount Better Auth directly on Express, bypassing NestJS global prefix
+  // Must be mounted at root so Better Auth receives the full /api/auth/* path
+  app.use(toNodeHandler(auth));
+
   app.setGlobalPrefix(`api/v${apiVersion}`);
   app.enableVersioning({
     type: VersioningType.URI,

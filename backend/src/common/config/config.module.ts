@@ -23,7 +23,7 @@ import { throttlerValidationSchema } from './validation/throttler.schema';
         allowUnknown: true,
         abortEarly: false,
       },
-      envFilePath: [`.env.${process.env.NODE_ENV}`, '.env'],
+      envFilePath: ['.env.local', `.env.${process.env.NODE_ENV}`, '.env'],
       cache: true,
     }),
   ],

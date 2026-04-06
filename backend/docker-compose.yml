@@ -6,7 +6,9 @@ services:
     ports:
       - "3000:3000"
     env_file:
-      - .env
+      - .env.local
+    environment:
+      - DATABASE_URL=postgresql://closedloop:closedloop_dev@closedloop-db:5432/closedloop_db
     depends_on:
       closedloop-db:
         condition: service_healthy
@@ -26,7 +28,7 @@ services:
       - POSTGRES_DB=closedloop_db
       - POSTGRES_INITDB_ARGS=--auth-host=scram-sha-256
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
     networks:
