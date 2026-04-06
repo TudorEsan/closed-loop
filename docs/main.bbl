@@ -6,6 +6,14 @@ Patrick Y.~K. Chau and Simpson Poon.
 \newblock Octopus: {An} {E}-cash payment system success story.
 \newblock {\em Communications of the ACM}, 46(9):129--133, 2003.
 
+\bibitem[DHJ{\etalchar{+}}07]{DeCandia2007}
+Giuseppe DeCandia, Deniz Hastorun, Madan Jampani, Gunavardhan Kakulapati,
+  Avinash Lakshman, Alex Pilchin, Swaminathan Sivasubramanian, Peter Vosshall,
+  and Werner Vogels.
+\newblock Dynamo: {Amazon}'s highly available key-value store.
+\newblock In {\em Proceedings of the 21st ACM Symposium on Operating Systems
+  Principles (SOSP 2007)}, pages 205--220, 2007.
+
 \bibitem[{eFe}16]{eFestivals2016}
 {eFestivals}.
 \newblock Download festival scraps on site cashless only payment system.
@@ -26,6 +34,12 @@ Patrick Y.~K. Chau and Simpson Poon.
 \newblock \url{https://eur-lex.europa.eu/eli/dir/2015/2366/oj/eng}, 2015.
 \newblock Online; accessed 2026.
 
+\bibitem[Fow05]{Fowler2005}
+Martin Fowler.
+\newblock Event sourcing.
+\newblock \url{https://martinfowler.com/eaaDev/EventSourcing.html}, 2005.
+\newblock Online; accessed 2026.
+
 \bibitem[GdKGM{\etalchar{+}}08]{Garcia2008}
 Flavio~D. Garcia, Gerhard de~Koning~Gans, Ruben Muijrers, Peter van Rossum,
   Roel Verdult, Ronny Wichers~Schreur, and Bart Jacobs.
@@ -33,6 +47,17 @@ Flavio~D. Garcia, Gerhard de~Koning~Gans, Ruben Muijrers, Peter van Rossum,
 \newblock In {\em Proceedings of the 13th European Symposium on Research in
   Computer Security (ESORICS 2008)}, volume 5283 of {\em LNCS}, pages 97--114.
   Springer, 2008.
+
+\bibitem[GL02]{Gilbert2002}
+Seth Gilbert and Nancy Lynch.
+\newblock Brewer's conjecture and the feasibility of consistent, available,
+  partition-tolerant web services.
+\newblock {\em ACM SIGACT News}, 33(2):51--59, 2002.
+
+\bibitem[KB17]{Kleppmann2017json}
+Martin Kleppmann and Alastair~R. Beresford.
+\newblock A conflict-free replicated {JSON} datatype.
+\newblock Technical Report~10, 2017.
 
 \bibitem[KWvHM19]{Kleppmann2019}
 Martin Kleppmann, Adam Wiggins, Peter van Hardenberg, and Mark McGranaghan.
@@ -45,6 +70,12 @@ Steven~J. Murdoch, Saar Drimer, Ross Anderson, and Mike Bond.
 \newblock In {\em Proceedings of the 2010 IEEE Symposium on Security and
   Privacy}, pages 433--446, 2010.
 
+\bibitem[{Ope}26]{OpenAIPostgres2026}
+{OpenAI}.
+\newblock Scaling {PostgreSQL} to power 800 million {ChatGPT} users.
+\newblock \url{https://openai.com/index/scaling-postgresql/}, 2026.
+\newblock Online; accessed April 2026.
+
 \bibitem[Rie11]{Ries2011}
 Eric Ries.
 \newblock {\em The Lean Startup}.
@@ -54,6 +85,11 @@ Eric Ries.
 Lachlan Schomburgk, Alessandro Belli, and Arvid O.~I. Hoffmann.
 \newblock Less cash, more splash? {A} meta-analysis on the cashless effect.
 \newblock {\em Journal of Retailing}, 100(3):382--403, 2024.
+
+\bibitem[SCZ{\etalchar{+}}16]{Shi2016}
+Weisong Shi, Jie Cao, Quan Zhang, Youhuizi Li, and Lanyu Xu.
+\newblock Edge computing: Vision and challenges.
+\newblock {\em IEEE Internet of Things Journal}, 3(5):637--646, 2016.
 
 \bibitem[{SDK}24]{SDKFinance2024}
 {SDK.finance}.
@@ -77,10 +113,43 @@ Muhammad~Zubair Shafiq, Lusheng Ji, Alex~X. Liu, Jeffrey Pang, Shobha
 \newblock A first look at cellular network performance during crowded events.
 \newblock In {\em Proceedings of the ACM SIGMETRICS 2013}, pages 17--28, 2013.
 
+\bibitem[{Son}24a]{SonyOctopus}
+{Sony Corporation}.
+\newblock Case study: {Hong Kong} octopus card.
+\newblock
+  \url{https://www.sony.co.jp/en/Products/felica/casestudy/article/octopus.html},
+  2024.
+\newblock Online; accessed 2026.
+
+\bibitem[{Son}24b]{SonyFeliCa}
+{Sony Corporation}.
+\newblock {FeliCa} -- contactless {IC} card technology.
+\newblock \url{https://www.sony.net/Products/felica/about/}, 2024.
+\newblock Online; accessed 2026.
+
+\bibitem[SPBZ11]{Shapiro2011}
+Marc Shapiro, Nuno Pregui{\c{c}}a, Carlos Baquero, and Marek Zawirski.
+\newblock Conflict-free replicated data types.
+\newblock In {\em Proceedings of the 13th International Symposium on
+  Stabilization, Safety, and Security of Distributed Systems (SSS 2011)}, pages
+  386--400, 2011.
+
 \bibitem[{Tap}24]{Tappit2024}
 {Tappit}.
 \newblock {RFID} cashless payments for events.
 \newblock \url{https://tappit.com/pay/rfid}, 2024.
+\newblock Online; accessed 2026.
+
+\bibitem[Vog09]{Vogels2009}
+Werner Vogels.
+\newblock Eventually consistent.
+\newblock {\em Communications of the ACM}, 52(1):40--44, 2009.
+
+\bibitem[You10]{Young2010}
+Greg Young.
+\newblock {CQRS} documents.
+\newblock \url{https://cqrs.files.wordpress.com/2010/11/cqrs_documents.pdf},
+  2010.
 \newblock Online; accessed 2026.
 
 \end{thebibliography}

@@ -1,119 +1,109 @@
 \chapter{Implementation}
 \label{chap:implementation}
 
-% Brief intro: what was implemented as the MVP, what was left out
+% Brief intro: what was implemented as the MVP, what tools and frameworks were used
 
-\section{Payment Service}
-\label{sec:payment-service}
+\section{NFC wristband integration}
+\label{sec:impl-nfc}
 
-% The core backend service handling all money movement
+% React Native NFC library, DESFire EV3 communication
+% Reading and writing balance data
+% Transaction counter and chain validation
+% Handling write failures and retries
 
-\subsection{Wallet Engine}
-\label{subsec:wallet-engine}
+\subsection{DESFire authentication flow}
+\label{subsec:impl-desfire-auth}
 
-% Wallet model: each user and vendor has a wallet with a balance
-% Credit and debit operations
-% Atomic balance updates using PostgreSQL transactions
-% Preventing negative balances in online mode
+% AES-128 mutual authentication between app and chip
+% Key diversification per wristband
+% Secure messaging setup
 
-\subsection{Stripe Integration}
-\label{subsec:stripe-integration}
+\subsection{Balance read/write protocol}
+\label{subsec:impl-balance-protocol}
 
-% How wallet top-ups work
-% Payment Intents flow: create intent, confirm, webhook callback
-% Handling Stripe webhooks: idempotency, retry logic
-% Error handling: what happens when Stripe fails mid-transaction
+% Step-by-step implementation of the transaction flow from Section 3.3
+% Error handling: timeout, pull-away, interference
+% Local transaction logging after successful write
 
-\subsection{Transaction Processing}
-\label{subsec:transaction-processing}
+\section{Mobile application}
+\label{sec:impl-mobile-app}
 
-% The lifecycle of a payment transaction
-% Online flow: consumer initiates, server validates balance, debits consumer, credits vendor
-% Response times and latency considerations
+% React Native setup, project structure, navigation
 
-\section{Core Service}
-\label{sec:core-service}
+\subsection{Attendee screens}
+\label{subsec:impl-attendee}
 
-% The administrative backend
-
-\subsection{Vendor Management}
-\label{subsec:vendor-management}
-
-% CRUD operations for vendors
-% Assigning vendors to events
-% Vendor onboarding flow
-
-\subsection{Product and Stock Management}
-\label{subsec:product-management}
-
-% Product catalog per vendor
-% Pricing, categories
-% Stock tracking (if implemented)
-
-\subsection{User Management}
-\label{subsec:user-management}
-
-% User registration and authentication
-% Role-based access: consumer, vendor, admin
-% Profile management
-
-\subsection{Event Management}
-\label{subsec:event-management}
-
-% Creating and configuring events
-% Associating vendors and products with an event
-% Event lifecycle: setup, active, closed
-
-\section{Database Design}
-\label{sec:database-design}
-
-% PostgreSQL schema overview
-% Key tables: users, wallets, transactions, vendors, products, events
-% Entity-relationship diagram
-% Indexes and query optimization for high-throughput transaction processing
-% Redis usage: what gets cached and why
-
-\section{Client Applications}
-\label{sec:client-apps}
-
-% Implementation details for each app
-
-\subsection{Consumer App}
-\label{subsec:consumer-app}
-
-% React Native implementation
-% Screens: home/balance, top-up, QR code display, NFC tap, transaction history
+% Balance display, transaction history, Stripe top-up flow
 % State management approach
 % How the app communicates with the backend
 
-\subsection{Vendor App}
-\label{subsec:vendor-app}
+\subsection{Vendor POS mode}
+\label{subsec:impl-vendor-pos}
 
-% React Native implementation
-% Screens: accept payment (scan QR / NFC), product selection, sales overview
-% Offline mode: local transaction queue, connectivity indicator
-% How queued transactions are displayed and managed
+% Payment screen, product catalog, NFC tap flow
+% Offline transaction queue: local storage, queue management
+% Connectivity indicator, pending sync count, last sync time
 
-\subsection{Admin Dashboard}
-\label{subsec:admin-dashboard}
+\subsection{Device security checks}
+\label{subsec:impl-device-security}
 
-% Web application (React or similar)
-% Pages: event overview, vendor list, transaction monitoring, reports
-% Real-time data via WebSockets or polling
+% Root/jailbreak detection implementation
+% App integrity verification
+% OS version and screen lock checks
 
-\section{Offline Transaction Queue}
-\label{sec:offline-queue}
+\section{Admin dashboard}
+\label{sec:impl-admin-dashboard}
+
+% Separate React web application, accessible from any browser
+% Screens: event setup, vendor management, device whitelisting
+% Real-time monitoring: transaction volume, sync status
+% Security alerts and device blocking
+
+\section{Backend server}
+\label{sec:impl-backend}
+
+% NestJS project structure, modules, dependency injection
+
+\subsection{Authentication and authorization}
+\label{subsec:impl-auth}
+
+% JWT tokens, guards, role-based access control
+% Token refresh strategy
+
+\subsection{Event management module}
+\label{subsec:impl-event-management}
+
+% CRUD operations for events
+% Event lifecycle state machine
+% Vendor approval and device whitelisting
+
+\subsection{Sync and reconciliation}
+\label{subsec:impl-sync}
+
+% Endpoint for receiving offline transaction batches
+% Server-side validation and conflict detection
+% Balance discrepancy flagging
+% Idempotency handling for duplicate submissions
+
+\subsection{Stripe integration}
+\label{subsec:impl-stripe}
+
+% Payment Intents flow for top-ups
+% Webhook handling: signature verification, idempotency, retries
+% Error handling when Stripe fails mid-transaction
+
+\section{Database implementation}
+\label{sec:impl-database}
+
+% PostgreSQL setup, schema migrations with TypeORM or Prisma
+% Entity-relationship diagram
+% Indexes and query optimization
+% Connection pooling configuration
+
+\section{Offline transaction queue and sync protocol}
+\label{sec:impl-offline-sync}
 
 % How the vendor app stores transactions locally when offline
-% Data structure and local storage mechanism
+% Data structure and local storage mechanism (AsyncStorage, SQLite, etc.)
 % Queue size limits and overflow handling
-% Visual feedback to the vendor: pending sync count, last sync time
-
-\section{Sync Protocol}
-\label{sec:sync-protocol}
-
-% Step-by-step: what happens when a vendor terminal reconnects
-% Authentication and session validation
-% Uploading the local queue to the backend
-% Server-side processing: validation, conflict detection, balance updates
-% Confirmation back to the terminal: which transactions were accepted, which had issues
+% Step-by-step sync protocol: authentication, upload, validation, confirmation
