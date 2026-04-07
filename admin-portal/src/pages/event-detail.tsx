@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useForm, Controller } from 'react-hook-form';
 import { toast } from 'sonner';
+import { Area, AreaChart, CartesianGrid, XAxis } from 'recharts';
 import {
   ArrowLeft,
   Loader2,
@@ -12,8 +13,14 @@ import {
   Plus,
   UserPlus,
   ChevronDown,
+  TrendingUpIcon,
+  WalletIcon,
+  UsersIcon,
+  StoreIcon,
+  ActivityIcon,
 } from 'lucide-react';
 
+import { useIsMobile } from '@/hooks/use-mobile';
 import { eventsService, vendorsService, usersService } from '@/services';
 import type {
   Event,
@@ -23,8 +30,13 @@ import type {
   CreateVendorDto,
   Vendor,
   VendorStatus,
+  VendorProductType,
   User,
 } from '@/types';
+import {
+  VENDOR_PRODUCT_TYPES,
+  VENDOR_PRODUCT_TYPE_LABELS,
+} from '@/types/vendor';
 
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -33,11 +45,19 @@ import { Skeleton } from '@/components/ui/skeleton';
 import { Separator } from '@/components/ui/separator';
 import {
   Card,
+  CardAction,
   CardContent,
+  CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
-  CardAction,
 } from '@/components/ui/card';
+import {
+  ChartContainer,
+  ChartTooltip,
+  ChartTooltipContent,
+  type ChartConfig,
+} from '@/components/ui/chart';
 import {
   Dialog,
   DialogContent,
@@ -70,13 +90,17 @@ import {
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
+  ToggleGroup,
+  ToggleGroupItem,
+} from '@/components/ui/toggle-group';
+import {
   Field,
   FieldError,
   FieldGroup,
   FieldLabel,
 } from '@/components/ui/field';
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+// Helpers
 
 function formatDate(dateStr: string) {
   return new Date(dateStr).toLocaleDateString('en-US', {
@@ -110,20 +134,13 @@ const STATUS_LABELS: Record<EventStatus, string> = {
   closed: 'Closed',
 };
 
-function statusBadgeVariant(status: EventStatus) {
-  switch (status) {
-    case 'active':
-      return 'default' as const;
-    case 'draft':
-      return 'secondary' as const;
-    case 'closed':
-      return 'outline' as const;
-    case 'settlement':
-      return 'outline' as const;
-    case 'setup':
-      return 'secondary' as const;
-  }
-}
+const STATUS_BADGE_CONFIG: Record<EventStatus, { variant: 'default' | 'secondary' | 'outline' | 'destructive'; className?: string }> = {
+  draft: { variant: 'secondary' },
+  setup: { variant: 'outline', className: 'border-blue-300 text-blue-700 dark:border-blue-700 dark:text-blue-400' },
+  active: { variant: 'default', className: 'bg-emerald-600 text-white' },
+  settlement: { variant: 'outline', className: 'border-amber-300 text-amber-700 dark:border-amber-700 dark:text-amber-400' },
+  closed: { variant: 'destructive' },
+};
 
 function vendorStatusBadgeVariant(status: VendorStatus) {
   switch (status) {
@@ -138,6 +155,20 @@ function vendorStatusBadgeVariant(status: VendorStatus) {
   }
 }
 
+function extractErrorMessage(err: unknown, fallback: string): string {
+  if (typeof err === 'object' && err !== null) {
+    const anyErr = err as {
+      response?: { data?: { message?: string | string[] } };
+      message?: string;
+    };
+    const msg = anyErr.response?.data?.message;
+    if (Array.isArray(msg)) return msg.join(', ');
+    if (typeof msg === 'string') return msg;
+    if (typeof anyErr.message === 'string') return anyErr.message;
+  }
+  return fallback;
+}
+
 function useDebounce<T>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = useState(value);
 
@@ -149,7 +180,7 @@ function useDebounce<T>(value: T, delay: number): T {
   return debouncedValue;
 }
 
-// ─── Currencies ─────────────────────────────────────────────────────────────
+// Currencies
 
 const CURRENCIES = [
   { code: 'EUR', label: 'EUR - Euro' },
@@ -169,7 +200,7 @@ const CURRENCIES = [
   { code: 'JPY', label: 'JPY - Japanese Yen' },
 ] as const;
 
-// ─── Form Types ─────────────────────────────────────────────────────────────
+// Form Types
 
 type EditEventFormData = {
   name: string;
@@ -186,12 +217,314 @@ type CreateVendorFormData = {
   businessName: string;
   contactPerson: string;
   contactEmail: string;
-  contactPhone: string;
-  productType: string;
+  productType: VendorProductType | '';
   description: string;
 };
 
-// ─── Overview Tab ────────────────────────────────────────────────────────────
+// Transaction Chart (placeholder data for now)
+
+function generateMockChartData(event: Event) {
+  const start = new Date(event.startDate);
+  const end = new Date(event.endDate);
+  const now = new Date();
+  const effectiveEnd = end < now ? end : now;
+
+  if (start > now || event.status === 'draft' || event.status === 'setup') {
+    return [];
+  }
+
+  const data: { date: string; volume: number; transactions: number }[] = [];
+  const current = new Date(start);
+
+  while (current <= effectiveEnd) {
+    const hour = current.getHours();
+    const isDay = hour >= 10 && hour <= 23;
+    const base = isDay ? 150 + Math.random() * 350 : 10 + Math.random() * 40;
+    const txCount = isDay ? 20 + Math.floor(Math.random() * 80) : Math.floor(Math.random() * 10);
+
+    data.push({
+      date: current.toISOString(),
+      volume: Math.round(base * 100) / 100,
+      transactions: txCount,
+    });
+
+    current.setHours(current.getHours() + 4);
+  }
+
+  return data;
+}
+
+const chartConfig = {
+  volume: {
+    label: 'Volume',
+    color: 'var(--primary)',
+  },
+  transactions: {
+    label: 'Transactions',
+    color: 'var(--primary)',
+  },
+} satisfies ChartConfig;
+
+function TransactionChart({ event }: { event: Event }) {
+  const isMobile = useIsMobile();
+  const [timeRange, setTimeRange] = useState('all');
+  const [chartMode, setChartMode] = useState<'volume' | 'transactions'>('volume');
+  const allData = generateMockChartData(event);
+
+  const filteredData = allData.filter((item) => {
+    if (timeRange === 'all') return true;
+    const date = new Date(item.date);
+    const ref = new Date(allData[allData.length - 1]?.date ?? new Date());
+    const days = timeRange === '7d' ? 7 : timeRange === '30d' ? 30 : 90;
+    const cutoff = new Date(ref);
+    cutoff.setDate(cutoff.getDate() - days);
+    return date >= cutoff;
+  });
+
+  if (allData.length === 0) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Transaction Volume</CardTitle>
+          <CardDescription>
+            No transaction data available yet. Data will appear once the event goes live.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex h-[250px] items-center justify-center text-muted-foreground">
+            <div className="text-center">
+              <ActivityIcon className="mx-auto mb-2 size-8 opacity-40" />
+              <p className="text-sm">Waiting for transactions...</p>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="@container/card">
+      <CardHeader>
+        <CardTitle>
+          {chartMode === 'volume' ? 'Transaction Volume' : 'Number of Transactions'}
+        </CardTitle>
+        <CardDescription>
+          <span className="hidden @[540px]/card:block">
+            {chartMode === 'volume'
+              ? `Total volume in ${event.currency} over time`
+              : 'Transaction count over time'}
+          </span>
+          <span className="@[540px]/card:hidden">
+            {chartMode === 'volume' ? event.currency : 'Count'}
+          </span>
+        </CardDescription>
+        <CardAction>
+          <div className="flex items-center gap-2">
+            <ToggleGroup
+              type="single"
+              value={chartMode}
+              onValueChange={(v) => v && setChartMode(v as 'volume' | 'transactions')}
+              variant="outline"
+              className="hidden @[600px]/card:flex"
+            >
+              <ToggleGroupItem value="volume" className="px-3 text-xs">Volume</ToggleGroupItem>
+              <ToggleGroupItem value="transactions" className="px-3 text-xs">Transactions</ToggleGroupItem>
+            </ToggleGroup>
+            <ToggleGroup
+              type="single"
+              value={timeRange}
+              onValueChange={(v) => v && setTimeRange(v)}
+              variant="outline"
+              className="hidden *:data-[slot=toggle-group-item]:px-3! @[767px]/card:flex"
+            >
+              <ToggleGroupItem value="7d">7d</ToggleGroupItem>
+              <ToggleGroupItem value="30d">30d</ToggleGroupItem>
+              <ToggleGroupItem value="all">All</ToggleGroupItem>
+            </ToggleGroup>
+            <Select value={timeRange} onValueChange={setTimeRange}>
+              <SelectTrigger
+                className="flex w-24 @[767px]/card:hidden"
+                size="sm"
+              >
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="7d">7 days</SelectItem>
+                <SelectItem value="30d">30 days</SelectItem>
+                <SelectItem value="all">All time</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </CardAction>
+      </CardHeader>
+      <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
+        <ChartContainer
+          config={chartConfig}
+          className="aspect-auto h-[250px] w-full"
+        >
+          <AreaChart data={filteredData}>
+            <defs>
+              <linearGradient id="fillChart" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="5%" stopColor="var(--color-volume)" stopOpacity={0.8} />
+                <stop offset="95%" stopColor="var(--color-volume)" stopOpacity={0.1} />
+              </linearGradient>
+            </defs>
+            <CartesianGrid vertical={false} />
+            <XAxis
+              dataKey="date"
+              tickLine={false}
+              axisLine={false}
+              tickMargin={8}
+              minTickGap={32}
+              tickFormatter={(value) => {
+                const date = new Date(value);
+                return date.toLocaleDateString('en-US', {
+                  month: 'short',
+                  day: 'numeric',
+                });
+              }}
+            />
+            <ChartTooltip
+              cursor={false}
+              content={
+                <ChartTooltipContent
+                  labelFormatter={(value) =>
+                    new Date(value).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })
+                  }
+                  indicator="dot"
+                />
+              }
+            />
+            <Area
+              dataKey={chartMode}
+              type="natural"
+              fill="url(#fillChart)"
+              stroke="var(--color-volume)"
+            />
+          </AreaChart>
+        </ChartContainer>
+      </CardContent>
+    </Card>
+  );
+}
+
+// Stats Cards for event
+
+function EventStatsCards({ event, vendorCount, memberCount }: { event: Event; vendorCount: number; memberCount: number }) {
+  const chartData = generateMockChartData(event);
+  const totalVolume = chartData.reduce((sum, d) => sum + d.volume, 0);
+  const totalTx = chartData.reduce((sum, d) => sum + d.transactions, 0);
+
+  return (
+    <div className="grid grid-cols-1 gap-4 px-4 *:data-[slot=card]:bg-gradient-to-t *:data-[slot=card]:from-primary/5 *:data-[slot=card]:to-card *:data-[slot=card]:shadow-xs lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4 dark:*:data-[slot=card]:bg-card">
+      <Card className="@container/card">
+        <CardHeader>
+          <CardDescription>Total Volume</CardDescription>
+          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
+            {totalVolume > 0 ? `${totalVolume.toLocaleString('en-US', { maximumFractionDigits: 0 })} ${event.currency}` : 'N/A'}
+          </CardTitle>
+          <CardAction>
+            <Badge variant="outline">
+              <WalletIcon className="size-3" />
+              {event.status === 'active' ? 'Live' : STATUS_LABELS[event.status]}
+            </Badge>
+          </CardAction>
+        </CardHeader>
+        <CardFooter className="flex-col items-start gap-1.5 text-sm">
+          <div className="line-clamp-1 flex gap-2 font-medium">
+            {totalVolume > 0 ? (
+              <>
+                <TrendingUpIcon className="size-4" />
+                Token rate: {event.tokenCurrencyRate}
+              </>
+            ) : (
+              'No transactions yet'
+            )}
+          </div>
+          <div className="text-muted-foreground">
+            Currency: {event.currency}
+          </div>
+        </CardFooter>
+      </Card>
+
+      <Card className="@container/card">
+        <CardHeader>
+          <CardDescription>Transactions</CardDescription>
+          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
+            {totalTx > 0 ? totalTx.toLocaleString() : 'N/A'}
+          </CardTitle>
+          <CardAction>
+            <Badge variant="outline" className={event.status === 'active' ? 'text-emerald-600' : ''}>
+              <ActivityIcon className="size-3" />
+              {event.status === 'active' ? 'Processing' : 'Idle'}
+            </Badge>
+          </CardAction>
+        </CardHeader>
+        <CardFooter className="flex-col items-start gap-1.5 text-sm">
+          <div className="line-clamp-1 flex gap-2 font-medium">
+            {totalTx > 0 ? 'All transaction types' : 'Waiting for activity'}
+          </div>
+          <div className="text-muted-foreground">
+            Top-ups, purchases, refunds
+          </div>
+        </CardFooter>
+      </Card>
+
+      <Card className="@container/card">
+        <CardHeader>
+          <CardDescription>Vendors</CardDescription>
+          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
+            {vendorCount}
+          </CardTitle>
+          <CardAction>
+            <Badge variant="outline">
+              <StoreIcon className="size-3" />
+              Registered
+            </Badge>
+          </CardAction>
+        </CardHeader>
+        <CardFooter className="flex-col items-start gap-1.5 text-sm">
+          <div className="line-clamp-1 flex gap-2 font-medium">
+            Accepting payments
+          </div>
+          <div className="text-muted-foreground">
+            Food, drinks, merchandise
+          </div>
+        </CardFooter>
+      </Card>
+
+      <Card className="@container/card">
+        <CardHeader>
+          <CardDescription>Team Members</CardDescription>
+          <CardTitle className="text-2xl font-semibold tabular-nums @[250px]/card:text-3xl">
+            {memberCount}
+          </CardTitle>
+          <CardAction>
+            <Badge variant="outline">
+              <UsersIcon className="size-3" />
+              Active
+            </Badge>
+          </CardAction>
+        </CardHeader>
+        <CardFooter className="flex-col items-start gap-1.5 text-sm">
+          <div className="line-clamp-1 flex gap-2 font-medium">
+            Managing the event
+          </div>
+          <div className="text-muted-foreground">
+            Organizers, admins, operators
+          </div>
+        </CardFooter>
+      </Card>
+    </div>
+  );
+}
+
+// Overview Tab
 
 function OverviewTab({
   event,
@@ -271,7 +604,6 @@ function OverviewTab({
                 1 token = {event.tokenCurrencyRate} {event.currency}
               </dd>
             </div>
-            <Separator />
           </dl>
         </CardContent>
       </Card>
@@ -279,7 +611,7 @@ function OverviewTab({
   );
 }
 
-// ─── Edit Event Dialog ───────────────────────────────────────────────────────
+// Edit Event Dialog
 
 function EditEventDialog({
   event,
@@ -412,7 +744,6 @@ function EditEventDialog({
               </Field>
             </div>
 
-
             <div className="grid grid-cols-2 gap-3">
               <Field>
                 <FieldLabel htmlFor="edit-start">Start Date</FieldLabel>
@@ -421,9 +752,6 @@ function EditEventDialog({
                   type="datetime-local"
                   {...register('startDate')}
                 />
-                {errors.startDate && (
-                  <FieldError>{errors.startDate.message}</FieldError>
-                )}
               </Field>
               <Field>
                 <FieldLabel htmlFor="edit-end">End Date</FieldLabel>
@@ -432,44 +760,27 @@ function EditEventDialog({
                   type="datetime-local"
                   {...register('endDate')}
                 />
-                {errors.endDate && (
-                  <FieldError>{errors.endDate.message}</FieldError>
-                )}
               </Field>
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <Field>
                 <FieldLabel htmlFor="edit-timezone">Timezone</FieldLabel>
-                <Input
-                  id="edit-timezone"
-                  {...register('timezone')}
-                  placeholder="Europe/Bucharest"
-                />
+                <Input id="edit-timezone" {...register('timezone')} placeholder="Europe/Bucharest" />
               </Field>
               <Field>
                 <FieldLabel htmlFor="edit-location">Location</FieldLabel>
-                <Input
-                  id="edit-location"
-                  {...register('location')}
-                  placeholder="Cluj-Napoca"
-                />
+                <Input id="edit-location" {...register('location')} placeholder="Cluj-Napoca" />
               </Field>
             </div>
           </FieldGroup>
 
           <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-            >
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
             <Button type="submit" disabled={updateMutation.isPending}>
-              {updateMutation.isPending && (
-                <Loader2 className="size-4 animate-spin" />
-              )}
+              {updateMutation.isPending && <Loader2 className="size-4 animate-spin" />}
               Save Changes
             </Button>
           </DialogFooter>
@@ -479,7 +790,7 @@ function EditEventDialog({
   );
 }
 
-// ─── Delete Event Dialog ─────────────────────────────────────────────────────
+// Delete Event Dialog
 
 function DeleteEventDialog({
   eventId,
@@ -500,7 +811,7 @@ function DeleteEventDialog({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['events'] });
       toast.success('Event deleted');
-      navigate('/events');
+      navigate('/dashboard');
     },
     onError: () => {
       toast.error('Failed to delete event');
@@ -526,9 +837,7 @@ function DeleteEventDialog({
             onClick={() => deleteMutation.mutate()}
             disabled={deleteMutation.isPending}
           >
-            {deleteMutation.isPending && (
-              <Loader2 className="size-4 animate-spin" />
-            )}
+            {deleteMutation.isPending && <Loader2 className="size-4 animate-spin" />}
             Delete
           </Button>
         </DialogFooter>
@@ -537,7 +846,7 @@ function DeleteEventDialog({
   );
 }
 
-// ─── Team Tab ────────────────────────────────────────────────────────────────
+// Team Tab
 
 function TeamTab({ eventId }: { eventId: string }) {
   const queryClient = useQueryClient();
@@ -586,54 +895,53 @@ function TeamTab({ eventId }: { eventId: string }) {
         </Button>
       </div>
 
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Name</TableHead>
-            <TableHead>Email</TableHead>
-            <TableHead>Role</TableHead>
-            <TableHead>Date Added</TableHead>
-            <TableHead className="w-[60px]" />
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {members?.length === 0 && (
+      <div className="overflow-hidden rounded-lg border">
+        <Table>
+          <TableHeader>
             <TableRow>
-              <TableCell
-                colSpan={5}
-                className="py-8 text-center text-muted-foreground"
-              >
-                No team members yet
-              </TableCell>
+              <TableHead>Name</TableHead>
+              <TableHead>Email</TableHead>
+              <TableHead>Role</TableHead>
+              <TableHead className="hidden sm:table-cell">Date Added</TableHead>
+              <TableHead className="w-[60px]" />
             </TableRow>
-          )}
-          {members?.map((member) => (
-            <TableRow key={member.id}>
-              <TableCell className="font-medium">{member.userName}</TableCell>
-              <TableCell>{member.userEmail}</TableCell>
-              <TableCell>
-                <Badge variant="secondary">{member.role}</Badge>
-              </TableCell>
-              <TableCell>{formatDate(member.createdAt)}</TableCell>
-              <TableCell>
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  onClick={() => setRemoveTarget(member)}
+          </TableHeader>
+          <TableBody>
+            {members?.length === 0 && (
+              <TableRow>
+                <TableCell
+                  colSpan={5}
+                  className="py-8 text-center text-muted-foreground"
                 >
-                  <Trash2 className="size-3.5 text-muted-foreground" />
-                </Button>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+                  No team members yet
+                </TableCell>
+              </TableRow>
+            )}
+            {members?.map((member) => (
+              <TableRow key={member.id}>
+                <TableCell className="font-medium">{member.userName}</TableCell>
+                <TableCell>{member.userEmail}</TableCell>
+                <TableCell>
+                  <Badge variant="secondary">{member.role}</Badge>
+                </TableCell>
+                <TableCell className="hidden sm:table-cell">{formatDate(member.createdAt)}</TableCell>
+                <TableCell>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="size-8"
+                    onClick={() => setRemoveTarget(member)}
+                  >
+                    <Trash2 className="size-3.5 text-muted-foreground" />
+                  </Button>
+                </TableCell>
+              </TableRow>
+            ))}
+          </TableBody>
+        </Table>
+      </div>
 
-      <AddMemberDialog
-        eventId={eventId}
-        open={addOpen}
-        onOpenChange={setAddOpen}
-      />
+      <AddMemberDialog eventId={eventId} open={addOpen} onOpenChange={setAddOpen} />
 
       <Dialog
         open={removeTarget !== null}
@@ -652,14 +960,10 @@ function TeamTab({ eventId }: { eventId: string }) {
             </Button>
             <Button
               variant="destructive"
-              onClick={() =>
-                removeTarget && removeMutation.mutate(removeTarget.id)
-              }
+              onClick={() => removeTarget && removeMutation.mutate(removeTarget.id)}
               disabled={removeMutation.isPending}
             >
-              {removeMutation.isPending && (
-                <Loader2 className="size-4 animate-spin" />
-              )}
+              {removeMutation.isPending && <Loader2 className="size-4 animate-spin" />}
               Remove
             </Button>
           </DialogFooter>
@@ -669,7 +973,7 @@ function TeamTab({ eventId }: { eventId: string }) {
   );
 }
 
-// ─── Add Member Dialog ───────────────────────────────────────────────────────
+// Add Member Dialog
 
 function AddMemberDialog({
   eventId,
@@ -763,40 +1067,28 @@ function AddMemberDialog({
                     >
                       <div className="min-w-0 flex-1">
                         <p className="truncate font-medium">{user.name}</p>
-                        <p className="truncate text-muted-foreground">
-                          {user.email}
-                        </p>
+                        <p className="truncate text-muted-foreground">{user.email}</p>
                       </div>
-                      <Badge variant="outline" className="shrink-0">
-                        {user.role}
-                      </Badge>
+                      <Badge variant="outline" className="shrink-0">{user.role}</Badge>
                     </button>
                   ))}
                 </div>
               )}
 
-              {searchResults &&
-                searchResults.length === 0 &&
-                debouncedEmail.length >= 3 && (
-                  <p className="py-2 text-sm text-muted-foreground">
-                    No users found for that email.
-                  </p>
-                )}
+              {searchResults && searchResults.length === 0 && debouncedEmail.length >= 3 && (
+                <p className="py-2 text-sm text-muted-foreground">
+                  No users found for that email.
+                </p>
+              )}
             </div>
           ) : (
             <div className="space-y-4">
               <div className="flex items-center gap-3 rounded-lg border p-3">
                 <div className="min-w-0 flex-1">
                   <p className="truncate font-medium">{selectedUser.name}</p>
-                  <p className="truncate text-sm text-muted-foreground">
-                    {selectedUser.email}
-                  </p>
+                  <p className="truncate text-sm text-muted-foreground">{selectedUser.email}</p>
                 </div>
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => setSelectedUser(null)}
-                >
+                <Button variant="ghost" size="sm" onClick={() => setSelectedUser(null)}>
                   Change
                 </Button>
               </div>
@@ -805,9 +1097,7 @@ function AddMemberDialog({
                 <FieldLabel>Role</FieldLabel>
                 <Select
                   value={selectedRole}
-                  onValueChange={(val) =>
-                    setSelectedRole(val as EventMemberRole)
-                  }
+                  onValueChange={(val) => setSelectedRole(val as EventMemberRole)}
                 >
                   <SelectTrigger className="w-full">
                     <SelectValue />
@@ -831,9 +1121,7 @@ function AddMemberDialog({
             onClick={() => addMutation.mutate()}
             disabled={!selectedUser || addMutation.isPending}
           >
-            {addMutation.isPending && (
-              <Loader2 className="size-4 animate-spin" />
-            )}
+            {addMutation.isPending && <Loader2 className="size-4 animate-spin" />}
             Add Member
           </Button>
         </DialogFooter>
@@ -842,9 +1130,9 @@ function AddMemberDialog({
   );
 }
 
-// ─── Vendors Tab ─────────────────────────────────────────────────────────────
+// Vendors Tab
 
-function VendorsTab({ eventId }: { eventId: string }) {
+function VendorsTab({ eventId, event }: { eventId: string; event: Event }) {
   const queryClient = useQueryClient();
   const [addOpen, setAddOpen] = useState(false);
   const [commissionTarget, setCommissionTarget] = useState<Vendor | null>(null);
@@ -896,7 +1184,6 @@ function VendorsTab({ eventId }: { eventId: string }) {
         <Skeleton className="h-8 w-full" />
         <Skeleton className="h-12 w-full" />
         <Skeleton className="h-12 w-full" />
-        <Skeleton className="h-12 w-full" />
       </div>
     );
   }
@@ -913,114 +1200,110 @@ function VendorsTab({ eventId }: { eventId: string }) {
         </Button>
       </div>
 
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>Business Name</TableHead>
-            <TableHead>Contact Person</TableHead>
-            <TableHead>Email</TableHead>
-            <TableHead>Status</TableHead>
-            <TableHead>Commission</TableHead>
-            <TableHead className="w-[60px]" />
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {vendors.length === 0 && (
-            <TableRow>
-              <TableCell
-                colSpan={6}
-                className="py-8 text-center text-muted-foreground"
-              >
-                No vendors yet
-              </TableCell>
-            </TableRow>
-          )}
+      {vendors.length === 0 ? (
+        <Card>
+          <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+            <StoreIcon className="size-10 text-muted-foreground/40" />
+            <h3 className="mt-4 text-base font-medium">No vendors yet</h3>
+            <p className="mt-1 text-sm text-muted-foreground">
+              Add vendors to start accepting payments at your event.
+            </p>
+            <Button variant="outline" size="sm" className="mt-4" onClick={() => setAddOpen(true)}>
+              <Plus className="size-3.5" />
+              Add Vendor
+            </Button>
+          </CardContent>
+        </Card>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
           {vendors.map((vendor) => (
-            <TableRow key={vendor.id}>
-              <TableCell className="font-medium">
-                {vendor.businessName}
-              </TableCell>
-              <TableCell>{vendor.contactPerson}</TableCell>
-              <TableCell>{vendor.contactEmail || 'N/A'}</TableCell>
-              <TableCell>
-                <Badge variant={vendorStatusBadgeVariant(vendor.status)}>
-                  {vendor.status}
-                </Badge>
-              </TableCell>
-              <TableCell>
-                {vendor.commissionRate != null
-                  ? `${vendor.commissionRate}%`
-                  : 'Default'}
-              </TableCell>
-              <TableCell>
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" size="icon-sm">
-                      <MoreHorizontal className="size-4" />
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end">
-                    {vendor.status === 'pending' && (
-                      <>
-                        <DropdownMenuItem
-                          onClick={() =>
-                            statusMutation.mutate({
-                              vendorId: vendor.id,
-                              status: 'approved',
-                            })
-                          }
-                        >
-                          Approve
+            <Card key={vendor.id}>
+              <CardHeader className="pb-3">
+                <div className="flex items-start justify-between">
+                  <div className="min-w-0 flex-1">
+                    <CardTitle className="truncate text-base">{vendor.businessName}</CardTitle>
+                    <CardDescription className="mt-1 truncate">
+                      {vendor.contactPerson}
+                    </CardDescription>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Badge variant={vendorStatusBadgeVariant(vendor.status)}>
+                      {vendor.status}
+                    </Badge>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="icon" className="size-8">
+                          <MoreHorizontal className="size-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        {vendor.status === 'pending' && (
+                          <>
+                            <DropdownMenuItem
+                              onClick={() =>
+                                statusMutation.mutate({ vendorId: vendor.id, status: 'approved' })
+                              }
+                            >
+                              Approve
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() =>
+                                statusMutation.mutate({ vendorId: vendor.id, status: 'rejected' })
+                              }
+                            >
+                              Reject
+                            </DropdownMenuItem>
+                          </>
+                        )}
+                        {vendor.status === 'approved' && (
+                          <DropdownMenuItem
+                            onClick={() =>
+                              statusMutation.mutate({ vendorId: vendor.id, status: 'suspended' })
+                            }
+                          >
+                            Suspend
+                          </DropdownMenuItem>
+                        )}
+                        <DropdownMenuItem onClick={() => setCommissionTarget(vendor)}>
+                          Update Commission
                         </DropdownMenuItem>
-                        <DropdownMenuItem
-                          onClick={() =>
-                            statusMutation.mutate({
-                              vendorId: vendor.id,
-                              status: 'rejected',
-                            })
-                          }
-                        >
-                          Reject
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem variant="destructive" onClick={() => setRemoveTarget(vendor)}>
+                          Remove
                         </DropdownMenuItem>
-                      </>
-                    )}
-                    {vendor.status === 'approved' && (
-                      <DropdownMenuItem
-                        onClick={() =>
-                          statusMutation.mutate({
-                            vendorId: vendor.id,
-                            status: 'suspended',
-                          })
-                        }
-                      >
-                        Suspend
-                      </DropdownMenuItem>
-                    )}
-                    <DropdownMenuItem
-                      onClick={() => setCommissionTarget(vendor)}
-                    >
-                      Update Commission
-                    </DropdownMenuItem>
-                    <DropdownMenuSeparator />
-                    <DropdownMenuItem
-                      variant="destructive"
-                      onClick={() => setRemoveTarget(vendor)}
-                    >
-                      Remove
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              </TableCell>
-            </TableRow>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <dl className="grid gap-2 text-sm">
+                  {vendor.productType && (
+                    <div className="flex justify-between">
+                      <dt className="text-muted-foreground">Product</dt>
+                      <dd>{VENDOR_PRODUCT_TYPE_LABELS[vendor.productType] ?? vendor.productType}</dd>
+                    </div>
+                  )}
+                  {vendor.contactEmail && (
+                    <div className="flex justify-between">
+                      <dt className="text-muted-foreground">Email</dt>
+                      <dd className="truncate max-w-[180px]">{vendor.contactEmail}</dd>
+                    </div>
+                  )}
+                  <div className="flex justify-between">
+                    <dt className="text-muted-foreground">Commission</dt>
+                    <dd className="font-medium">
+                      {vendor.commissionRate != null ? `${vendor.commissionRate}%` : 'Default'}
+                    </dd>
+                  </div>
+                </dl>
+              </CardContent>
+            </Card>
           ))}
-        </TableBody>
-      </Table>
+        </div>
+      )}
 
-      <AddVendorDialog
-        eventId={eventId}
-        open={addOpen}
-        onOpenChange={setAddOpen}
-      />
+      <AddVendorDialog eventId={eventId} open={addOpen} onOpenChange={setAddOpen} />
 
       <UpdateCommissionDialog
         eventId={eventId}
@@ -1047,14 +1330,10 @@ function VendorsTab({ eventId }: { eventId: string }) {
             </Button>
             <Button
               variant="destructive"
-              onClick={() =>
-                removeTarget && removeMutation.mutate(removeTarget.id)
-              }
+              onClick={() => removeTarget && removeMutation.mutate(removeTarget.id)}
               disabled={removeMutation.isPending}
             >
-              {removeMutation.isPending && (
-                <Loader2 className="size-4 animate-spin" />
-              )}
+              {removeMutation.isPending && <Loader2 className="size-4 animate-spin" />}
               Remove
             </Button>
           </DialogFooter>
@@ -1064,7 +1343,7 @@ function VendorsTab({ eventId }: { eventId: string }) {
   );
 }
 
-// ─── Add Vendor Dialog ───────────────────────────────────────────────────────
+// Add Vendor Dialog
 
 function AddVendorDialog({
   eventId,
@@ -1081,13 +1360,13 @@ function AddVendorDialog({
     register,
     handleSubmit,
     reset,
+    control,
     formState: { errors },
   } = useForm<CreateVendorFormData>({
     defaultValues: {
       businessName: '',
       contactPerson: '',
       contactEmail: '',
-      contactPhone: '',
       productType: '',
       description: '',
     },
@@ -1100,13 +1379,12 @@ function AddVendorDialog({
   const createMutation = useMutation({
     mutationFn: (data: CreateVendorFormData) => {
       const payload: CreateVendorDto = {
-        businessName: data.businessName,
-        contactPerson: data.contactPerson,
+        businessName: data.businessName.trim(),
+        contactPerson: data.contactPerson.trim(),
       };
-      if (data.contactEmail) payload.contactEmail = data.contactEmail;
-      if (data.contactPhone) payload.contactPhone = data.contactPhone;
+      if (data.contactEmail) payload.contactEmail = data.contactEmail.trim();
       if (data.productType) payload.productType = data.productType;
-      if (data.description) payload.description = data.description;
+      if (data.description) payload.description = data.description.trim();
 
       return vendorsService.create(eventId, payload);
     },
@@ -1117,8 +1395,9 @@ function AddVendorDialog({
       toast.success('Vendor added');
       onOpenChange(false);
     },
-    onError: () => {
-      toast.error('Failed to add vendor');
+    onError: (err: unknown) => {
+      const message = extractErrorMessage(err, 'Failed to add vendor');
+      toast.error(message);
     },
   });
 
@@ -1127,9 +1406,7 @@ function AddVendorDialog({
       <DialogContent>
         <DialogHeader>
           <DialogTitle>Add Vendor</DialogTitle>
-          <DialogDescription>
-            Register a new vendor for this event.
-          </DialogDescription>
+          <DialogDescription>Register a new vendor for this event.</DialogDescription>
         </DialogHeader>
         <form
           onSubmit={handleSubmit((data) => createMutation.mutate(data))}
@@ -1138,65 +1415,89 @@ function AddVendorDialog({
           <FieldGroup>
             <Field>
               <FieldLabel htmlFor="vendor-name">Business Name</FieldLabel>
-              <Input id="vendor-name" {...register('businessName')} />
-              {errors.businessName && (
-                <FieldError>{errors.businessName.message}</FieldError>
-              )}
+              <Input
+                id="vendor-name"
+                {...register('businessName', {
+                  required: 'Business name is required',
+                  minLength: { value: 2, message: 'At least 2 characters' },
+                  maxLength: { value: 255, message: 'Too long (max 255)' },
+                })}
+              />
+              {errors.businessName && <FieldError>{errors.businessName.message}</FieldError>}
             </Field>
 
             <Field>
               <FieldLabel htmlFor="vendor-contact">Contact Person</FieldLabel>
-              <Input id="vendor-contact" {...register('contactPerson')} />
-              {errors.contactPerson && (
-                <FieldError>{errors.contactPerson.message}</FieldError>
-              )}
+              <Input
+                id="vendor-contact"
+                {...register('contactPerson', {
+                  required: 'Contact person is required',
+                  minLength: { value: 2, message: 'At least 2 characters' },
+                  maxLength: { value: 255, message: 'Too long (max 255)' },
+                })}
+              />
+              {errors.contactPerson && <FieldError>{errors.contactPerson.message}</FieldError>}
             </Field>
 
-            <div className="grid grid-cols-2 gap-3">
-              <Field>
-                <FieldLabel htmlFor="vendor-email">Email</FieldLabel>
-                <Input
-                  id="vendor-email"
-                  type="email"
-                  {...register('contactEmail')}
-                />
-                {errors.contactEmail && (
-                  <FieldError>{errors.contactEmail.message}</FieldError>
-                )}
-              </Field>
-              <Field>
-                <FieldLabel htmlFor="vendor-phone">Phone</FieldLabel>
-                <Input id="vendor-phone" {...register('contactPhone')} />
-              </Field>
-            </div>
+            <Field>
+              <FieldLabel htmlFor="vendor-email">Email</FieldLabel>
+              <Input
+                id="vendor-email"
+                type="email"
+                {...register('contactEmail', {
+                  pattern: {
+                    value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
+                    message: 'Enter a valid email address',
+                  },
+                })}
+              />
+              {errors.contactEmail && <FieldError>{errors.contactEmail.message}</FieldError>}
+            </Field>
 
             <Field>
               <FieldLabel htmlFor="vendor-product">Product Type</FieldLabel>
-              <Input
-                id="vendor-product"
-                {...register('productType')}
-                placeholder="Food, Drinks, Merchandise..."
+              <Controller
+                control={control}
+                name="productType"
+                render={({ field }) => (
+                  <Select
+                    value={field.value || undefined}
+                    onValueChange={(value) => field.onChange(value as VendorProductType)}
+                  >
+                    <SelectTrigger id="vendor-product">
+                      <SelectValue placeholder="Select a product type" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {VENDOR_PRODUCT_TYPES.map((type) => (
+                        <SelectItem key={type} value={type}>
+                          {VENDOR_PRODUCT_TYPE_LABELS[type]}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
               />
+              {errors.productType && <FieldError>{errors.productType.message}</FieldError>}
             </Field>
 
             <Field>
               <FieldLabel htmlFor="vendor-desc">Description</FieldLabel>
-              <Input id="vendor-desc" {...register('description')} />
+              <Input
+                id="vendor-desc"
+                {...register('description', {
+                  maxLength: { value: 1000, message: 'Too long (max 1000)' },
+                })}
+              />
+              {errors.description && <FieldError>{errors.description.message}</FieldError>}
             </Field>
           </FieldGroup>
 
           <DialogFooter>
-            <Button
-              type="button"
-              variant="outline"
-              onClick={() => onOpenChange(false)}
-            >
+            <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
             <Button type="submit" disabled={createMutation.isPending}>
-              {createMutation.isPending && (
-                <Loader2 className="size-4 animate-spin" />
-              )}
+              {createMutation.isPending && <Loader2 className="size-4 animate-spin" />}
               Add Vendor
             </Button>
           </DialogFooter>
@@ -1206,7 +1507,7 @@ function AddVendorDialog({
   );
 }
 
-// ─── Update Commission Dialog ────────────────────────────────────────────────
+// Update Commission Dialog
 
 function UpdateCommissionDialog({
   eventId,
@@ -1249,8 +1550,7 @@ function UpdateCommissionDialog({
         <DialogHeader>
           <DialogTitle>Update Commission Rate</DialogTitle>
           <DialogDescription>
-            Set a custom commission rate for{' '}
-            <strong>{vendor?.businessName}</strong>.
+            Set a custom commission rate for <strong>{vendor?.businessName}</strong>.
           </DialogDescription>
         </DialogHeader>
         <Field>
@@ -1270,13 +1570,8 @@ function UpdateCommissionDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button
-            onClick={() => mutation.mutate()}
-            disabled={!rate || mutation.isPending}
-          >
-            {mutation.isPending && (
-              <Loader2 className="size-4 animate-spin" />
-            )}
+          <Button onClick={() => mutation.mutate()} disabled={!rate || mutation.isPending}>
+            {mutation.isPending && <Loader2 className="size-4 animate-spin" />}
             Save
           </Button>
         </DialogFooter>
@@ -1285,26 +1580,24 @@ function UpdateCommissionDialog({
   );
 }
 
-// ─── Page Loading Skeleton ───────────────────────────────────────────────────
+// Page Loading Skeleton
 
 function EventDetailSkeleton() {
   return (
-    <div className="space-y-6">
-      <div className="flex items-center gap-3">
-        <Skeleton className="h-8 w-8" />
-        <Skeleton className="h-7 w-48" />
-        <Skeleton className="h-5 w-16" />
+    <>
+      <div className="grid grid-cols-1 gap-4 px-4 lg:px-6 @xl/main:grid-cols-2 @5xl/main:grid-cols-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Skeleton key={i} className="h-[140px] rounded-xl" />
+        ))}
       </div>
-      <Skeleton className="h-9 w-64" />
-      <div className="grid gap-4 md:grid-cols-2">
-        <Skeleton className="h-[360px]" />
-        <Skeleton className="h-[360px]" />
+      <div className="px-4 lg:px-6">
+        <Skeleton className="h-[350px] rounded-xl" />
       </div>
-    </div>
+    </>
   );
 }
 
-// ─── Main Page ───────────────────────────────────────────────────────────────
+// Main Page
 
 export function EventDetailPage() {
   const { eventId } = useParams<{ eventId: string }>();
@@ -1324,6 +1617,18 @@ export function EventDetailPage() {
     enabled: !!eventId,
   });
 
+  const { data: vendorData } = useQuery({
+    queryKey: ['events', eventId, 'vendors'],
+    queryFn: () => vendorsService.list(eventId!).then((r) => r.data),
+    enabled: !!eventId,
+  });
+
+  const { data: members } = useQuery({
+    queryKey: ['events', eventId, 'members'],
+    queryFn: () => eventsService.listMembers(eventId!).then((r) => r.data),
+    enabled: !!eventId,
+  });
+
   const statusMutation = useMutation({
     mutationFn: (newStatus: EventStatus) =>
       eventsService.updateStatus(eventId!, newStatus),
@@ -1337,23 +1642,19 @@ export function EventDetailPage() {
   });
 
   if (isLoading) {
-    return (
-      <div className="mx-auto max-w-5xl p-6">
-        <EventDetailSkeleton />
-      </div>
-    );
+    return <EventDetailSkeleton />;
   }
 
   if (isError || !event) {
     return (
-      <div className="mx-auto max-w-5xl p-6">
+      <div className="px-4 lg:px-6">
         <div className="flex flex-col items-center gap-4 py-12">
           <p className="text-muted-foreground">
             Could not load event details.
           </p>
-          <Button variant="outline" onClick={() => navigate('/events')}>
+          <Button variant="outline" onClick={() => navigate('/dashboard')}>
             <ArrowLeft className="size-4" />
-            Back to Events
+            Back to Dashboard
           </Button>
         </div>
       </div>
@@ -1361,62 +1662,88 @@ export function EventDetailPage() {
   }
 
   const nextStatus = STATUS_TRANSITIONS[event.status];
+  const badgeConfig = STATUS_BADGE_CONFIG[event.status];
+  const vendorCount = vendorData?.vendors?.length ?? 0;
+  const memberCount = members?.length ?? 0;
 
   return (
-    <div className="mx-auto max-w-5xl p-6">
-      <div className="space-y-6">
-        {/* Header */}
-        <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div className="flex items-center gap-3">
-            <Button
-              variant="ghost"
-              size="icon-sm"
-              onClick={() => navigate('/events')}
-            >
-              <ArrowLeft className="size-4" />
-            </Button>
-            <h1 className="text-xl font-semibold">{event.name}</h1>
-            <Badge variant={statusBadgeVariant(event.status)}>
-              {STATUS_LABELS[event.status]}
-            </Badge>
-          </div>
-
-          <div className="flex items-center gap-2">
-            {nextStatus && (
-              <DropdownMenu>
-                <DropdownMenuTrigger asChild>
-                  <Button variant="outline" size="sm">
-                    Change Status
-                    <ChevronDown className="size-3.5" />
-                  </Button>
-                </DropdownMenuTrigger>
-                <DropdownMenuContent align="end">
-                  <DropdownMenuItem
-                    onClick={() => statusMutation.mutate(nextStatus)}
-                    disabled={statusMutation.isPending}
-                  >
-                    Move to {STATUS_LABELS[nextStatus]}
-                  </DropdownMenuItem>
-                </DropdownMenuContent>
-              </DropdownMenu>
-            )}
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={() => setDeleteOpen(true)}
-            >
-              <Trash2 className="size-3.5" />
-              Delete
-            </Button>
-          </div>
+    <>
+      {/* Header */}
+      <div className="flex flex-col gap-3 px-4 sm:flex-row sm:items-center sm:justify-between lg:px-6">
+        <div className="flex items-center gap-3">
+          <Button
+            variant="ghost"
+            size="icon"
+            className="size-8"
+            onClick={() => navigate('/dashboard')}
+          >
+            <ArrowLeft className="size-4" />
+          </Button>
+          <h1 className="text-xl font-semibold">{event.name}</h1>
+          <Badge variant={badgeConfig.variant} className={badgeConfig.className}>
+            {STATUS_LABELS[event.status]}
+          </Badge>
         </div>
 
-        {/* Tabs */}
+        <div className="flex items-center gap-2">
+          {nextStatus && (
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" size="sm">
+                  Change Status
+                  <ChevronDown className="size-3.5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end">
+                <DropdownMenuItem
+                  onClick={() => statusMutation.mutate(nextStatus)}
+                  disabled={statusMutation.isPending}
+                >
+                  Move to {STATUS_LABELS[nextStatus]}
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
+          )}
+          <Button variant="outline" size="sm" onClick={() => setEditOpen(true)}>
+            <Pencil className="size-3.5" />
+            Edit
+          </Button>
+          <Button variant="destructive" size="sm" onClick={() => setDeleteOpen(true)}>
+            <Trash2 className="size-3.5" />
+            Delete
+          </Button>
+        </div>
+      </div>
+
+      {/* Stats Cards */}
+      <EventStatsCards event={event} vendorCount={vendorCount} memberCount={memberCount} />
+
+      {/* Chart */}
+      <div className="px-4 lg:px-6">
+        <TransactionChart event={event} />
+      </div>
+
+      {/* Tabs */}
+      <div className="px-4 lg:px-6">
         <Tabs defaultValue="overview">
           <TabsList>
             <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="team">Team</TabsTrigger>
-            <TabsTrigger value="vendors">Vendors</TabsTrigger>
+            <TabsTrigger value="team">
+              Team
+              {memberCount > 0 && (
+                <Badge variant="secondary" className="ml-1.5 px-1.5 py-0 text-[10px]">
+                  {memberCount}
+                </Badge>
+              )}
+            </TabsTrigger>
+            <TabsTrigger value="vendors">
+              Vendors
+              {vendorCount > 0 && (
+                <Badge variant="secondary" className="ml-1.5 px-1.5 py-0 text-[10px]">
+                  {vendorCount}
+                </Badge>
+              )}
+            </TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="mt-4">
@@ -1428,23 +1755,19 @@ export function EventDetailPage() {
           </TabsContent>
 
           <TabsContent value="vendors" className="mt-4">
-            <VendorsTab eventId={event.id} />
+            <VendorsTab eventId={event.id} event={event} />
           </TabsContent>
         </Tabs>
       </div>
 
       {/* Dialogs */}
-      <EditEventDialog
-        event={event}
-        open={editOpen}
-        onOpenChange={setEditOpen}
-      />
+      <EditEventDialog event={event} open={editOpen} onOpenChange={setEditOpen} />
       <DeleteEventDialog
         eventId={event.id}
         eventName={event.name}
         open={deleteOpen}
         onOpenChange={setDeleteOpen}
       />
-    </div>
+    </>
   );
 }

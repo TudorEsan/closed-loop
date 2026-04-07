@@ -6,11 +6,11 @@ import { toast } from 'sonner';
 import {
   PlusIcon,
   SearchIcon,
-  MoreHorizontalIcon,
-  EyeIcon,
-  Trash2Icon,
   Loader2,
   CalendarIcon,
+  MapPinIcon,
+  ArrowRightIcon,
+  CoinsIcon,
 } from 'lucide-react';
 
 import { eventsService } from '@/services/events.service';
@@ -24,17 +24,11 @@ import { Skeleton } from '@/components/ui/skeleton';
 import {
   Card,
   CardContent,
+  CardDescription,
+  CardFooter,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card';
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table';
 import {
   Select,
   SelectContent,
@@ -42,13 +36,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
 import {
   Dialog,
   DialogContent,
@@ -305,11 +292,63 @@ function CreateEventDialog({
 }
 
 // ---------------------------------------------------------------------------
+// Event Card
+// ---------------------------------------------------------------------------
+
+function EventCard({ event }: { event: { id: string; name: string; status: EventStatus; description: string | null; location: string | null; startDate: string; endDate: string; currency: string; tokenCurrencyRate: string } }) {
+  const currencyInfo = CURRENCIES.find((c) => c.code === event.currency);
+  const symbol = currencyInfo?.symbol ?? event.currency;
+
+  return (
+    <Link to={`/events/${event.id}`} className="group">
+      <Card className="transition-all duration-200 hover:shadow-md hover:border-primary/30 group-focus-visible:ring-2 group-focus-visible:ring-ring">
+        <CardHeader className="pb-3">
+          <div className="flex items-start justify-between">
+            <div className="min-w-0 flex-1">
+              <CardTitle className="truncate text-lg">{event.name}</CardTitle>
+              {event.description && (
+                <CardDescription className="mt-1 line-clamp-2">
+                  {event.description}
+                </CardDescription>
+              )}
+            </div>
+            <StatusBadge status={event.status} />
+          </div>
+        </CardHeader>
+        <CardContent className="pb-3">
+          <div className="flex flex-col gap-2 text-sm text-muted-foreground">
+            {event.location && (
+              <div className="flex items-center gap-2">
+                <MapPinIcon className="size-3.5 shrink-0" />
+                <span className="truncate">{event.location}</span>
+              </div>
+            )}
+            <div className="flex items-center gap-2">
+              <CalendarIcon className="size-3.5 shrink-0" />
+              <span>{formatDate(event.startDate)} — {formatDate(event.endDate)}</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <CoinsIcon className="size-3.5 shrink-0" />
+              <span>1 token = {event.tokenCurrencyRate} {symbol}</span>
+            </div>
+          </div>
+        </CardContent>
+        <CardFooter className="pt-0">
+          <div className="flex w-full items-center justify-end text-sm font-medium text-primary opacity-0 transition-opacity group-hover:opacity-100">
+            Open dashboard
+            <ArrowRightIcon className="ml-1 size-3.5" />
+          </div>
+        </CardFooter>
+      </Card>
+    </Link>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Dashboard Page
 // ---------------------------------------------------------------------------
 
 export function DashboardPage() {
-  const queryClient = useQueryClient();
   const [dialogOpen, setDialogOpen] = useState(false);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<EventStatus | 'all'>('all');
@@ -324,17 +363,6 @@ export function DashboardPage() {
     queryFn: () => eventsService.list(filters).then((r) => r.data),
   });
 
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => eventsService.delete(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['events'] });
-      toast.success('Event deleted');
-    },
-    onError: () => {
-      toast.error('Failed to delete event');
-    },
-  });
-
   const events = data?.events ?? [];
 
   return (
@@ -342,138 +370,72 @@ export function DashboardPage() {
       <SectionCards events={events} />
 
       <div className="px-4 lg:px-6">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0">
-            <CardTitle>Events</CardTitle>
-            <Button size="sm" onClick={() => setDialogOpen(true)}>
-              <PlusIcon className="size-4" />
-              Create Event
-            </Button>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            {/* Filters */}
-            <div className="flex items-center gap-3">
-              <div className="relative max-w-xs flex-1">
-                <SearchIcon className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-                <Input
-                  placeholder="Search events..."
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  className="pl-8"
-                />
-              </div>
-              <Select
-                value={statusFilter}
-                onValueChange={(value) => setStatusFilter(value as EventStatus | 'all')}
-              >
-                <SelectTrigger className="w-36">
-                  <SelectValue placeholder="All statuses" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All statuses</SelectItem>
-                  <SelectItem value="draft">Draft</SelectItem>
-                  <SelectItem value="setup">Setup</SelectItem>
-                  <SelectItem value="active">Active</SelectItem>
-                  <SelectItem value="settlement">Settlement</SelectItem>
-                  <SelectItem value="closed">Closed</SelectItem>
-                </SelectContent>
-              </Select>
+        {/* Header with filters */}
+        <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-center gap-3">
+            <div className="relative max-w-xs flex-1">
+              <SearchIcon className="absolute left-2.5 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+              <Input
+                placeholder="Search events..."
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                className="pl-8"
+              />
             </div>
+            <Select
+              value={statusFilter}
+              onValueChange={(value) => setStatusFilter(value as EventStatus | 'all')}
+            >
+              <SelectTrigger className="w-36">
+                <SelectValue placeholder="All statuses" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All statuses</SelectItem>
+                <SelectItem value="draft">Draft</SelectItem>
+                <SelectItem value="setup">Setup</SelectItem>
+                <SelectItem value="active">Active</SelectItem>
+                <SelectItem value="settlement">Settlement</SelectItem>
+                <SelectItem value="closed">Closed</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <Button onClick={() => setDialogOpen(true)}>
+            <PlusIcon className="size-4" />
+            Create Event
+          </Button>
+        </div>
 
-            {/* Table */}
-            {isLoading ? (
-              <div className="space-y-3">
-                {Array.from({ length: 4 }).map((_, i) => (
-                  <Skeleton key={i} className="h-12 w-full" />
-                ))}
-              </div>
-            ) : events.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-12 text-center">
-                <CalendarIcon className="size-10 text-muted-foreground/40" />
-                <h3 className="mt-4 text-base font-medium">No events yet</h3>
-                <p className="mt-1 text-sm text-muted-foreground">
-                  Create your first event to get started.
-                </p>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="mt-4"
-                  onClick={() => setDialogOpen(true)}
-                >
-                  <PlusIcon className="size-4" />
-                  Create Event
-                </Button>
-              </div>
-            ) : (
-              <div className="overflow-hidden rounded-lg border">
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>Name</TableHead>
-                      <TableHead>Status</TableHead>
-                      <TableHead className="hidden md:table-cell">Location</TableHead>
-                      <TableHead className="hidden sm:table-cell">Start</TableHead>
-                      <TableHead className="hidden sm:table-cell">End</TableHead>
-                      <TableHead className="w-10" />
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {events.map((event) => (
-                      <TableRow key={event.id}>
-                        <TableCell className="font-medium">
-                          <Link
-                            to={`/events/${event.id}`}
-                            className="hover:underline underline-offset-4"
-                          >
-                            {event.name}
-                          </Link>
-                        </TableCell>
-                        <TableCell>
-                          <StatusBadge status={event.status} />
-                        </TableCell>
-                        <TableCell className="hidden text-muted-foreground md:table-cell">
-                          {event.location ?? '\u2014'}
-                        </TableCell>
-                        <TableCell className="hidden sm:table-cell">
-                          {formatDate(event.startDate)}
-                        </TableCell>
-                        <TableCell className="hidden sm:table-cell">
-                          {formatDate(event.endDate)}
-                        </TableCell>
-                        <TableCell>
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button variant="ghost" size="icon" className="size-8">
-                                <MoreHorizontalIcon className="size-4" />
-                                <span className="sr-only">Actions</span>
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end">
-                              <DropdownMenuItem asChild>
-                                <Link to={`/events/${event.id}`}>
-                                  <EyeIcon className="size-4" />
-                                  View
-                                </Link>
-                              </DropdownMenuItem>
-                              <DropdownMenuSeparator />
-                              <DropdownMenuItem
-                                variant="destructive"
-                                onClick={() => deleteMutation.mutate(event.id)}
-                              >
-                                <Trash2Icon className="size-4" />
-                                Delete
-                              </DropdownMenuItem>
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+        {/* Event cards grid */}
+        {isLoading ? (
+          <div className="grid grid-cols-1 gap-4 @xl/main:grid-cols-2 @5xl/main:grid-cols-3">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Skeleton key={i} className="h-[200px] rounded-xl" />
+            ))}
+          </div>
+        ) : events.length === 0 ? (
+          <Card>
+            <CardContent className="flex flex-col items-center justify-center py-16 text-center">
+              <CalendarIcon className="size-12 text-muted-foreground/40" />
+              <h3 className="mt-4 text-lg font-medium">No events yet</h3>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Create your first event to get started with Endow.
+              </p>
+              <Button
+                className="mt-6"
+                onClick={() => setDialogOpen(true)}
+              >
+                <PlusIcon className="size-4" />
+                Create Event
+              </Button>
+            </CardContent>
+          </Card>
+        ) : (
+          <div className="grid grid-cols-1 gap-4 @xl/main:grid-cols-2 @5xl/main:grid-cols-3">
+            {events.map((event) => (
+              <EventCard key={event.id} event={event} />
+            ))}
+          </div>
+        )}
       </div>
 
       <CreateEventDialog open={dialogOpen} onOpenChange={setDialogOpen} />

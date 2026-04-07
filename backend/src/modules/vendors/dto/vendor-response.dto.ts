@@ -19,9 +19,6 @@ export class VendorResponseDto {
   @ApiPropertyOptional({ description: 'Contact email', nullable: true })
   contactEmail: string | null;
 
-  @ApiPropertyOptional({ description: 'Contact phone', nullable: true })
-  contactPhone: string | null;
-
   @ApiPropertyOptional({ description: 'Product type', nullable: true })
   productType: string | null;
 

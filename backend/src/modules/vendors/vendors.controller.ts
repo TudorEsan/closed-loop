@@ -17,6 +17,8 @@ import { UpdateVendorDto } from './dto/update-vendor.dto';
 import { UpdateVendorStatusDto } from './dto/update-vendor-status.dto';
 import { UpdateCommissionDto } from './dto/update-commission.dto';
 import { VendorQueryDto } from './dto/vendor-query.dto';
+import { InviteMemberDto } from './dto/invite-member.dto';
+import { UpdateMemberRoleDto } from './dto/update-member-role.dto';
 
 @ApiTags('Vendors')
 @ApiBearerAuth()
@@ -31,7 +33,7 @@ export class VendorsController {
     @Body() dto: CreateVendorDto,
     @CurrentUser() user: { id: string; role: string },
   ) {
-    return this.vendorsService.create(eventId, user.id, dto);
+    return this.vendorsService.create(eventId, user.id, user.role, dto);
   }
 
   @Get()
@@ -112,5 +114,70 @@ export class VendorsController {
     @CurrentUser() user: { id: string; role: string },
   ) {
     return this.vendorsService.remove(eventId, id, user.id, user.role);
+  }
+
+  // ---- Vendor Members ----
+
+  @Get(':vendorId/members')
+  @Roles('super_admin', 'admin', 'vendor')
+  async findMembers(
+    @Param('eventId') eventId: string,
+    @Param('vendorId') vendorId: string,
+    @CurrentUser() user: { id: string; role: string },
+  ) {
+    return this.vendorsService.findMembers(eventId, vendorId, user.id, user.role);
+  }
+
+  @Post(':vendorId/members/invite')
+  @Roles('super_admin', 'admin', 'vendor')
+  async inviteMember(
+    @Param('eventId') eventId: string,
+    @Param('vendorId') vendorId: string,
+    @Body() dto: InviteMemberDto,
+    @CurrentUser() user: { id: string; role: string },
+  ) {
+    return this.vendorsService.inviteMember(eventId, vendorId, user.id, user.role, dto);
+  }
+
+  @Patch(':vendorId/members/:memberId')
+  @Roles('super_admin', 'admin', 'vendor')
+  async updateMemberRole(
+    @Param('eventId') eventId: string,
+    @Param('vendorId') vendorId: string,
+    @Param('memberId') memberId: string,
+    @Body() dto: UpdateMemberRoleDto,
+    @CurrentUser() user: { id: string; role: string },
+  ) {
+    return this.vendorsService.updateMemberRole(
+      eventId, vendorId, memberId, user.id, user.role, dto.role,
+    );
+  }
+
+  @Delete(':vendorId/members/:memberId')
+  @Roles('super_admin', 'admin', 'vendor')
+  async removeMember(
+    @Param('eventId') eventId: string,
+    @Param('vendorId') vendorId: string,
+    @Param('memberId') memberId: string,
+    @CurrentUser() user: { id: string; role: string },
+  ) {
+    return this.vendorsService.removeMember(eventId, vendorId, memberId, user.id, user.role);
+  }
+}
+
+// Separate controller for invitation acceptance (not nested under events)
+@ApiTags('Vendor Invitations')
+@ApiBearerAuth()
+@Controller('vendor-invitations')
+export class VendorInvitationsController {
+  constructor(private readonly vendorsService: VendorsService) {}
+
+  @Post(':token/accept')
+  @Roles('super_admin', 'admin', 'vendor', 'attendee')
+  async acceptInvitation(
+    @Param('token') token: string,
+    @CurrentUser() user: { id: string; role: string },
+  ) {
+    return this.vendorsService.acceptInvitation(token, user.id);
   }
 }

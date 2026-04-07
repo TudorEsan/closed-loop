@@ -10,6 +10,7 @@ import { AuthGuard } from '@common/guards/auth.guard';
 import { RolesGuard } from '@common/guards/roles.guard';
 import { VendorsModule } from './modules/vendors/vendors.module';
 import { EventsModule } from './modules/events/events.module';
+import { DevicesModule } from './modules/devices/devices.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { EventsModule } from './modules/events/events.module';
     UsersModule,
     EventsModule,
     VendorsModule,
+    DevicesModule,
   ],
   controllers: [],
   providers: [
