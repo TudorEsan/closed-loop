@@ -1,6 +1,7 @@
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
 import { emailOTP } from 'better-auth/plugins';
+import { expo } from '@better-auth/expo';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
 import { Resend } from 'resend';
@@ -41,6 +42,7 @@ export const auth = betterAuth({
     },
   },
   plugins: [
+    expo(),
     emailOTP({
       async sendVerificationOTP({ email, otp, type }) {
         await resend.emails.send({
@@ -66,7 +68,13 @@ export const auth = betterAuth({
       expiresIn: 600, // 10 minutes
     }),
   ],
-  trustedOrigins: [process.env.ALLOWED_ORIGINS || 'http://localhost:5173'],
+  trustedOrigins: [
+    process.env.ALLOWED_ORIGINS || 'http://localhost:5173',
+    // mobile app (expo dev + custom scheme)
+    'softpos://',
+    'exp://',
+    'http://localhost:8081',
+  ],
 });
 
 export type Session = typeof auth.$Infer.Session;

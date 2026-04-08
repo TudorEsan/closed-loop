@@ -50,7 +50,9 @@ async function bootstrap() {
   }
 
   app.enableCors({
-    origin: allowedOrigins,
+    // In dev we accept any origin so the mobile app (expo) can talk to us.
+    // Production uses the configured list.
+    origin: isProduction ? allowedOrigins : true,
     credentials: true,
   });
 
