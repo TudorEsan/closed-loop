@@ -8,17 +8,26 @@ import { databaseValidationSchema } from './validation/database.schema';
 import databaseConfig from './configurations/database.config';
 import throttlerConfig from './configurations/throttler.config';
 import { throttlerValidationSchema } from './validation/throttler.schema';
+import paymentsConfig from './configurations/payments.config';
+import { paymentsValidationSchema } from './validation/payments.schema';
 
 @Global()
 @Module({
   imports: [
     NestConfigModule.forRoot({
       isGlobal: true,
-      load: [appConfig, swaggerConfig, databaseConfig, throttlerConfig],
+      load: [
+        appConfig,
+        swaggerConfig,
+        databaseConfig,
+        throttlerConfig,
+        paymentsConfig,
+      ],
       validationSchema: appValidationSchema
         .concat(swaggerValidationSchema)
         .concat(databaseValidationSchema)
-        .concat(throttlerValidationSchema),
+        .concat(throttlerValidationSchema)
+        .concat(paymentsValidationSchema),
       validationOptions: {
         allowUnknown: true,
         abortEarly: false,

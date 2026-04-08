@@ -9,7 +9,10 @@ import { devices } from './devices';
 
 export const transactions = pgTable('transactions', {
   id: text('id').primaryKey().$defaultFn(() => crypto.randomUUID()),
-  eventId: text('event_id').notNull().references(() => events.id),
+  // eventId is nullable because topups happen at the user level now (no
+  // event). Spending at a POS still carries the eventId of the festival
+  // where it happened.
+  eventId: text('event_id').references(() => events.id),
   walletId: text('wallet_id').notNull().references(() => wallets.id),
   vendorId: text('vendor_id').references(() => vendors.id),
   deviceId: text('device_id').references(() => devices.id),

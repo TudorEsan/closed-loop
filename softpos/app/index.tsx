@@ -1,17 +1,24 @@
 import { Redirect } from 'expo-router';
-import { View } from 'react-native';
-import { Spinner } from 'heroui-native';
+import { ActivityIndicator, View } from 'react-native';
 
 import { useAuth } from '@/lib/auth-context';
+import { theme } from '@/lib/theme';
 
-// Decides where to send the user based on session + role.
+// Decides where to send the user based on the session.
 export default function Index() {
-  const { session, isLoading, user } = useAuth();
+  const { session, isLoading } = useAuth();
 
   if (isLoading) {
     return (
-      <View className="flex-1 items-center justify-center bg-background">
-        <Spinner />
+      <View
+        style={{
+          flex: 1,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: theme.colors.background,
+        }}
+      >
+        <ActivityIndicator color={theme.colors.foreground} />
       </View>
     );
   }
@@ -20,11 +27,5 @@ export default function Index() {
     return <Redirect href="/login" />;
   }
 
-  // Vendor / staff accounts go to the vendor flow. Anyone else (attendee,
-  // organizer, admin testing it) goes to the attendee flow by default.
-  const role = user?.role ?? 'attendee';
-  if (role === 'vendor' || role === 'operator') {
-    return <Redirect href="/(vendor)" />;
-  }
-  return <Redirect href="/(attendee)" />;
+  return <Redirect href="/home" />;
 }

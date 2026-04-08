@@ -23,4 +23,10 @@ const host = resolveDevHost();
 export const config = {
   apiBaseUrl: `http://${host}:3000/api/v1`,
   authBaseUrl: `http://${host}:3000`,
+  // Stripe publishable key. Safe to expose, it's the public half of the
+  // pair. Set it via EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY in .env or .env.local.
+  // Without it, the topup flow can still create the intent (the backend
+  // returns its own publishable key) but the StripeProvider needs one at
+  // mount time so we read it here.
+  stripePublishableKey: process.env.EXPO_PUBLIC_STRIPE_PUBLISHABLE_KEY || '',
 };

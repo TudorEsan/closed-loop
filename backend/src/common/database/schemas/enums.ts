@@ -14,3 +14,4 @@ export const eventMemberRoleEnum = pgEnum('event_member_role', ['organizer', 'ad
 export const vendorMemberRoleEnum = pgEnum('vendor_member_role', ['owner', 'manager', 'cashier']);
 export const vendorInvitationStatusEnum = pgEnum('vendor_invitation_status', ['pending', 'accepted', 'expired', 'revoked']);
 export const deviceOperatorStatusEnum = pgEnum('device_operator_status', ['active', 'revoked']);
+export const paymentIntentStatusEnum = pgEnum('payment_intent_status', ['pending', 'processing', 'succeeded', 'failed', 'canceled']);

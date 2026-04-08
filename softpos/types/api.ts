@@ -20,7 +20,6 @@ export type EventSummary = {
 export type Wallet = {
   id: string;
   userId: string;
-  eventId: string;
   balance: number; // in minor units (cents)
   wristbandUid: string | null;
   status: 'active' | 'frozen' | 'closed';
@@ -28,12 +27,19 @@ export type Wallet = {
   updatedAt: string;
 };
 
-export type TransactionType = 'topup' | 'payment' | 'refund' | 'adjustment';
-export type TransactionStatus = 'pending' | 'completed' | 'failed' | 'reversed';
+export type TransactionType =
+  | 'payment'
+  | 'topup_online'
+  | 'topup_cash'
+  | 'refund'
+  | 'cashout';
+export type TransactionStatus = 'pending' | 'completed' | 'failed' | 'flagged';
 
 export type Transaction = {
   id: string;
-  eventId: string;
+  // Null for topups (topups are user-level, not event-scoped). Set for
+  // POS spending transactions.
+  eventId: string | null;
   walletId: string;
   vendorId: string | null;
   deviceId: string | null;

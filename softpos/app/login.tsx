@@ -1,30 +1,24 @@
 import { useState } from 'react';
 import {
+  ActivityIndicator,
   KeyboardAvoidingView,
   Platform,
+  Pressable,
   Text,
+  TextInput,
   View,
 } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import {
-  Button,
-  Card,
-  Description,
-  Input,
-  Label,
-  Spinner,
-  TextField,
-} from 'heroui-native';
 import { router } from 'expo-router';
 
 import { authApi } from '@/lib/auth';
 import { useAuth } from '@/lib/auth-context';
 import { extractErrorMessage } from '@/lib/api';
+import { Screen } from '@/components/ui';
+import { theme } from '@/lib/theme';
 
 type Step = 'email' | 'otp';
 
 export default function LoginScreen() {
-  const insets = useSafeAreaInsets();
   const { refresh } = useAuth();
   const [step, setStep] = useState<Step>('email');
   const [email, setEmail] = useState('');
@@ -68,93 +62,192 @@ export default function LoginScreen() {
   }
 
   return (
-    <View
-      style={{
-        flex: 1,
-        backgroundColor: '#ffffff',
-        paddingTop: insets.top,
-        paddingBottom: insets.bottom,
-      }}
-    >
+    <Screen>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         style={{ flex: 1 }}
       >
-        <View style={{ flex: 1, paddingHorizontal: 24, justifyContent: 'center' }}>
+        <View
+          style={{
+            flex: 1,
+            paddingHorizontal: 24,
+            justifyContent: 'center',
+          }}
+        >
           <View style={{ marginBottom: 32 }}>
-            <Text style={{ fontSize: 32, fontWeight: '700', color: '#0a0a0a', marginBottom: 8 }}>
+            <Text
+              style={{
+                ...theme.font.balance,
+                color: theme.colors.foreground,
+                marginBottom: 8,
+              }}
+            >
               SoftPOS
             </Text>
-            <Text style={{ fontSize: 14, color: '#6b7280' }}>
+            <Text
+              style={{
+                ...theme.font.body,
+                color: theme.colors.mutedForeground,
+              }}
+            >
               Sign in with your email, we send you a one time code.
             </Text>
           </View>
 
-          <Card>
-            <Card.Body className="gap-4">
-              {step === 'email' ? (
-                <>
-                  <TextField>
-                    <Label>Email</Label>
-                    <Input
-                      value={email}
-                      onChangeText={setEmail}
-                      placeholder="you@email.com"
-                      autoCapitalize="none"
-                      keyboardType="email-address"
-                      autoComplete="email"
-                    />
-                  </TextField>
-
-                  {error ? (
-                    <Description className="text-danger">{error}</Description>
-                  ) : null}
-
-                  <Button onPress={handleSendOtp} isDisabled={loading}>
-                    {loading ? <Spinner /> : <Button.Label>Send code</Button.Label>}
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <Description>
-                    We sent a 6 digit code to {email}. Enter it below.
-                  </Description>
-
-                  <TextField>
-                    <Label>Verification code</Label>
-                    <Input
-                      value={otp}
-                      onChangeText={setOtp}
-                      placeholder="123456"
-                      keyboardType="number-pad"
-                      maxLength={6}
-                    />
-                  </TextField>
-
-                  {error ? (
-                    <Description className="text-danger">{error}</Description>
-                  ) : null}
-
-                  <Button onPress={handleVerifyOtp} isDisabled={loading}>
-                    {loading ? <Spinner /> : <Button.Label>Verify and continue</Button.Label>}
-                  </Button>
-
-                  <Button
-                    variant="ghost"
-                    onPress={() => {
-                      setStep('email');
-                      setOtp('');
-                      setError(null);
+          <View
+            style={{
+              backgroundColor: theme.colors.surface,
+              borderRadius: theme.radius.xxl,
+              padding: 20,
+              gap: 16,
+              ...theme.shadow.card,
+            }}
+          >
+            {step === 'email' ? (
+              <>
+                <FieldLabel>Email</FieldLabel>
+                <StyledInput
+                  value={email}
+                  onChangeText={setEmail}
+                  placeholder="you@email.com"
+                  autoCapitalize="none"
+                  keyboardType="email-address"
+                  autoComplete="email"
+                />
+                {error ? <ErrorText>{error}</ErrorText> : null}
+                <PrimaryButton
+                  label={loading ? null : 'Send code'}
+                  loading={loading}
+                  onPress={handleSendOtp}
+                />
+              </>
+            ) : (
+              <>
+                <Text
+                  style={{
+                    ...theme.font.body,
+                    color: theme.colors.mutedForeground,
+                  }}
+                >
+                  We sent a 6 digit code to {email}. Enter it below.
+                </Text>
+                <FieldLabel>Verification code</FieldLabel>
+                <StyledInput
+                  value={otp}
+                  onChangeText={setOtp}
+                  placeholder="123456"
+                  keyboardType="number-pad"
+                  maxLength={6}
+                />
+                {error ? <ErrorText>{error}</ErrorText> : null}
+                <PrimaryButton
+                  label={loading ? null : 'Verify and continue'}
+                  loading={loading}
+                  onPress={handleVerifyOtp}
+                />
+                <Pressable
+                  onPress={() => {
+                    setStep('email');
+                    setOtp('');
+                    setError(null);
+                  }}
+                  style={{ alignItems: 'center', paddingVertical: 8 }}
+                >
+                  <Text
+                    style={{
+                      ...theme.font.bodySmall,
+                      color: theme.colors.mutedForeground,
                     }}
                   >
-                    <Button.Label>Change email</Button.Label>
-                  </Button>
-                </>
-              )}
-            </Card.Body>
-          </Card>
+                    Change email
+                  </Text>
+                </Pressable>
+              </>
+            )}
+          </View>
         </View>
       </KeyboardAvoidingView>
-    </View>
+    </Screen>
+  );
+}
+
+function FieldLabel({ children }: { children: string }) {
+  return (
+    <Text
+      style={{
+        ...theme.font.bodySmall,
+        color: theme.colors.mutedForeground,
+        fontWeight: '600',
+      }}
+    >
+      {children}
+    </Text>
+  );
+}
+
+function StyledInput(props: React.ComponentProps<typeof TextInput>) {
+  return (
+    <TextInput
+      placeholderTextColor={theme.colors.mutedForeground}
+      {...props}
+      style={{
+        backgroundColor: theme.colors.surfaceSoft,
+        borderRadius: theme.radius.md,
+        paddingHorizontal: 14,
+        paddingVertical: 14,
+        fontSize: 16,
+        color: theme.colors.foreground,
+      }}
+    />
+  );
+}
+
+function ErrorText({ children }: { children: string }) {
+  return (
+    <Text
+      style={{
+        ...theme.font.bodySmall,
+        color: theme.colors.danger,
+      }}
+    >
+      {children}
+    </Text>
+  );
+}
+
+function PrimaryButton({
+  label,
+  loading,
+  onPress,
+}: {
+  label: string | null;
+  loading?: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      disabled={loading}
+      onPress={onPress}
+      style={({ pressed }) => ({
+        backgroundColor: theme.colors.foreground,
+        borderRadius: theme.radius.pill,
+        paddingVertical: 16,
+        alignItems: 'center',
+        opacity: loading ? 0.7 : pressed ? 0.9 : 1,
+      })}
+    >
+      {loading ? (
+        <ActivityIndicator color={theme.colors.heroText} />
+      ) : (
+        <Text
+          style={{
+            ...theme.font.button,
+            color: theme.colors.heroText,
+          }}
+        >
+          {label}
+        </Text>
+      )}
+    </Pressable>
   );
 }

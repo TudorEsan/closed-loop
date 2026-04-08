@@ -4,3 +4,17 @@
 @import 'heroui-native/styles';
 
 @source './node_modules/heroui-native/lib';
+
+@theme {
+  --color-app-bg: #eeeeee;
+  --color-app-surface: #ffffff;
+  --color-app-surface-soft: #f5f5f5;
+  --color-app-fg: #0a0a0a;
+  --color-app-muted: #7a7a7a;
+  --color-app-border: #e5e5e5;
+  --color-app-success: #16a34a;
+  --color-app-danger: #dc2626;
+  --color-app-link: #2563eb;
+  --color-glass-border: rgba(255, 255, 255, 0.28);
+  --color-row-bg: rgba(0, 0, 0, 0.03);
+}

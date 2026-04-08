@@ -10,6 +10,7 @@ export * from './device-operators';
 export * from './device-registration-tokens';
 export * from './wallets';
 export * from './transactions';
+export * from './payment-intents';
 export * from './sync-logs';
 export * from './security-alerts';
 export * from './audit-logs';

@@ -11,6 +11,8 @@ import { RolesGuard } from '@common/guards/roles.guard';
 import { VendorsModule } from './modules/vendors/vendors.module';
 import { EventsModule } from './modules/events/events.module';
 import { DevicesModule } from './modules/devices/devices.module';
+import { PaymentsModule } from './modules/payments/payments.module';
+import { WalletsModule } from './modules/wallets/wallets.module';
 
 @Module({
   imports: [
@@ -25,6 +27,8 @@ import { DevicesModule } from './modules/devices/devices.module';
     EventsModule,
     VendorsModule,
     DevicesModule,
+    WalletsModule,
+    PaymentsModule,
   ],
   controllers: [],
   providers: [
