@@ -165,10 +165,10 @@ type IconStyle = {
 
 function iconStyleFor(tx: Transaction): IconStyle {
   if (tx.type === 'topup_cash' || tx.type === 'topup_online') {
-    return { bg: '#16a34a', fg: '#ffffff', icon: 'add' };
+    return { bg: '#dcfce7', fg: '#15803d', icon: 'add' };
   }
   if (tx.type === 'refund') {
-    return { bg: '#16a34a', fg: '#ffffff', icon: 'return-up-back' };
+    return { bg: '#dcfce7', fg: '#15803d', icon: 'return-up-back' };
   }
   const meta = tx.metadata as { vendorName?: string } | null;
   const seed = (meta?.vendorName ?? tx.id).charCodeAt(0) % 2;
