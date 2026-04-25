@@ -36,11 +36,31 @@ export function OperatorHome() {
                 <Ionicons name="cash-outline" size={20} color="#0a0a0a" />
               </View>
               <View>
-                <Text className="text-[16px] font-semibold text-background">
+                <Text className="text-base font-semibold text-background">
                   Cash top-up
                 </Text>
-                <Text className="mt-0.5 text-[12px] text-muted">
+                <Text className="mt-0.5 text-xs text-muted">
                   Accept cash, credit bracelet
+                </Text>
+              </View>
+            </View>
+            <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
+          </Pressable>
+
+          <Pressable
+            onPress={() => router.push('/link-bracelet')}
+            className="mt-3 rounded-2xl bg-surface px-6 py-5 flex-row items-center justify-between"
+          >
+            <View className="flex-row items-center gap-3">
+              <View className="h-10 w-10 items-center justify-center rounded-full bg-surface-secondary">
+                <Ionicons name="link-outline" size={20} color="#0a0a0a" />
+              </View>
+              <View>
+                <Text className="text-base font-semibold text-foreground">
+                  Link bracelet
+                </Text>
+                <Text className="mt-0.5 text-xs text-muted">
+                  Scan attendee QR, tap their wristband
                 </Text>
               </View>
             </View>

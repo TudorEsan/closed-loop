@@ -29,7 +29,7 @@ import { Screen } from '@/components/ui';
 type Step = 'email' | 'otp';
 
 export default function LoginScreen() {
-  const { refresh } = useAuthContext();
+  const { setSession } = useAuthContext();
   const [step, setStep] = useState<Step>('email');
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
@@ -80,8 +80,8 @@ export default function LoginScreen() {
     setError(null);
     setLoading(true);
     try {
-      await authApi.verifyOtp(email.trim().toLowerCase(), code);
-      await refresh();
+      const session = await authApi.verifyOtp(email.trim().toLowerCase(), code);
+      setSession(session);
       router.replace('/');
     } catch (err) {
       setError(extractErrorMessage(err));

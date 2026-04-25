@@ -7,3 +7,4 @@ export {
   FULL_TRANSACTIONS_QUERY_KEY,
 } from './use-transactions';
 export { useTopUp, TOPUP_CANCELED } from './use-topup';
+export { useMyEvents, MY_EVENTS_QUERY_KEY } from './use-my-events';

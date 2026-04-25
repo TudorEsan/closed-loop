@@ -14,6 +14,7 @@ import { Roles } from '@common/decorators/roles.decorator';
 import { CurrentUser } from '@common/decorators/current-user.decorator';
 import { BraceletsService } from './bracelets.service';
 import { LinkBraceletDto } from './dto/link-bracelet.dto';
+import { LinkBraceletByTokenDto } from './dto/link-bracelet-by-token.dto';
 import { ListBraceletsDto } from './dto/list-bracelets.dto';
 import { ReplaceBraceletDto } from './dto/replace-bracelet.dto';
 import { RevokeBraceletDto } from './dto/revoke-bracelet.dto';
@@ -26,6 +27,38 @@ const ipFromRequest = (req: Request): string | null =>
 @Controller()
 export class BraceletsController {
   constructor(private readonly bracelets: BraceletsService) {}
+
+  @Get('me/events')
+  @Roles('super_admin', 'admin', 'organizer', 'operator', 'vendor', 'attendee')
+  async myEvents(@CurrentUser() user: { id: string }) {
+    return this.bracelets.myEvents(user.id);
+  }
+
+  @Post('me/events/:eventId/link-token')
+  @Roles('super_admin', 'admin', 'organizer', 'operator', 'vendor', 'attendee')
+  async issueLinkToken(
+    @Param('eventId') eventId: string,
+    @CurrentUser() user: { id: string },
+  ) {
+    return this.bracelets.issueLinkToken(eventId, user.id);
+  }
+
+  @Post('events/:eventId/bracelets/link-by-token')
+  @Roles('super_admin', 'admin', 'organizer', 'operator')
+  async linkByToken(
+    @Param('eventId') eventId: string,
+    @Body() dto: LinkBraceletByTokenDto,
+    @CurrentUser() user: { id: string; role: string },
+    @Req() req: Request,
+  ) {
+    return this.bracelets.linkByToken(
+      eventId,
+      user.id,
+      user.role,
+      dto,
+      ipFromRequest(req),
+    );
+  }
 
   @Post('events/:eventId/bracelets')
   @Roles('super_admin', 'admin')

@@ -16,6 +16,7 @@ import { BraceletsConfig } from '@app/common/types/bracelets.types';
 // stays consistent and avoids shipping a second key pair to the field.
 
 export type BraceletTokenPayload = {
+  kind?: 'bundle';
   assignmentId: string;
   eventId: string;
   userId: string;
@@ -23,6 +24,18 @@ export type BraceletTokenPayload = {
   issuedAt: number;
   expiresAt: number;
   v: number;
+};
+
+// Short-lived token an attendee shows as a QR. An admin scans it from the
+// SoftPOS to prove "this user wants to bind a bracelet to this event right now".
+// Same key, different `kind` so a sync-bundle token cannot be replayed as a
+// link token and vice versa.
+export type BraceletLinkTokenPayload = {
+  kind: 'link';
+  eventId: string;
+  userId: string;
+  issuedAt: number;
+  expiresAt: number;
 };
 
 const base64urlEncode = (input: Buffer | string) =>
@@ -60,12 +73,69 @@ export class BraceletTokenService {
   }
 
   issue(payload: BraceletTokenPayload): string {
-    const body = base64urlEncode(JSON.stringify(payload));
+    const body = base64urlEncode(
+      JSON.stringify({ kind: 'bundle', ...payload }),
+    );
     const sig = createHmac('sha256', this.key).update(body).digest();
     return `${body}.${base64urlEncode(sig)}`;
   }
 
   verify(token: string, expected: { eventId: string }): BraceletTokenPayload {
+    const payload = this.decodeAndVerify(token) as BraceletTokenPayload & {
+      kind?: string;
+    };
+    if (payload.kind && payload.kind !== 'bundle') {
+      throw new UnauthorizedException(
+        'Wrong token kind: expected a bundle token',
+      );
+    }
+    if (payload.eventId !== expected.eventId) {
+      throw new UnauthorizedException(
+        'Bracelet token does not match this event',
+      );
+    }
+    return payload;
+  }
+
+  // Attendee-facing QR token. Short-lived (5 min) so a screenshot leaked on
+  // social media cannot be replayed at the gate hours later.
+  issueLinkToken(args: { eventId: string; userId: string }): {
+    token: string;
+    expiresAt: number;
+  } {
+    const now = Date.now();
+    const expiresAt = now + 5 * 60 * 1000;
+    const payload: BraceletLinkTokenPayload = {
+      kind: 'link',
+      eventId: args.eventId,
+      userId: args.userId,
+      issuedAt: now,
+      expiresAt,
+    };
+    const body = base64urlEncode(JSON.stringify(payload));
+    const sig = createHmac('sha256', this.key).update(body).digest();
+    return { token: `${body}.${base64urlEncode(sig)}`, expiresAt };
+  }
+
+  verifyLinkToken(
+    token: string,
+    expected: { eventId: string },
+  ): BraceletLinkTokenPayload {
+    const payload = this.decodeAndVerify(token) as BraceletLinkTokenPayload & {
+      kind?: string;
+    };
+    if (payload.kind !== 'link') {
+      throw new UnauthorizedException(
+        'Wrong token kind: expected an attendee link token',
+      );
+    }
+    if (payload.eventId !== expected.eventId) {
+      throw new UnauthorizedException('Link token does not match this event');
+    }
+    return payload;
+  }
+
+  private decodeAndVerify(token: string): Record<string, unknown> {
     const parts = token.split('.');
     if (parts.length !== 2) {
       throw new BadRequestException('Malformed bracelet token');
@@ -82,21 +152,20 @@ export class BraceletTokenService {
       throw new UnauthorizedException('Bracelet token signature mismatch');
     }
 
-    let payload: BraceletTokenPayload;
+    let payload: Record<string, unknown>;
     try {
-      payload = JSON.parse(
-        base64urlDecode(body).toString('utf8'),
-      ) as BraceletTokenPayload;
+      payload = JSON.parse(base64urlDecode(body).toString('utf8')) as Record<
+        string,
+        unknown
+      >;
     } catch {
       throw new BadRequestException('Bracelet token payload is not valid JSON');
     }
 
-    if (payload.eventId !== expected.eventId) {
-      throw new UnauthorizedException(
-        'Bracelet token does not match this event',
-      );
+    if (typeof payload.expiresAt !== 'number') {
+      throw new BadRequestException('Bracelet token missing expiresAt');
     }
-    if (Date.now() > payload.expiresAt) {
+    if (Date.now() > (payload.expiresAt as number)) {
       throw new UnauthorizedException('Bracelet token has expired');
     }
 

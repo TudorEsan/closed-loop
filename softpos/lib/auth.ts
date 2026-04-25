@@ -30,6 +30,11 @@ export const authClient = createAuthClient({
       type: 'Bearer',
       token: () => getStoredToken() ?? '',
     },
+    headers: {
+      // React Native fetch does not set Origin, but better-auth checks it
+      // against trustedOrigins. Send our app scheme so the server can match.
+      Origin: 'softpos://',
+    },
     onSuccess: async (ctx) => {
       const token = ctx.response.headers.get('set-auth-token');
       if (token) {

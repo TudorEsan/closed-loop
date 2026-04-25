@@ -10,7 +10,16 @@
     "newArchEnabled": true,
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.tudoresan.softpos"
+      "bundleIdentifier": "com.tudoresan.softpos",
+      "infoPlist": {
+        "NFCReaderUsageDescription": "Used to read wristband chips when linking bracelets and processing payments.",
+        "NSCameraUsageDescription": "Used to scan attendee QR codes when linking bracelets at the gate."
+      },
+      "entitlements": {
+        "com.apple.developer.nfc.readersession.formats": [
+          "TAG"
+        ]
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -21,7 +30,12 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false,
-      "package": "com.tudoresan.softpos"
+      "package": "com.tudoresan.softpos",
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.NFC",
+        "android.permission.RECORD_AUDIO"
+      ]
     },
     "web": {
       "output": "static",
@@ -51,11 +65,23 @@
         }
       ],
       "expo-font",
-      "expo-image"
+      "expo-image",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "softpos needs the camera to scan attendee QR codes."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "ca7268b8-3523-4c17-a16d-488022dda790"
+      }
     }
   }
 }

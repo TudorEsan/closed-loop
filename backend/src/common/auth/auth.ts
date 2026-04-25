@@ -12,7 +12,7 @@ const db = drizzle({ client, schema });
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-const REVIEWER_EMAIL = 'reviewer@tudor.esan';
+const REVIEWER_EMAIL = 'attendee@tudor.esan';
 const REVIEWER_OTP = '111111';
 
 export const auth = betterAuth({
