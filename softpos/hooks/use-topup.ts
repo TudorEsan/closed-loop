@@ -12,20 +12,27 @@ export const TOPUP_CANCELED = 'CANCELED';
 
 type TopUpOptions = {
   onSuccess?: () => void;
+  onCanceled?: () => void;
   onError?: (err: unknown) => void;
 };
+
+type TopUpResult =
+  | { canceled: true }
+  | { canceled: false; intent: Awaited<ReturnType<typeof paymentsApi.createTopupIntent>> };
 
 // Topup flow has two phases packed into one mutation:
 // 1. ask the backend to create a payment intent
 // 2. open the payment sheet with that intent
 // The wallet gets credited by the backend webhook, so when the sheet
 // returns we just refetch the wallet to see the new balance.
-export function useTopUp({ onSuccess, onError }: TopUpOptions = {}) {
+// Cancel is handled as a normal resolved result, not an error, so the
+// mutation goes back to idle and the button does not stay stuck loading.
+export function useTopUp({ onSuccess, onCanceled, onError }: TopUpOptions = {}) {
   const qc = useQueryClient();
   const { initPaymentSheet, presentPaymentSheet } = useStripe();
 
-  return useMutation({
-    mutationFn: async (amountCents: number) => {
+  return useMutation<TopUpResult, Error, number>({
+    mutationFn: async (amountCents) => {
       if (!amountCents || amountCents <= 0) {
         throw new Error('Enter an amount first');
       }
@@ -43,14 +50,18 @@ export function useTopUp({ onSuccess, onError }: TopUpOptions = {}) {
       const sheetRes = await presentPaymentSheet();
       if (sheetRes.error) {
         if (sheetRes.error.code === 'Canceled') {
-          throw new Error(TOPUP_CANCELED);
+          return { canceled: true };
         }
         throw new Error(sheetRes.error.message);
       }
 
-      return intent;
+      return { canceled: false, intent };
     },
-    onSuccess: () => {
+    onSuccess: (result) => {
+      if (result.canceled) {
+        onCanceled?.();
+        return;
+      }
       qc.invalidateQueries({ queryKey: WALLET_QUERY_KEY });
       qc.invalidateQueries({ queryKey: RECENT_TRANSACTIONS_QUERY_KEY });
       qc.invalidateQueries({ queryKey: FULL_TRANSACTIONS_QUERY_KEY });

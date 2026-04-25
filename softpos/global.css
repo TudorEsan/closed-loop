@@ -48,8 +48,8 @@
 
       --muted: oklch(55.17% 0.0000 248.20);
 
-      --default: oklch(94.00% 0.0000 248.20);
-      --default-foreground: oklch(21.03% 0.0059 248.20);
+      --default: oklch(21.78% 0.0033 286.07); /* zinc-900 */
+      --default-foreground: oklch(100% 0 0); /* white */
 
       --accent: oklch(79.82% 0.0755 248.20);
       --accent-foreground: oklch(15% 0.0151 248.20);
@@ -115,8 +115,8 @@
 
       --muted: oklch(70.50% 0.0000 248.20);
 
-      --default: oklch(27.40% 0.0000 248.20);
-      --default-foreground: oklch(99.11% 0 0);
+      --default: oklch(100% 0 0); /* white */
+      --default-foreground: oklch(21.78% 0.0033 286.07); /* zinc-900 */
 
       --accent: oklch(79.82% 0.0755 248.20);
       --accent-foreground: oklch(15% 0.0151 248.20);

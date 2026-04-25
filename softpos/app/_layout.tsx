@@ -2,9 +2,12 @@ import "../global.css";
 
 import { useEffect } from "react";
 import { HeroUINativeConfig, HeroUINativeProvider } from "heroui-native";
-import { Stack } from "expo-router";
+import { router, Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { GestureHandlerRootView } from "react-native-gesture-handler";
+import {
+  GestureHandlerRootView,
+  Pressable,
+} from "react-native-gesture-handler";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { StripeProvider } from "@stripe/stripe-react-native";
@@ -16,6 +19,8 @@ import { queryClient } from "@/lib/query";
 import { theme } from "@/lib/theme";
 import { config } from "@/lib/config";
 import { applyDMSansAsDefault, dmSansFontMap } from "@/lib/fonts";
+import { SymbolView } from "expo-symbols";
+import { Ionicons } from "@expo/vector-icons";
 
 applyDMSansAsDefault();
 SplashScreen.preventAutoHideAsync().catch(() => {});
@@ -61,9 +66,24 @@ export default function RootLayout() {
                   <Stack.Screen
                     name="topup"
                     options={{
-                      presentation: "modal",
+                      presentation: "formSheet",
                       headerShown: true,
-                      title: "Add funds",
+                      headerTransparent: true,
+                      headerTitle: "Top-Up Account",
+                      headerLeft: () => (
+                        <Pressable
+                          onPress={() => router.back()}
+                          hitSlop={12}
+                          style={{
+                            width: 18,
+                            height: 18,
+                            alignItems: "center",
+                            justifyContent: "center",
+                          }}
+                        >
+                          <Ionicons name="close" size={18} color="oklch(55.17% 0.0000 248.20)" />
+                        </Pressable>
+                      ),
                     }}
                   />
                   <Stack.Screen

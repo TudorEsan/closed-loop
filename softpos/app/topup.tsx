@@ -1,154 +1,244 @@
-import { useState } from 'react';
-import {
-  ActivityIndicator,
-  Alert,
-  Pressable,
-  ScrollView,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
-import { router } from 'expo-router';
+import { useEffect, useState } from "react";
+import { ActivityIndicator, Pressable, Text, View } from "react-native";
+import Animated, {
+  FadeIn,
+  FadeOut,
+  LinearTransition,
+  ZoomIn,
+} from "react-native-reanimated";
+import { router } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
 
-import { extractErrorMessage } from '@/lib/api';
-import { Screen } from '@/components/ui';
-import { formatMoney } from '@/lib/format';
-import { TOPUP_CANCELED, useTopUp } from '@/hooks';
+import { extractErrorMessage } from "@/lib/api";
+import { useTopUp } from "@/hooks";
+import { Button } from "heroui-native";
 
-const QUICK_AMOUNTS = [10, 20, 50, 100];
+const MIN_AMOUNT = 5;
 
 export default function TopUpScreen() {
-  const [amount, setAmount] = useState('');
+  const [amount, setAmount] = useState("");
   const [error, setError] = useState<string | null>(null);
+  const [showSuccess, setShowSuccess] = useState(false);
 
   const topUpMutation = useTopUp({
     onSuccess: () => {
-      Alert.alert('Done', 'Your funds were added.', [
-        { text: 'OK', onPress: () => router.back() },
-      ]);
+      setShowSuccess(true);
+    },
+    onCanceled: () => {
+      setError(null);
     },
     onError: (err) => {
-      const msg = extractErrorMessage(err);
-      if (msg === TOPUP_CANCELED) {
-        setError(null);
-        return;
-      }
-      setError(msg);
+      setError(extractErrorMessage(err));
     },
   });
 
-  const parsedAmount = parseFloat(amount || '0');
-  const hasAmount = parsedAmount > 0;
+  useEffect(() => {
+    if (!showSuccess) return;
+    const timeout = setTimeout(() => {
+      router.back();
+    }, 1600);
+    return () => clearTimeout(timeout);
+  }, [showSuccess]);
+
+  const parsedAmount = parseFloat(amount || "0");
+  const meetsMinimum = parsedAmount >= MIN_AMOUNT;
+  const isDisabled = !meetsMinimum || topUpMutation.isPending;
+
+  function handleKeyPress(key: string) {
+    setError(null);
+    setAmount((prev) => {
+      if (key === ".") {
+        if (prev.includes(".")) return prev;
+        if (prev.length === 0) return "0.";
+        return prev + ".";
+      }
+      if (prev.includes(".")) {
+        const decimals = prev.split(".")[1] ?? "";
+        if (decimals.length >= 2) return prev;
+      }
+      if (prev === "0") return key;
+      const next = prev + key;
+      if (parseFloat(next) > 9999) return prev;
+      return next;
+    });
+  }
+
+  function handleBackspace() {
+    setError(null);
+    setAmount((prev) => prev.slice(0, -1));
+  }
+
+  function handleSubmit() {
+    if (!meetsMinimum) return;
+    topUpMutation.mutate(Math.round(parsedAmount * 100));
+  }
+
+  const displayAmount = amount.length === 0 ? "0" : amount;
 
   return (
-    <Screen edgeTop={false}>
-      <ScrollView
-        contentContainerStyle={{ flexGrow: 1 }}
-        className="bg-app-bg"
-        keyboardShouldPersistTaps="handled"
-      >
-        <View className="flex-1 px-6 pt-10 pb-8">
-          <Text className="mb-2 text-sm text-app-muted">Amount</Text>
-
-          <View className="mb-10 flex-row items-baseline">
-            <Text className="text-[56px] font-bold text-app-fg">€</Text>
-            <TextInput
-              value={amount}
-              onChangeText={(v) => {
-                setAmount(v);
-                setError(null);
-              }}
-              placeholder="0"
-              placeholderTextColor="#c7c7c7"
-              keyboardType="decimal-pad"
-              className="ml-1 flex-1 p-0 text-[56px] font-bold text-app-fg"
-            />
-          </View>
-
-          <View className="mb-8 flex-row flex-wrap gap-2">
-            {QUICK_AMOUNTS.map((q) => (
-              <QuickChip
-                key={q}
-                label={formatMoney(q * 100)}
-                selected={parsedAmount === q}
-                onPress={() => {
-                  setAmount(String(q));
-                  setError(null);
-                }}
-              />
-            ))}
-          </View>
-
-          <View className="mb-6 rounded-2xl bg-app-surface p-5">
-            <Text className="mb-1 text-xs uppercase tracking-wide text-app-muted">
-              Payment method
-            </Text>
-            <Text className="text-[17px] font-medium text-app-fg">
-              Card
-            </Text>
-            <Text className="mt-1 text-xs text-app-muted">
-              Your card details are handled securely, we never see them.
-            </Text>
-          </View>
-
-          {error ? (
-            <Text className="mb-4 text-center text-sm text-app-danger">
-              {error}
-            </Text>
-          ) : null}
-
-          <View className="mt-auto">
-            <Pressable
-              onPress={() =>
-                topUpMutation.mutate(Math.round(parsedAmount * 100))
-              }
-              disabled={!hasAmount || topUpMutation.isPending}
-              className={`rounded-2xl py-4 ${
-                hasAmount && !topUpMutation.isPending
-                  ? 'bg-app-fg'
-                  : 'bg-app-border'
-              }`}
-            >
-              {topUpMutation.isPending ? (
-                <ActivityIndicator color="#ffffff" />
-              ) : (
-                <Text className="text-center text-[17px] font-semibold text-white">
-                  {hasAmount
-                    ? `Add ${formatMoney(Math.round(parsedAmount * 100))}`
-                    : 'Add funds'}
-                </Text>
-              )}
-            </Pressable>
-          </View>
+    <View className="flex-1 ">
+      <View className="flex-1 items-center justify-center px-6">
+        <View className="flex-row items-end gap-2 relative">
+          <AnimatedAmount value={displayAmount} />
+          <Text className="text-4xl font-bold text-foreground absolute bottom-0 -right-20">
+            RON
+          </Text>
         </View>
-      </ScrollView>
-    </Screen>
+
+        {error ? (
+          <Text className="mt-4 text-center text-sm text-danger">
+            {error}
+          </Text>
+        ) : null}
+      </View>
+
+      <View className="px-6 pb-4">
+        <View className="flex-row">
+          <KeypadKey label="1" onPress={() => handleKeyPress("1")} />
+          <KeypadKey label="2" onPress={() => handleKeyPress("2")} />
+          <KeypadKey label="3" onPress={() => handleKeyPress("3")} />
+        </View>
+        <View className="flex-row">
+          <KeypadKey label="4" onPress={() => handleKeyPress("4")} />
+          <KeypadKey label="5" onPress={() => handleKeyPress("5")} />
+          <KeypadKey label="6" onPress={() => handleKeyPress("6")} />
+        </View>
+        <View className="flex-row">
+          <KeypadKey label="7" onPress={() => handleKeyPress("7")} />
+          <KeypadKey label="8" onPress={() => handleKeyPress("8")} />
+          <KeypadKey label="9" onPress={() => handleKeyPress("9")} />
+        </View>
+        <View className="flex-row">
+          <KeypadKey label="." onPress={() => handleKeyPress(".")} />
+          <KeypadKey label="0" onPress={() => handleKeyPress("0")} />
+          <KeypadKey
+            onPress={handleBackspace}
+            icon={
+              <Ionicons name="backspace-outline" size={26} color="#0a0a0a" />
+            }
+          />
+        </View>
+      </View>
+
+      <View className="px-6 pb-6">
+        <Button
+          onPress={handleSubmit}
+          isDisabled={isDisabled}
+          size="lg"
+          className="rounded-full bg-foreground"
+        >
+          {topUpMutation.isPending ? (
+            <ActivityIndicator color="#ffffff" />
+          ) : (
+            <View className="flex-row items-end gap-1">
+              <Text className="text-base font-semibold text-background">
+                {meetsMinimum
+                  ? `Add ${formatAmount(parsedAmount)}`
+                  : `${MIN_AMOUNT} minimum`}
+              </Text>
+              <Text className="text-xs font-semibold text-background opacity-80">
+                RON
+              </Text>
+            </View>
+          )}
+        </Button>
+      </View>
+
+      {showSuccess ? (
+        <SuccessOverlay amount={formatAmount(parsedAmount)} />
+      ) : null}
+    </View>
   );
 }
 
-function QuickChip({
+function SuccessOverlay({ amount }: { amount: string }) {
+  return (
+    <Animated.View
+      entering={FadeIn.duration(180)}
+      className="absolute inset-0 items-center justify-center bg-background"
+    >
+      <Animated.View
+        entering={ZoomIn.springify().damping(12).mass(0.6)}
+        className="h-24 w-24 items-center justify-center rounded-full bg-success"
+      >
+        <Ionicons name="checkmark" size={56} color="#ffffff" />
+      </Animated.View>
+
+      <Animated.Text
+        entering={FadeIn.delay(220).duration(220)}
+        className="mt-6 text-2xl font-bold text-foreground"
+      >
+        Funds added
+      </Animated.Text>
+
+      <Animated.View
+        entering={FadeIn.delay(280).duration(220)}
+        className="mt-2 flex-row items-end gap-1"
+      >
+        <Text className="text-base text-muted">{amount}</Text>
+        <Text className="text-xs text-muted">RON</Text>
+      </Animated.View>
+    </Animated.View>
+  );
+}
+
+function KeypadKey({
   label,
-  selected,
+  icon,
   onPress,
 }: {
-  label: string;
-  selected?: boolean;
+  label?: string;
+  icon?: React.ReactNode;
   onPress: () => void;
 }) {
   return (
     <Pressable
       onPress={onPress}
-      className={`rounded-full px-5 py-2.5 ${
-        selected ? 'bg-app-fg' : 'bg-app-surface'
-      }`}
+      android_ripple={{ color: "rgba(0,0,0,0.08)", borderless: false }}
+      className="flex-1 items-center justify-center py-5"
     >
-      <Text
-        className={`text-[15px] font-medium ${
-          selected ? 'text-white' : 'text-app-fg'
-        }`}
-      >
-        {label}
-      </Text>
+      {icon ?? (
+        <Text className="text-3xl font-medium text-foreground">{label}</Text>
+      )}
     </Pressable>
   );
+}
+
+function AnimatedAmount({ value }: { value: string }) {
+  const formatted = formatWithCommas(value);
+  const chars = formatted.split("");
+
+  return (
+    <Animated.View layout={LinearTransition.duration(160)} className="flex-row">
+      {chars.map((char, idx) => (
+        <Animated.Text
+          key={`${idx}-${char}`}
+          entering={FadeIn.duration(140)}
+          exiting={FadeOut.duration(120)}
+          layout={LinearTransition.duration(160)}
+          className="text-6xl font-bold text-foreground tracking-tight"
+        >
+          {char}
+        </Animated.Text>
+      ))}
+    </Animated.View>
+  );
+}
+
+function formatWithCommas(amount: string): string {
+  if (amount.length === 0) return "0";
+  const [intPart, decPart] = amount.split(".");
+  const intNum = parseInt(intPart || "0", 10);
+  const intFormatted = Number.isFinite(intNum)
+    ? intNum.toLocaleString("en-US")
+    : intPart || "0";
+  return decPart !== undefined ? `${intFormatted}.${decPart}` : intFormatted;
+}
+
+function formatAmount(value: number): string {
+  if (Number.isInteger(value)) return value.toLocaleString("en-US");
+  return value.toLocaleString("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
+  });
 }
