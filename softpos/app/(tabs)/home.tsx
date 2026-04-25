@@ -69,14 +69,14 @@ export default function HomeScreen() {
             className="overflow-hidden rounded-[28px] border border-white h-52"
           >
             <View className="px-6 py-8 items-center">
-              <Text className="text-white/85 text-[14px] font-medium">
+              <Text className="text-muted text-sm font-medium">
                 Global Balance
               </Text>
-              <View className="mt-2 h-[48px] flex-row items-center">
+              <View className="flex-row items-center mt-2">
                 {walletQuery.isLoading ? (
                   <Spinner color="#ffffff" />
                 ) : (
-                  <Text className="text-white text-[40px] font-bold tracking-tight">
+                  <Text className="text-black text-4xl font-bold tracking-tight">
                     {walletError
                       ? '—'
                       : formatBalance(walletQuery.data?.balance ?? 0)}
@@ -84,7 +84,7 @@ export default function HomeScreen() {
                 )}
               </View>
 
-              <View className="mt-5">
+              <View className="mt-5" style={{ height: 48, width: 160 }}>
                 <LiquidButton onPress={() => router.push('/topup')}>
                   Top-up
                 </LiquidButton>

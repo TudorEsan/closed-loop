@@ -1,0 +1,8 @@
+{
+  "android": {
+    "package": "com.tudoresan.closedloop"
+  },
+  "ios": {
+    "bundleIdentifier": "com.tudoresan.closedloop"
+  }
+}

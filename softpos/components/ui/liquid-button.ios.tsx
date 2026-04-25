@@ -1,4 +1,4 @@
-import { Button } from '@expo/ui/swift-ui';
+import { Button, Text, Host } from "@expo/ui/swift-ui";
 
 type Props = {
   onPress?: () => void;
@@ -8,8 +8,15 @@ type Props = {
 
 export function LiquidButton({ onPress, isDisabled, children }: Props) {
   return (
-    <Button variant="prominent" onPress={onPress} disabled={isDisabled}>
-      {children ?? ''}
-    </Button>
+    <Host matchContents>
+      <Button
+        onPress={onPress}
+        disabled={isDisabled}
+        variant="glassProminent"
+        style={{ minHeight: 48, minWidth: 140 }}
+      >
+        <Text>{children ?? ""}</Text>
+      </Button>
+    </Host>
   );
 }

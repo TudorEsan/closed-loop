@@ -11,5 +11,11 @@
   },
   "devDependencies": {
     "concurrently": "^9.1.0"
-  }
+  },
+  "dependencies": {
+    "expo": "^55.0.17",
+    "react": "19.2.0",
+    "react-native": "0.83.6"
+  },
+  "version": "1.0.0"
 }
