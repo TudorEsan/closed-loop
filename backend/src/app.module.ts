@@ -13,6 +13,7 @@ import { EventsModule } from './modules/events/events.module';
 import { DevicesModule } from './modules/devices/devices.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { WalletsModule } from './modules/wallets/wallets.module';
+import { BraceletsModule } from './modules/bracelets/bracelets.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { WalletsModule } from './modules/wallets/wallets.module';
     DevicesModule,
     WalletsModule,
     PaymentsModule,
+    BraceletsModule,
   ],
   controllers: [],
   providers: [

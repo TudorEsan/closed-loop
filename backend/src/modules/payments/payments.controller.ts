@@ -36,7 +36,9 @@ export class PaymentsController {
   // that the Stripe SDK can use to present the PaymentSheet. Topups are at
   // the user level, balance is usable across any event.
   @Post('wallets/me/topup/intent')
-  @ApiOperation({ summary: 'Create a topup payment intent for the current user' })
+  @ApiOperation({
+    summary: 'Create a topup payment intent for the current user',
+  })
   async createTopupIntent(
     @Body() dto: CreateTopupIntentDto,
     @CurrentUser() user: { id: string },

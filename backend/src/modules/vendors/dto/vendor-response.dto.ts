@@ -31,10 +31,16 @@ export class VendorResponseDto {
   })
   status: string;
 
-  @ApiPropertyOptional({ description: 'Commission rate percentage', nullable: true })
+  @ApiPropertyOptional({
+    description: 'Commission rate percentage',
+    nullable: true,
+  })
   commissionRate: string | null;
 
-  @ApiPropertyOptional({ description: 'ID of user who approved the vendor', nullable: true })
+  @ApiPropertyOptional({
+    description: 'ID of user who approved the vendor',
+    nullable: true,
+  })
   approvedBy: string | null;
 
   @ApiPropertyOptional({ description: 'Date of approval', nullable: true })

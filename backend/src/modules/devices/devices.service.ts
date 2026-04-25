@@ -39,9 +39,16 @@ export class DevicesService {
     userRole: string,
     dto: CreateRegistrationTokenDto,
   ) {
-    const canManage = await this.canManageVendorDevices(eventId, vendorId, userId, userRole);
+    const canManage = await this.canManageVendorDevices(
+      eventId,
+      vendorId,
+      userId,
+      userRole,
+    );
     if (!canManage) {
-      throw new ForbiddenException('Only admins or vendor owners/managers can create registration tokens');
+      throw new ForbiddenException(
+        'Only admins or vendor owners/managers can create registration tokens',
+      );
     }
 
     // Verify vendor exists and belongs to event
@@ -56,7 +63,9 @@ export class DevicesService {
     }
 
     if (vendor[0].status !== 'approved') {
-      throw new BadRequestException('Can only create registration tokens for approved vendors');
+      throw new BadRequestException(
+        'Can only create registration tokens for approved vendors',
+      );
     }
 
     const token = randomBytes(32).toString('hex');
@@ -99,7 +108,9 @@ export class DevicesService {
     const regToken = tokenRecord[0];
 
     if (regToken.vendorId !== vendorId) {
-      throw new BadRequestException('Registration token does not belong to this vendor');
+      throw new BadRequestException(
+        'Registration token does not belong to this vendor',
+      );
     }
 
     if (new Date() > regToken.expiresAt) {
@@ -107,7 +118,9 @@ export class DevicesService {
     }
 
     if (regToken.usedCount >= regToken.maxUses) {
-      throw new BadRequestException('Registration token has reached its usage limit');
+      throw new BadRequestException(
+        'Registration token has reached its usage limit',
+      );
     }
 
     // Verify vendor exists, is approved, and belongs to event
@@ -133,7 +146,9 @@ export class DevicesService {
       .limit(1);
 
     if (existingDevice.length > 0) {
-      throw new ConflictException('A device with this identifier is already registered');
+      throw new ConflictException(
+        'A device with this identifier is already registered',
+      );
     }
 
     // Create the device record
@@ -183,7 +198,9 @@ export class DevicesService {
     const device = await this.getDeviceForEvent(eventId, deviceId);
 
     if (device.status !== 'pending_approval') {
-      throw new BadRequestException(`Device is already in "${device.status}" status`);
+      throw new BadRequestException(
+        `Device is already in "${device.status}" status`,
+      );
     }
 
     // Generate key provisioning data
@@ -221,7 +238,9 @@ export class DevicesService {
     const device = await this.getDeviceForEvent(eventId, deviceId);
 
     if (device.status !== 'pending_approval') {
-      throw new BadRequestException(`Can only reject devices that are pending approval`);
+      throw new BadRequestException(
+        `Can only reject devices that are pending approval`,
+      );
     }
 
     const result = await this.db
@@ -374,9 +393,16 @@ export class DevicesService {
     userRole: string,
     query: DeviceQueryDto,
   ) {
-    const canView = await this.canManageVendorDevices(eventId, vendorId, userId, userRole);
+    const canView = await this.canManageVendorDevices(
+      eventId,
+      vendorId,
+      userId,
+      userRole,
+    );
     if (!canView) {
-      throw new ForbiddenException('You do not have access to this vendor\'s devices');
+      throw new ForbiddenException(
+        "You do not have access to this vendor's devices",
+      );
     }
 
     const { status, limit = 20, cursor } = query;
@@ -425,7 +451,12 @@ export class DevicesService {
 
     const isAdmin = await this.isEventAdmin(eventId, userId, userRole);
     if (!isAdmin) {
-      const canView = await this.canManageVendorDevices(eventId, device.vendorId, userId, userRole);
+      const canView = await this.canManageVendorDevices(
+        eventId,
+        device.vendorId,
+        userId,
+        userRole,
+      );
       if (!canView) {
         throw new ForbiddenException('You do not have access to this device');
       }
@@ -445,9 +476,16 @@ export class DevicesService {
   ) {
     const device = await this.getDeviceForEvent(eventId, deviceId);
 
-    const canManage = await this.canManageVendorDevices(eventId, device.vendorId, userId, userRole);
+    const canManage = await this.canManageVendorDevices(
+      eventId,
+      device.vendorId,
+      userId,
+      userRole,
+    );
     if (!canManage) {
-      throw new ForbiddenException('Only admins or vendor owners/managers can assign operators');
+      throw new ForbiddenException(
+        'Only admins or vendor owners/managers can assign operators',
+      );
     }
 
     // Verify the target user exists
@@ -474,7 +512,9 @@ export class DevicesService {
       .limit(1);
 
     if (membership.length === 0) {
-      throw new BadRequestException('User must be a member of the vendor to be assigned as device operator');
+      throw new BadRequestException(
+        'User must be a member of the vendor to be assigned as device operator',
+      );
     }
 
     // Check if already assigned
@@ -491,12 +531,19 @@ export class DevicesService {
 
     if (existing.length > 0) {
       if (existing[0].status === 'active') {
-        throw new ConflictException('User is already an active operator of this device');
+        throw new ConflictException(
+          'User is already an active operator of this device',
+        );
       }
       // Reactivate revoked operator
       const result = await this.db
         .update(deviceOperators)
-        .set({ status: 'active', assignedBy: userId, revokedBy: null, revokedAt: null })
+        .set({
+          status: 'active',
+          assignedBy: userId,
+          revokedBy: null,
+          revokedAt: null,
+        })
         .where(eq(deviceOperators.id, existing[0].id))
         .returning();
       return result[0];
@@ -522,7 +569,12 @@ export class DevicesService {
   ) {
     const device = await this.getDeviceForEvent(eventId, deviceId);
 
-    const canView = await this.canManageVendorDevices(eventId, device.vendorId, userId, userRole);
+    const canView = await this.canManageVendorDevices(
+      eventId,
+      device.vendorId,
+      userId,
+      userRole,
+    );
     if (!canView) {
       throw new ForbiddenException('You do not have access to this device');
     }
@@ -556,15 +608,27 @@ export class DevicesService {
   ) {
     const device = await this.getDeviceForEvent(eventId, deviceId);
 
-    const canManage = await this.canManageVendorDevices(eventId, device.vendorId, userId, userRole);
+    const canManage = await this.canManageVendorDevices(
+      eventId,
+      device.vendorId,
+      userId,
+      userRole,
+    );
     if (!canManage) {
-      throw new ForbiddenException('Only admins or vendor owners/managers can revoke operators');
+      throw new ForbiddenException(
+        'Only admins or vendor owners/managers can revoke operators',
+      );
     }
 
     const operator = await this.db
       .select()
       .from(deviceOperators)
-      .where(and(eq(deviceOperators.id, operatorId), eq(deviceOperators.deviceId, deviceId)))
+      .where(
+        and(
+          eq(deviceOperators.id, operatorId),
+          eq(deviceOperators.deviceId, deviceId),
+        ),
+      )
       .limit(1);
 
     if (operator.length === 0) {
@@ -609,7 +673,9 @@ export class DevicesService {
       .limit(1);
 
     if (vendor.length === 0 || vendor[0].eventId !== eventId) {
-      throw new NotFoundException(`Device with ID ${deviceId} not found in this event`);
+      throw new NotFoundException(
+        `Device with ID ${deviceId} not found in this event`,
+      );
     }
 
     return device[0];

@@ -14,3 +14,4 @@ export * from './payment-intents';
 export * from './sync-logs';
 export * from './security-alerts';
 export * from './audit-logs';
+export * from './event-bracelets';

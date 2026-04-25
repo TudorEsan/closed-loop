@@ -17,7 +17,17 @@ import {
   transactions,
   users,
 } from '@common/database/schemas';
-import { eq, and, or, ilike, desc, lt, inArray, count, type SQL } from 'drizzle-orm';
+import {
+  eq,
+  and,
+  or,
+  ilike,
+  desc,
+  lt,
+  inArray,
+  count,
+  type SQL,
+} from 'drizzle-orm';
 import { randomBytes } from 'crypto';
 import { CreateVendorDto } from './dto/create-vendor.dto';
 import { UpdateVendorDto } from './dto/update-vendor.dto';
@@ -30,7 +40,12 @@ import { InviteMemberDto } from './dto/invite-member.dto';
 export class VendorsService {
   constructor(@Inject(DRIZZLE) private readonly db: DrizzleClient) {}
 
-  async create(eventId: string, userId: string, userRole: string, dto: CreateVendorDto) {
+  async create(
+    eventId: string,
+    userId: string,
+    userRole: string,
+    dto: CreateVendorDto,
+  ) {
     // Check event exists and is in an acceptable status
     const event = await this.db
       .select()
@@ -63,7 +78,9 @@ export class VendorsService {
         .limit(1);
 
       if (targetUser.length === 0) {
-        throw new NotFoundException(`User with ID ${dto.targetUserId} not found`);
+        throw new NotFoundException(
+          `User with ID ${dto.targetUserId} not found`,
+        );
       }
     }
 
@@ -222,7 +239,9 @@ export class VendorsService {
 
     // Vendors can only update their own record
     if (!isAdmin && vendor.userId !== userId) {
-      throw new ForbiddenException('You can only update your own vendor record');
+      throw new ForbiddenException(
+        'You can only update your own vendor record',
+      );
     }
 
     const result = await this.db
@@ -243,9 +262,7 @@ export class VendorsService {
   ) {
     const isAdmin = await this.isEventAdmin(eventId, userId, userRole);
     if (!isAdmin) {
-      throw new ForbiddenException(
-        'Only admins can change vendor status',
-      );
+      throw new ForbiddenException('Only admins can change vendor status');
     }
 
     const vendor = await this.db
@@ -295,9 +312,7 @@ export class VendorsService {
   ) {
     const isAdmin = await this.isEventAdmin(eventId, userId, userRole);
     if (!isAdmin) {
-      throw new ForbiddenException(
-        'Only admins can set commission rates',
-      );
+      throw new ForbiddenException('Only admins can set commission rates');
     }
 
     const vendor = await this.db
@@ -362,8 +377,18 @@ export class VendorsService {
 
   // ---- Vendor Members ----
 
-  async findMembers(eventId: string, vendorId: string, userId: string, userRole: string) {
-    const canView = await this.canManageVendor(eventId, vendorId, userId, userRole);
+  async findMembers(
+    eventId: string,
+    vendorId: string,
+    userId: string,
+    userRole: string,
+  ) {
+    const canView = await this.canManageVendor(
+      eventId,
+      vendorId,
+      userId,
+      userRole,
+    );
     if (!canView) {
       throw new ForbiddenException('You do not have access to this vendor');
     }
@@ -390,9 +415,16 @@ export class VendorsService {
     userRole: string,
     dto: InviteMemberDto,
   ) {
-    const canManage = await this.canManageVendor(eventId, vendorId, userId, userRole);
+    const canManage = await this.canManageVendor(
+      eventId,
+      vendorId,
+      userId,
+      userRole,
+    );
     if (!canManage) {
-      throw new ForbiddenException('Only vendor owners, managers, or admins can invite members');
+      throw new ForbiddenException(
+        'Only vendor owners, managers, or admins can invite members',
+      );
     }
 
     // Check vendor exists and belongs to this event
@@ -420,7 +452,9 @@ export class VendorsService {
       .limit(1);
 
     if (existingInvite.length > 0) {
-      throw new ConflictException('A pending invitation already exists for this email');
+      throw new ConflictException(
+        'A pending invitation already exists for this email',
+      );
     }
 
     const token = randomBytes(32).toString('hex');
@@ -457,7 +491,9 @@ export class VendorsService {
     const invite = invitation[0];
 
     if (invite.status !== 'pending') {
-      throw new BadRequestException(`Invitation has already been ${invite.status}`);
+      throw new BadRequestException(
+        `Invitation has already been ${invite.status}`,
+      );
     }
 
     if (new Date() > invite.expiresAt) {
@@ -514,15 +550,27 @@ export class VendorsService {
     userRole: string,
     newRole: 'manager' | 'cashier',
   ) {
-    const canManage = await this.canManageVendor(eventId, vendorId, userId, userRole);
+    const canManage = await this.canManageVendor(
+      eventId,
+      vendorId,
+      userId,
+      userRole,
+    );
     if (!canManage) {
-      throw new ForbiddenException('Only vendor owners or admins can change member roles');
+      throw new ForbiddenException(
+        'Only vendor owners or admins can change member roles',
+      );
     }
 
     const member = await this.db
       .select()
       .from(vendorMembers)
-      .where(and(eq(vendorMembers.id, memberId), eq(vendorMembers.vendorId, vendorId)))
+      .where(
+        and(
+          eq(vendorMembers.id, memberId),
+          eq(vendorMembers.vendorId, vendorId),
+        ),
+      )
       .limit(1);
 
     if (member.length === 0) {
@@ -530,7 +578,9 @@ export class VendorsService {
     }
 
     if (member[0].role === 'owner') {
-      throw new BadRequestException('Cannot change the role of the vendor owner');
+      throw new BadRequestException(
+        'Cannot change the role of the vendor owner',
+      );
     }
 
     const result = await this.db
@@ -549,15 +599,27 @@ export class VendorsService {
     userId: string,
     userRole: string,
   ) {
-    const canManage = await this.canManageVendor(eventId, vendorId, userId, userRole);
+    const canManage = await this.canManageVendor(
+      eventId,
+      vendorId,
+      userId,
+      userRole,
+    );
     if (!canManage) {
-      throw new ForbiddenException('Only vendor owners or admins can remove members');
+      throw new ForbiddenException(
+        'Only vendor owners or admins can remove members',
+      );
     }
 
     const member = await this.db
       .select()
       .from(vendorMembers)
-      .where(and(eq(vendorMembers.id, memberId), eq(vendorMembers.vendorId, vendorId)))
+      .where(
+        and(
+          eq(vendorMembers.id, memberId),
+          eq(vendorMembers.vendorId, vendorId),
+        ),
+      )
       .limit(1);
 
     if (member.length === 0) {

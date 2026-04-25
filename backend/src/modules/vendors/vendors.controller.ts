@@ -125,7 +125,12 @@ export class VendorsController {
     @Param('vendorId') vendorId: string,
     @CurrentUser() user: { id: string; role: string },
   ) {
-    return this.vendorsService.findMembers(eventId, vendorId, user.id, user.role);
+    return this.vendorsService.findMembers(
+      eventId,
+      vendorId,
+      user.id,
+      user.role,
+    );
   }
 
   @Post(':vendorId/members/invite')
@@ -136,7 +141,13 @@ export class VendorsController {
     @Body() dto: InviteMemberDto,
     @CurrentUser() user: { id: string; role: string },
   ) {
-    return this.vendorsService.inviteMember(eventId, vendorId, user.id, user.role, dto);
+    return this.vendorsService.inviteMember(
+      eventId,
+      vendorId,
+      user.id,
+      user.role,
+      dto,
+    );
   }
 
   @Patch(':vendorId/members/:memberId')
@@ -149,7 +160,12 @@ export class VendorsController {
     @CurrentUser() user: { id: string; role: string },
   ) {
     return this.vendorsService.updateMemberRole(
-      eventId, vendorId, memberId, user.id, user.role, dto.role,
+      eventId,
+      vendorId,
+      memberId,
+      user.id,
+      user.role,
+      dto.role,
     );
   }
 
@@ -161,7 +177,13 @@ export class VendorsController {
     @Param('memberId') memberId: string,
     @CurrentUser() user: { id: string; role: string },
   ) {
-    return this.vendorsService.removeMember(eventId, vendorId, memberId, user.id, user.role);
+    return this.vendorsService.removeMember(
+      eventId,
+      vendorId,
+      memberId,
+      user.id,
+      user.role,
+    );
   }
 }
 

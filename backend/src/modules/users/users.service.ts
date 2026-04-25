@@ -21,7 +21,10 @@ export class UsersService {
     }
 
     if (search) {
-      const searchCondition = or(ilike(users.name, `%${search}%`), ilike(users.email, `%${search}%`));
+      const searchCondition = or(
+        ilike(users.name, `%${search}%`),
+        ilike(users.email, `%${search}%`),
+      );
       if (searchCondition) conditions.push(searchCondition);
     }
 
@@ -37,8 +40,7 @@ export class UsersService {
       }
     }
 
-    const whereClause =
-      conditions.length > 0 ? and(...conditions) : undefined;
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
     const results = await this.db
       .select()

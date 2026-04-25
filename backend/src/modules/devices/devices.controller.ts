@@ -36,7 +36,13 @@ export class DevicesController {
     @Body() dto: CreateRegistrationTokenDto,
     @CurrentUser() user: { id: string; role: string },
   ) {
-    return this.devicesService.createRegistrationToken(eventId, vendorId, user.id, user.role, dto);
+    return this.devicesService.createRegistrationToken(
+      eventId,
+      vendorId,
+      user.id,
+      user.role,
+      dto,
+    );
   }
 
   // ---- Device Registration (uses registration token for auth) ----
@@ -50,7 +56,12 @@ export class DevicesController {
     @Req() req: Request,
   ) {
     const ipAddress = req.ip || req.socket.remoteAddress || 'unknown';
-    return this.devicesService.registerDevice(eventId, vendorId, dto, ipAddress);
+    return this.devicesService.registerDevice(
+      eventId,
+      vendorId,
+      dto,
+      ipAddress,
+    );
   }
 
   // ---- Device Listing ----
@@ -63,7 +74,13 @@ export class DevicesController {
     @Query() query: DeviceQueryDto,
     @CurrentUser() user: { id: string; role: string },
   ) {
-    return this.devicesService.findByVendor(eventId, vendorId, user.id, user.role, query);
+    return this.devicesService.findByVendor(
+      eventId,
+      vendorId,
+      user.id,
+      user.role,
+      query,
+    );
   }
 
   @Get('events/:eventId/devices')
@@ -73,7 +90,12 @@ export class DevicesController {
     @Query() query: DeviceQueryDto,
     @CurrentUser() user: { id: string; role: string },
   ) {
-    return this.devicesService.findAllByEvent(eventId, user.id, user.role, query);
+    return this.devicesService.findAllByEvent(
+      eventId,
+      user.id,
+      user.role,
+      query,
+    );
   }
 
   @Get('events/:eventId/devices/:id')
@@ -106,7 +128,13 @@ export class DevicesController {
     @Body() dto: RejectDeviceDto,
     @CurrentUser() user: { id: string; role: string },
   ) {
-    return this.devicesService.rejectDevice(eventId, id, user.id, user.role, dto);
+    return this.devicesService.rejectDevice(
+      eventId,
+      id,
+      user.id,
+      user.role,
+      dto,
+    );
   }
 
   @Patch('events/:eventId/devices/:id/block')
@@ -139,7 +167,13 @@ export class DevicesController {
     @Body() dto: AssignOperatorDto,
     @CurrentUser() user: { id: string; role: string },
   ) {
-    return this.devicesService.assignOperator(eventId, id, user.id, user.role, dto);
+    return this.devicesService.assignOperator(
+      eventId,
+      id,
+      user.id,
+      user.role,
+      dto,
+    );
   }
 
   @Get('events/:eventId/devices/:id/operators')
@@ -160,6 +194,12 @@ export class DevicesController {
     @Param('operatorId') operatorId: string,
     @CurrentUser() user: { id: string; role: string },
   ) {
-    return this.devicesService.revokeOperator(eventId, id, operatorId, user.id, user.role);
+    return this.devicesService.revokeOperator(
+      eventId,
+      id,
+      operatorId,
+      user.id,
+      user.role,
+    );
   }
 }

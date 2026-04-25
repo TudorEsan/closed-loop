@@ -7,12 +7,7 @@ import {
 } from '@nestjs/common';
 import { DRIZZLE } from '@common/database/drizzle.module';
 import { DrizzleClient } from '@common/database/drizzle.client';
-import {
-  events,
-  eventMembers,
-  users,
-  vendors,
-} from '@common/database/schemas';
+import { events, eventMembers, users, vendors } from '@common/database/schemas';
 import { eq, and, or, ilike, desc, lt, count, type SQL } from 'drizzle-orm';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
@@ -124,8 +119,7 @@ export class EventsService {
       }
     }
 
-    const whereClause =
-      conditions.length > 0 ? and(...conditions) : undefined;
+    const whereClause = conditions.length > 0 ? and(...conditions) : undefined;
 
     const results = await this.db
       .select()
@@ -157,13 +151,10 @@ export class EventsService {
     // super_admin can see any event
     if (userRole !== 'super_admin') {
       const hasAccess =
-        event[0].organizerId === userId ||
-        (await this.isMember(id, userId));
+        event[0].organizerId === userId || (await this.isMember(id, userId));
 
       if (!hasAccess) {
-        throw new ForbiddenException(
-          'You do not have access to this event',
-        );
+        throw new ForbiddenException('You do not have access to this event');
       }
     }
 
@@ -240,7 +231,12 @@ export class EventsService {
     // Validate requirements for specific transitions
     if (currentStatus === 'draft' && targetStatus === 'setup') {
       // Must have name, dates, and token rate (basic validation)
-      if (!event.name || !event.startDate || !event.endDate || !event.tokenCurrencyRate) {
+      if (
+        !event.name ||
+        !event.startDate ||
+        !event.endDate ||
+        !event.tokenCurrencyRate
+      ) {
         throw new BadRequestException(
           'Event must have a name, start date, end date, and token currency rate before moving to setup',
         );
@@ -252,12 +248,7 @@ export class EventsService {
       const vendorCount = await this.db
         .select({ total: count() })
         .from(vendors)
-        .where(
-          and(
-            eq(vendors.eventId, id),
-            eq(vendors.status, 'approved'),
-          ),
-        );
+        .where(and(eq(vendors.eventId, id), eq(vendors.status, 'approved')));
 
       if (!vendorCount[0] || vendorCount[0].total === 0) {
         throw new BadRequestException(
@@ -391,10 +382,7 @@ export class EventsService {
       .select()
       .from(eventMembers)
       .where(
-        and(
-          eq(eventMembers.id, memberId),
-          eq(eventMembers.eventId, eventId),
-        ),
+        and(eq(eventMembers.id, memberId), eq(eventMembers.eventId, eventId)),
       )
       .limit(1);
 
@@ -413,9 +401,7 @@ export class EventsService {
       throw new BadRequestException('Cannot remove the event organizer');
     }
 
-    await this.db
-      .delete(eventMembers)
-      .where(eq(eventMembers.id, memberId));
+    await this.db.delete(eventMembers).where(eq(eventMembers.id, memberId));
 
     return { message: 'Member removed successfully' };
   }
@@ -441,10 +427,7 @@ export class EventsService {
       .select()
       .from(eventMembers)
       .where(
-        and(
-          eq(eventMembers.eventId, eventId),
-          eq(eventMembers.userId, userId),
-        ),
+        and(eq(eventMembers.eventId, eventId), eq(eventMembers.userId, userId)),
       )
       .limit(1);
 
@@ -458,18 +441,12 @@ export class EventsService {
     return false;
   }
 
-  private async isMember(
-    eventId: string,
-    userId: string,
-  ): Promise<boolean> {
+  private async isMember(eventId: string, userId: string): Promise<boolean> {
     const membership = await this.db
       .select()
       .from(eventMembers)
       .where(
-        and(
-          eq(eventMembers.eventId, eventId),
-          eq(eventMembers.userId, userId),
-        ),
+        and(eq(eventMembers.eventId, eventId), eq(eventMembers.userId, userId)),
       )
       .limit(1);
 

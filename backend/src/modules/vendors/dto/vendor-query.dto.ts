@@ -2,7 +2,12 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsIn, IsOptional, IsString, Max, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 
-const VALID_STATUSES = ['pending', 'approved', 'rejected', 'suspended'] as const;
+const VALID_STATUSES = [
+  'pending',
+  'approved',
+  'rejected',
+  'suspended',
+] as const;
 
 export class VendorQueryDto {
   @ApiPropertyOptional({

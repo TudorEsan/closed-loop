@@ -89,6 +89,7 @@ import {
   TableRow,
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { BraceletsTab } from '@/components/event-detail/bracelets-tab';
 import {
   ToggleGroup,
   ToggleGroupItem,
@@ -1744,6 +1745,7 @@ export function EventDetailPage() {
                 </Badge>
               )}
             </TabsTrigger>
+            <TabsTrigger value="bracelets">Bracelets</TabsTrigger>
           </TabsList>
 
           <TabsContent value="overview" className="mt-4">
@@ -1756,6 +1758,10 @@ export function EventDetailPage() {
 
           <TabsContent value="vendors" className="mt-4">
             <VendorsTab eventId={event.id} event={event} />
+          </TabsContent>
+
+          <TabsContent value="bracelets" className="mt-4">
+            <BraceletsTab eventId={event.id} />
           </TabsContent>
         </Tabs>
       </div>

@@ -137,7 +137,7 @@ export class StripePaymentProvider implements PaymentProvider {
           providerIntentId: pi.id,
           amount: pi.amount,
           currency: pi.currency,
-          metadata: (pi.metadata ?? {}) as Record<string, string>,
+          metadata: pi.metadata ?? {},
         };
       }
       case 'payment_intent.payment_failed': {

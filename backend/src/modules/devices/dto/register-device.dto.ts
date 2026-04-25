@@ -64,7 +64,9 @@ export class RegisterDeviceDto {
   @IsNumber()
   longitude?: number;
 
-  @ApiProperty({ description: 'Registration token provided by admin or vendor owner' })
+  @ApiProperty({
+    description: 'Registration token provided by admin or vendor owner',
+  })
   @IsString()
   @IsNotEmpty()
   registrationToken: string;

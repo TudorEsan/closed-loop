@@ -1,9 +1,15 @@
 {
-  "moduleFileExtensions": ["js", "json", "ts"],
+  "moduleFileExtensions": ["js", "mjs", "cjs", "json", "ts"],
   "rootDir": ".",
   "testEnvironment": "node",
   "testRegex": ".e2e-spec.ts$",
   "transform": {
-    "^.+\\.(t|j)s$": "ts-jest"
+    "^.+\\.(ts|js|mjs|cjs)$": ["ts-jest", { "isolatedModules": true }]
+  },
+  "transformIgnorePatterns": [],
+  "moduleNameMapper": {
+    "^@app/(.*)$": "<rootDir>/../src/$1",
+    "^@common/(.*)$": "<rootDir>/../src/common/$1",
+    "^(\\.{1,2}/.*)\\.mjs$": "$1"
   }
 }

@@ -10,6 +10,8 @@ import throttlerConfig from './configurations/throttler.config';
 import { throttlerValidationSchema } from './validation/throttler.schema';
 import paymentsConfig from './configurations/payments.config';
 import { paymentsValidationSchema } from './validation/payments.schema';
+import braceletsConfig from './configurations/bracelets.config';
+import { braceletsValidationSchema } from './validation/bracelets.schema';
 
 @Global()
 @Module({
@@ -22,12 +24,14 @@ import { paymentsValidationSchema } from './validation/payments.schema';
         databaseConfig,
         throttlerConfig,
         paymentsConfig,
+        braceletsConfig,
       ],
       validationSchema: appValidationSchema
         .concat(swaggerValidationSchema)
         .concat(databaseValidationSchema)
         .concat(throttlerValidationSchema)
-        .concat(paymentsValidationSchema),
+        .concat(paymentsValidationSchema)
+        .concat(braceletsValidationSchema),
       validationOptions: {
         allowUnknown: true,
         abortEarly: false,

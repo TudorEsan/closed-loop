@@ -1,7 +1,12 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsIn } from 'class-validator';
 
-const VALID_STATUSES = ['pending', 'approved', 'rejected', 'suspended'] as const;
+const VALID_STATUSES = [
+  'pending',
+  'approved',
+  'rejected',
+  'suspended',
+] as const;
 
 export class UpdateVendorStatusDto {
   @ApiProperty({
