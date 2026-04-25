@@ -6,3 +6,5 @@ export { SurfaceCard } from './surface-card';
 export { TransactionRow } from './transaction-row';
 export { SectionHeader } from './section-header';
 export { LiquidButton } from './liquid-button';
+export { TopupButton } from './topup-button';
+export { BlurHeader, BLUR_HEADER_HEIGHT } from './blur-header';

@@ -49,7 +49,9 @@
           "merchantIdentifier": "merchant.com.softpos",
           "enableGooglePay": false
         }
-      ]
+      ],
+      "expo-font",
+      "expo-image"
     ],
     "experiments": {
       "typedRoutes": true,
