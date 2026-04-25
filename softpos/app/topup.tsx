@@ -9,61 +9,27 @@ import {
   View,
 } from 'react-native';
 import { router } from 'expo-router';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useStripe } from '@stripe/stripe-react-native';
 
-import { paymentsApi } from '@/lib/api/payments';
 import { extractErrorMessage } from '@/lib/api';
 import { Screen } from '@/components/ui';
 import { formatMoney } from '@/lib/format';
+import { TOPUP_CANCELED, useTopUp } from '@/hooks';
 
 const QUICK_AMOUNTS = [10, 20, 50, 100];
 
 export default function TopUpScreen() {
-  const qc = useQueryClient();
-  const { initPaymentSheet, presentPaymentSheet } = useStripe();
   const [amount, setAmount] = useState('');
   const [error, setError] = useState<string | null>(null);
 
-  // Topup flow has two phases packed into one mutation:
-  // 1. ask the backend to create a payment intent
-  // 2. open the payment sheet with that intent
-  // The wallet gets credited by the backend webhook, so when the sheet
-  // returns we just refetch the wallet to see the new balance.
-  const topUpMutation = useMutation({
-    mutationFn: async () => {
-      const cents = Math.round(parseFloat(amount || '0') * 100);
-      if (!cents || cents <= 0) throw new Error('Enter an amount first');
-
-      const intent = await paymentsApi.createTopupIntent({ amount: cents });
-
-      const initRes = await initPaymentSheet({
-        merchantDisplayName: 'SoftPOS Festival',
-        paymentIntentClientSecret: intent.clientSecret,
-      });
-      if (initRes.error) throw new Error(initRes.error.message);
-
-      const sheetRes = await presentPaymentSheet();
-      if (sheetRes.error) {
-        if (sheetRes.error.code === 'Canceled') {
-          throw new Error('CANCELED');
-        }
-        throw new Error(sheetRes.error.message);
-      }
-
-      return intent;
-    },
+  const topUpMutation = useTopUp({
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ['wallet'] });
-      qc.invalidateQueries({ queryKey: ['transactions'] });
-      qc.invalidateQueries({ queryKey: ['transactions-full'] });
       Alert.alert('Done', 'Your funds were added.', [
         { text: 'OK', onPress: () => router.back() },
       ]);
     },
     onError: (err) => {
       const msg = extractErrorMessage(err);
-      if (msg === 'CANCELED') {
+      if (msg === TOPUP_CANCELED) {
         setError(null);
         return;
       }
@@ -133,7 +99,9 @@ export default function TopUpScreen() {
 
           <View className="mt-auto">
             <Pressable
-              onPress={() => topUpMutation.mutate()}
+              onPress={() =>
+                topUpMutation.mutate(Math.round(parsedAmount * 100))
+              }
               disabled={!hasAmount || topUpMutation.isPending}
               className={`rounded-2xl py-4 ${
                 hasAmount && !topUpMutation.isPending

@@ -5,3 +5,4 @@ export { ActionPill } from './action-pill';
 export { SurfaceCard } from './surface-card';
 export { TransactionRow } from './transaction-row';
 export { SectionHeader } from './section-header';
+export { LiquidButton } from './liquid-button';

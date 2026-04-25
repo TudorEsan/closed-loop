@@ -40,7 +40,7 @@ export default function RootLayout() {
                 >
                   <Stack.Screen name="index" />
                   <Stack.Screen name="login" />
-                  <Stack.Screen name="home" />
+                  <Stack.Screen name="(tabs)" />
                   <Stack.Screen
                     name="topup"
                     options={{
@@ -52,10 +52,6 @@ export default function RootLayout() {
                   <Stack.Screen
                     name="transactions"
                     options={{ headerShown: true, title: "Transactions" }}
-                  />
-                  <Stack.Screen
-                    name="profile"
-                    options={{ headerShown: true, title: "Profile" }}
                   />
                 </Stack>
                 <StatusBar style="dark" />

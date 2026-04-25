@@ -8,11 +8,11 @@ import {
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
-import { useAuth } from '@/lib/auth-context';
+import { useAuthContext } from '@/lib/auth-context';
 import { Avatar, Screen } from '@/components/ui';
 
 export default function ProfileScreen() {
-  const { user, signOut } = useAuth();
+  const { user, signOut } = useAuthContext();
 
   async function handleSignOut() {
     Alert.alert('Sign out', 'Are you sure you want to sign out?', [
@@ -56,22 +56,18 @@ export default function ProfileScreen() {
   const handle = user?.email ? `@${user.email.split('@')[0]}` : '';
 
   return (
-    <Screen edgeTop={false}>
+    <Screen edgeBottom={false}>
       <ScrollView
         className="flex-1 bg-background"
         contentContainerStyle={{ paddingBottom: 40 }}
       >
-        <View className="flex-row items-center justify-between px-5 pt-3">
-          <Pressable
-            onPress={() => router.back()}
-            hitSlop={8}
-            className="h-10 w-10 items-center justify-center rounded-full bg-surface"
-          >
-            <Ionicons name="close" size={20} color="#0a0a0a" />
-          </Pressable>
+        <View className="flex-row items-center justify-center px-5 pt-2 pb-4">
+          <Text className="text-[18px] font-semibold text-foreground">
+            Profile
+          </Text>
         </View>
 
-        <View className="items-center px-5 pb-8 pt-6">
+        <View className="items-center px-5 pb-8 pt-2">
           <Avatar fallback={displayName} size={96} borderColor="#e5e5e5" />
           <Text className="mt-4 text-[28px] font-bold tracking-tight text-foreground">
             {displayName}

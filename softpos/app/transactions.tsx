@@ -1,23 +1,12 @@
 import { FlatList, RefreshControl, Text, View } from 'react-native';
-import { useInfiniteQuery } from '@tanstack/react-query';
 
-import { walletsApi } from '@/lib/api/wallets';
 import { Screen, SurfaceCard, TransactionRow } from '@/components/ui';
 import { formatMoney, formatRelativeTime } from '@/lib/format';
+import { useTransactionsInfinite } from '@/hooks';
 import type { Transaction } from '@/types/api';
 
 export default function TransactionsScreen() {
-  const query = useInfiniteQuery({
-    queryKey: ['transactions-full'],
-    initialPageParam: undefined as string | undefined,
-    queryFn: ({ pageParam }) =>
-      walletsApi.listMyTransactions({
-        limit: 20,
-        cursor: pageParam,
-      }),
-    getNextPageParam: (last) =>
-      (last.nextCursor ?? undefined) as string | undefined,
-  });
+  const query = useTransactionsInfinite(20);
 
   const items: Transaction[] = (
     query.data?.pages.flatMap((p) => p.transactions) ?? []

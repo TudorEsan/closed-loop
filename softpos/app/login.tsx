@@ -22,14 +22,14 @@ import {
 } from 'heroui-native';
 
 import { authApi } from '@/lib/auth';
-import { useAuth } from '@/lib/auth-context';
+import { useAuthContext } from '@/lib/auth-context';
 import { extractErrorMessage } from '@/lib/api';
 import { Screen } from '@/components/ui';
 
 type Step = 'email' | 'otp';
 
 export default function LoginScreen() {
-  const { refresh } = useAuth();
+  const { refresh } = useAuthContext();
   const [step, setStep] = useState<Step>('email');
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
