@@ -25,11 +25,24 @@ export class WalletsService {
 
     if (existing.length > 0) return existing[0];
 
+    // Two parallel requests (e.g. balance + transactions on the home
+    // screen) can both reach this point and try to insert. The unique
+    // constraint on user_id would make the second one throw, so we let
+    // the DB resolve the race with onConflictDoNothing and re-select.
     const inserted = await this.db
       .insert(wallets)
       .values({ userId })
+      .onConflictDoNothing({ target: wallets.userId })
       .returning();
-    return inserted[0];
+
+    if (inserted.length > 0) return inserted[0];
+
+    const row = await this.db
+      .select()
+      .from(wallets)
+      .where(eq(wallets.userId, userId))
+      .limit(1);
+    return row[0];
   }
 
   // Cursor-paginated list of the user's transactions, newest first. Cursor

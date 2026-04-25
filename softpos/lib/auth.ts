@@ -1,24 +1,42 @@
 import { createAuthClient } from 'better-auth/react';
 import { emailOTPClient } from 'better-auth/client/plugins';
-import { expoClient } from '@better-auth/expo/client';
 import * as SecureStore from 'expo-secure-store';
 
 import { config } from './config';
 
-// better-auth client wired up for Expo. The expoClient plugin handles cookie
-// persistence in SecureStore for us, so we do not need to manage Set-Cookie
-// headers by hand. Other API calls can grab the cookie via authClient.getCookie()
-// and forward it as a header.
+const TOKEN_KEY = 'softpos.bearer-token';
+
+// React Native has no cookie jar, so we use bearer tokens instead of
+// session cookies. The backend's bearer() plugin returns the token in
+// the `set-auth-token` response header on sign-in, and accepts it on
+// subsequent requests via the standard Authorization header.
+export function getStoredToken(): string | null {
+  return SecureStore.getItem(TOKEN_KEY);
+}
+
+export async function setStoredToken(token: string | null): Promise<void> {
+  if (token) {
+    await SecureStore.setItemAsync(TOKEN_KEY, token);
+  } else {
+    await SecureStore.deleteItemAsync(TOKEN_KEY);
+  }
+}
+
 export const authClient = createAuthClient({
   baseURL: config.authBaseUrl,
-  plugins: [
-    expoClient({
-      scheme: 'softpos',
-      storagePrefix: 'softpos',
-      storage: SecureStore,
-    }),
-    emailOTPClient(),
-  ],
+  plugins: [emailOTPClient()],
+  fetchOptions: {
+    auth: {
+      type: 'Bearer',
+      token: () => getStoredToken() ?? '',
+    },
+    onSuccess: async (ctx) => {
+      const token = ctx.response.headers.get('set-auth-token');
+      if (token) {
+        await setStoredToken(token);
+      }
+    },
+  },
 });
 
 export type AuthUser = {
@@ -53,6 +71,7 @@ export const authApi = {
   },
 
   async getSession(): Promise<AuthSession | null> {
+    if (!getStoredToken()) return null;
     const { data } = await authClient.getSession();
     if (!data?.user) return null;
     return { user: data.user as AuthUser };
@@ -62,7 +81,9 @@ export const authApi = {
     try {
       await authClient.signOut();
     } catch {
-      // ignore, plugin clears local state anyway
+      // ignore network failures, we still clear the local token below
+    } finally {
+      await setStoredToken(null);
     }
   },
 };

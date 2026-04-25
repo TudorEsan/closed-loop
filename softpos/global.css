@@ -6,15 +6,152 @@
 @source './node_modules/heroui-native/lib';
 
 @theme {
-  --color-app-bg: #eeeeee;
-  --color-app-surface: #ffffff;
-  --color-app-surface-soft: #f5f5f5;
-  --color-app-fg: #0a0a0a;
-  --color-app-muted: #7a7a7a;
-  --color-app-border: #e5e5e5;
-  --color-app-success: #16a34a;
-  --color-app-danger: #dc2626;
-  --color-app-link: #2563eb;
-  --color-glass-border: rgba(255, 255, 255, 0.28);
-  --color-row-bg: rgba(0, 0, 0, 0.03);
+  /* Primitive Colors (Do not change between light and dark) */
+  --white: oklch(100% 0 0);
+  --black: oklch(0% 0 0);
+  --snow: oklch(99.11% 0 0);
+  --eclipse: oklch(15% 0.0151 248.20);
+
+  /* Border */
+  --border-width: 1px;
+  --field-border-width: 0px;
+
+  /* Base radius */
+  --radius: 0.25rem;
+  --field-radius: 0.75rem;
+
+  /* Opacity */
+  --opacity-disabled: 0.5;
+}
+
+@layer theme {
+  :root {
+    @variant light {
+      /* Base Colors */
+      --background: oklch(97.02% 0.0000 248.20);
+      --foreground: oklch(21.03% 0.0000 248.20);
+
+      /* Surface: Used for non-overlay components (cards, accordions, disclosure groups) */
+      --surface: oklch(100.00% 0.0000 248.20);
+      --surface-foreground: oklch(21.03% 0.0000 248.20);
+
+      --surface-secondary: oklch(95.24% 0.0000 248.20);
+      --surface-secondary-foreground: oklch(21.03% 0.0000 248.20);
+
+      --surface-tertiary: oklch(93.73% 0.0000 248.20);
+      --surface-tertiary-foreground: oklch(21.03% 0.0000 248.20);
+
+      /* Overlay: Used for floating/overlay components (dialogs, popovers, modals, menus) */
+      --overlay: oklch(100.00% 0.0000 248.20);
+      --overlay-foreground: oklch(21.03% 0.0000 248.20);
+      --backdrop: oklch(0% 0 0 / 20%);
+
+      --muted: oklch(55.17% 0.0000 248.20);
+
+      --default: oklch(94.00% 0.0000 248.20);
+      --default-foreground: oklch(21.03% 0.0059 248.20);
+
+      --accent: oklch(79.82% 0.0755 248.20);
+      --accent-foreground: oklch(15% 0.0151 248.20);
+
+      /* Form Fields */
+      --field-background: oklch(100.00% 0.0000 248.20);
+      --field-foreground: oklch(21.03% 0.0000 248.20);
+      --field-placeholder: oklch(55.17% 0.0000 248.20);
+      --field-border: transparent; /* no border by default on form fields */
+
+      /* Status Colors */
+      --success: oklch(73.29% 0.1935 150.13);
+      --success-foreground: oklch(21.03% 0.0059 150.13);
+
+      --warning: oklch(78.19% 0.1585 71.65);
+      --warning-foreground: oklch(21.03% 0.0059 71.65);
+
+      --danger: oklch(65.32% 0.2328 25.06);
+      --danger-foreground: oklch(99.11% 0 0);
+
+      /* Component Colors */
+      --segment: oklch(100.00% 0.0000 248.20);
+      --segment-foreground: oklch(21.03% 0.0000 248.20);
+
+      /* Misc Colors */
+      --border: oklch(90.00% 0.0000 248.20);
+      --separator: oklch(92.00% 0.0000 248.20);
+      --scrollbar: oklch(87.10% 0.0000 248.20);
+      --focus: oklch(79.82% 0.0755 248.20);
+      --link: var(--foreground);
+
+      /* Shadows */
+      --surface-shadow:
+        0 2px 4px 0 rgba(0, 0, 0, 0.04), 0 1px 2px 0 rgba(0, 0, 0, 0.06),
+        0 0 1px 0 rgba(0, 0, 0, 0.06);
+      --overlay-shadow:
+        0 2px 8px 0 rgba(0, 0, 0, 0.02), 0 -6px 12px 0 rgba(0, 0, 0, 0.01),
+        0 14px 28px 0 rgba(0, 0, 0, 0.03);
+      --field-shadow:
+        0 2px 4px 0 rgba(0, 0, 0, 0.04), 0 1px 2px 0 rgba(0, 0, 0, 0.06),
+        0 0 1px 0 rgba(0, 0, 0, 0.06);
+    }
+
+    @variant dark {
+      /* Base Colors */
+      --background: oklch(12.00% 0.0000 248.20);
+      --foreground: oklch(99.11% 0.0000 248.20);
+
+      /* Surface: Used for non-overlay components (cards, accordions, disclosure groups) */
+      --surface: oklch(21.03% 0.0000 248.20);
+      --surface-foreground: oklch(99.11% 0.0000 248.20);
+
+      --surface-secondary: oklch(25.70% 0.0000 248.20);
+      --surface-secondary-foreground: oklch(99.11% 0.0000 248.20);
+
+      --surface-tertiary: oklch(27.21% 0.0000 248.20);
+      --surface-tertiary-foreground: oklch(99.11% 0.0000 248.20);
+
+      /* Overlay: Used for floating/overlay components (dialogs, popovers, modals, menus) */
+      --overlay: oklch(21.03% 0.0000 248.20);
+      --overlay-foreground: oklch(99.11% 0.0000 248.20);
+      --backdrop: oklch(0% 0 0 / 20%);
+
+      --muted: oklch(70.50% 0.0000 248.20);
+
+      --default: oklch(27.40% 0.0000 248.20);
+      --default-foreground: oklch(99.11% 0 0);
+
+      --accent: oklch(79.82% 0.0755 248.20);
+      --accent-foreground: oklch(15% 0.0151 248.20);
+
+      /* Form Field Defaults - Colors */
+      --field-background: oklch(21.03% 0.0000 248.20);
+      --field-foreground: oklch(99.11% 0.0000 248.20);
+      --field-placeholder: oklch(70.50% 0.0000 248.20);
+      --field-border: transparent; /* no border by default on form fields */
+
+      /* Status Colors */
+      --success: oklch(73.29% 0.1935 150.13);
+      --success-foreground: oklch(21.03% 0.0059 150.13);
+
+      --warning: oklch(82.03% 0.1388 75.66);
+      --warning-foreground: oklch(21.03% 0.0059 75.66);
+
+      --danger: oklch(59.40% 0.1967 23.95);
+      --danger-foreground: oklch(99.11% 0 0);
+
+      /* Component Colors */
+      --segment: oklch(39.64% 0.0000 248.20);
+      --segment-foreground: oklch(99.11% 0.0000 248.20);
+
+      /* Misc Colors */
+      --border: oklch(28.00% 0.0000 248.20);
+      --separator: oklch(25.00% 0.0000 248.20);
+      --scrollbar: oklch(70.50% 0.0000 248.20);
+      --focus: oklch(79.82% 0.0755 248.20);
+      --link: var(--foreground);
+
+      /* Shadows */
+      --surface-shadow: 0 0 0 0 transparent inset; /* No shadow on dark mode */
+      --overlay-shadow: 0 0 1px 0 rgba(255, 255, 255, 0.2) inset;
+      --field-shadow: 0 0 0 0 transparent inset; /* Transparent shadow to allow ring utilities to work */
+    }
+  }
 }

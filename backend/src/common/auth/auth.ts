@@ -1,6 +1,6 @@
 import { betterAuth } from 'better-auth';
 import { drizzleAdapter } from 'better-auth/adapters/drizzle';
-import { emailOTP } from 'better-auth/plugins';
+import { emailOTP, bearer } from 'better-auth/plugins';
 import { expo } from '@better-auth/expo';
 import { drizzle } from 'drizzle-orm/postgres-js';
 import postgres from 'postgres';
@@ -11,6 +11,9 @@ const client = postgres(process.env.DATABASE_URL!);
 const db = drizzle({ client, schema });
 
 const resend = new Resend(process.env.RESEND_API_KEY);
+
+const REVIEWER_EMAIL = 'reviewer@tudor.esan';
+const REVIEWER_OTP = '111111';
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
@@ -41,10 +44,37 @@ export const auth = betterAuth({
       isActive: { type: 'boolean', defaultValue: true, required: false },
     },
   },
+  databaseHooks: {
+    user: {
+      create: {
+        after: async (user) => {
+          try {
+            await db
+              .insert(schema.wallets)
+              .values({ userId: user.id })
+              .onConflictDoNothing({ target: schema.wallets.userId });
+          } catch (err) {
+            // Do not block sign-up if wallet provisioning fails, the
+            // lazy path in WalletsService will pick it up on first use.
+            console.error('Failed to provision wallet for user', user.id, err);
+          }
+        },
+      },
+    },
+  },
   plugins: [
     expo(),
+    bearer(),
     emailOTP({
+      generateOTP: ({ email }) => {
+        if (email === REVIEWER_EMAIL) return REVIEWER_OTP;
+        return undefined;
+      },
       async sendVerificationOTP({ email, otp, type }) {
+        if (email === REVIEWER_EMAIL) {
+          // Reviewer account uses a fixed OTP, do not send an email.
+          return;
+        }
         await resend.emails.send({
           from: 'ClosedLoop <noreply@pulsar.money>',
           to: email,

@@ -1,9 +1,15 @@
-import { Alert, Pressable, Text, View } from 'react-native';
+import {
+  Alert,
+  Pressable,
+  ScrollView,
+  Text,
+  View,
+} from 'react-native';
 import { router } from 'expo-router';
+import { Ionicons } from '@expo/vector-icons';
 
 import { useAuth } from '@/lib/auth-context';
-import { Avatar, Screen, SurfaceCard } from '@/components/ui';
-import { theme } from '@/lib/theme';
+import { Avatar, Screen } from '@/components/ui';
 
 export default function ProfileScreen() {
   const { user, signOut } = useAuth();
@@ -25,110 +31,171 @@ export default function ProfileScreen() {
     ]);
   }
 
+  function handleDeleteAccount() {
+    Alert.alert(
+      'Delete account',
+      'This will permanently remove your account and wallet. This cannot be undone.',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            Alert.alert('Not available', 'Please contact support to delete your account.');
+          },
+        },
+      ],
+    );
+  }
+
+  function notImplemented(label: string) {
+    Alert.alert(label, 'Coming soon.');
+  }
+
+  const displayName = user?.name || user?.email?.split('@')[0] || 'You';
+  const handle = user?.email ? `@${user.email.split('@')[0]}` : '';
+
   return (
     <Screen edgeTop={false}>
-      <View style={{ padding: theme.spacing.lg, gap: theme.spacing.lg }}>
-        <SurfaceCard>
-          <View
-            style={{
-              alignItems: 'center',
-              gap: 12,
-              paddingVertical: 8,
-            }}
+      <ScrollView
+        className="flex-1 bg-background"
+        contentContainerStyle={{ paddingBottom: 40 }}
+      >
+        <View className="flex-row items-center justify-between px-5 pt-3">
+          <Pressable
+            onPress={() => router.back()}
+            hitSlop={8}
+            className="h-10 w-10 items-center justify-center rounded-full bg-surface"
           >
-            <Avatar
-              fallback={user?.name || user?.email || '?'}
-              size={88}
-            />
-            <Text
-              style={{
-                ...theme.font.title,
-                color: theme.colors.foreground,
-              }}
-            >
-              {user?.name || 'No name'}
-            </Text>
-            <Text
-              style={{
-                ...theme.font.bodySmall,
-                color: theme.colors.mutedForeground,
-              }}
-            >
-              {user?.email}
-            </Text>
-          </View>
-        </SurfaceCard>
+            <Ionicons name="close" size={20} color="#0a0a0a" />
+          </Pressable>
+        </View>
 
-        <SurfaceCard noPadding>
-          <Row label="Role" value={user?.role || 'attendee'} />
-          <Separator />
-          <Row label="Phone" value={user?.phone || 'Not set'} />
-        </SurfaceCard>
-
-        <Pressable
-          onPress={handleSignOut}
-          style={({ pressed }) => ({
-            backgroundColor: theme.colors.surface,
-            borderRadius: theme.radius.pill,
-            paddingVertical: 16,
-            alignItems: 'center',
-            opacity: pressed ? 0.9 : 1,
-            ...theme.shadow.soft,
-          })}
-        >
-          <Text
-            style={{
-              ...theme.font.button,
-              color: theme.colors.danger,
-            }}
-          >
-            Sign out
+        <View className="items-center px-5 pb-8 pt-6">
+          <Avatar fallback={displayName} size={96} borderColor="#e5e5e5" />
+          <Text className="mt-4 text-[28px] font-bold tracking-tight text-foreground">
+            {displayName}
           </Text>
-        </Pressable>
-      </View>
+          {handle ? (
+            <Text className="mt-1 text-[14px] font-medium text-muted">
+              {handle}
+            </Text>
+          ) : null}
+        </View>
+
+        <View className="px-4">
+          <View className="overflow-hidden rounded-2xl bg-surface">
+            <MenuRow
+              icon="person-outline"
+              label="Personal info"
+              subtitle={user?.email ?? undefined}
+              onPress={() => notImplemented('Personal info')}
+            />
+            <Divider />
+            <MenuRow
+              icon="wallet-outline"
+              label="Wallet details"
+              subtitle={user?.role ? capitalize(user.role) : undefined}
+              onPress={() => notImplemented('Wallet details')}
+            />
+            <Divider />
+            <MenuRow
+              icon="shield-checkmark-outline"
+              label="Security"
+              onPress={() => notImplemented('Security')}
+            />
+            <Divider />
+            <MenuRow
+              icon="notifications-outline"
+              label="Notifications"
+              onPress={() => notImplemented('Notifications')}
+            />
+            <Divider />
+            <MenuRow
+              icon="help-circle-outline"
+              label="Help"
+              onPress={() => notImplemented('Help')}
+            />
+            <Divider />
+            <MenuRow
+              icon="settings-outline"
+              label="Settings"
+              onPress={() => notImplemented('Settings')}
+            />
+          </View>
+
+          <View className="mt-3 overflow-hidden rounded-2xl bg-surface">
+            <MenuRow
+              icon="log-out-outline"
+              label="Log out"
+              onPress={handleSignOut}
+              showChevron={false}
+            />
+          </View>
+
+          <Pressable
+            onPress={handleDeleteAccount}
+            hitSlop={8}
+            className="items-center py-8"
+          >
+            <Text className="text-[13px] font-normal text-muted">
+              Delete account
+            </Text>
+          </Pressable>
+        </View>
+      </ScrollView>
     </Screen>
   );
 }
 
-function Row({ label, value }: { label: string; value: string }) {
+function MenuRow({
+  icon,
+  label,
+  subtitle,
+  onPress,
+  showChevron = true,
+}: {
+  icon: keyof typeof Ionicons.glyphMap;
+  label: string;
+  subtitle?: string;
+  onPress: () => void;
+  showChevron?: boolean;
+}) {
   return (
-    <View
-      style={{
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingHorizontal: theme.spacing.lg,
-        paddingVertical: theme.spacing.lg,
-      }}
+    <Pressable
+      onPress={onPress}
+      android_ripple={{ color: '#00000010' }}
+      style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
     >
-      <Text
-        style={{
-          ...theme.font.body,
-          color: theme.colors.mutedForeground,
-        }}
-      >
-        {label}
-      </Text>
-      <Text
-        style={{
-          ...theme.font.body,
-          color: theme.colors.foreground,
-        }}
-      >
-        {value}
-      </Text>
-    </View>
+      <View className="flex-row items-center px-4 py-4">
+        <View className="h-9 w-9 items-center justify-center">
+          <Ionicons name={icon} size={22} color="#0a0a0a" />
+        </View>
+        <View className="ml-2 flex-1">
+          <Text className="text-[16px] font-medium text-foreground">
+            {label}
+          </Text>
+          {subtitle ? (
+            <Text
+              className="mt-0.5 text-[12px] font-normal text-muted"
+              numberOfLines={1}
+            >
+              {subtitle}
+            </Text>
+          ) : null}
+        </View>
+        {showChevron ? (
+          <Ionicons name="chevron-forward" size={18} color="#b5b5b5" />
+        ) : null}
+      </View>
+    </Pressable>
   );
 }
 
-function Separator() {
-  return (
-    <View
-      style={{
-        height: 1,
-        backgroundColor: theme.colors.border,
-        marginHorizontal: theme.spacing.lg,
-      }}
-    />
-  );
+function Divider() {
+  return <View className="ml-[60px] h-px bg-separator" />;
+}
+
+function capitalize(s: string): string {
+  return s.charAt(0).toUpperCase() + s.slice(1);
 }
