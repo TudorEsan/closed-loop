@@ -8,6 +8,7 @@ import {
 import { DRIZZLE } from '@common/database/drizzle.module';
 import { DrizzleClient } from '@common/database/drizzle.client';
 import { events, eventMembers, users, vendors } from '@common/database/schemas';
+import { EmailService } from '@common/email/email.service';
 import { eq, and, or, ilike, desc, lt, count, type SQL } from 'drizzle-orm';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
@@ -36,7 +37,10 @@ const VALID_TRANSITIONS: Record<string, string[]> = {
 
 @Injectable()
 export class EventsService {
-  constructor(@Inject(DRIZZLE) private readonly db: DrizzleClient) {}
+  constructor(
+    @Inject(DRIZZLE) private readonly db: DrizzleClient,
+    private readonly emailService: EmailService,
+  ) {}
 
   async create(userId: string, dto: CreateEventDto) {
     const slug = generateSlug(dto.name);
@@ -65,38 +69,22 @@ export class EventsService {
 
     const conditions: SQL<unknown>[] = [];
 
-    // Access control based on role
-    if (userRole === 'admin') {
+    // Non-super_admin users see events they organize or are members of.
+    if (userRole !== 'super_admin') {
       const memberEventIds = await this.db
         .select({ eventId: eventMembers.eventId })
         .from(eventMembers)
         .where(eq(eventMembers.userId, userId));
 
       const memberIds = memberEventIds.map((m) => m.eventId);
-
-      if (memberIds.length > 0) {
-        const accessCondition = or(
-          eq(events.organizerId, userId),
-          ...memberIds.map((id) => eq(events.id, id)),
-        );
-        if (accessCondition) conditions.push(accessCondition);
-      } else {
-        conditions.push(eq(events.organizerId, userId));
-      }
-    } else if (userRole === 'operator') {
-      const memberEventIds = await this.db
-        .select({ eventId: eventMembers.eventId })
-        .from(eventMembers)
-        .where(eq(eventMembers.userId, userId));
-
-      const memberIds = memberEventIds.map((m) => m.eventId);
-
-      if (memberIds.length > 0) {
-        const accessCondition = or(...memberIds.map((id) => eq(events.id, id)));
-        if (accessCondition) conditions.push(accessCondition);
-      } else {
-        return { events: [], nextCursor: null };
-      }
+      const accessCondition =
+        memberIds.length > 0
+          ? or(
+              eq(events.organizerId, userId),
+              ...memberIds.map((id) => eq(events.id, id)),
+            )
+          : eq(events.organizerId, userId);
+      if (accessCondition) conditions.push(accessCondition);
     }
 
     if (status) {
@@ -294,7 +282,7 @@ export class EventsService {
     dto: AddMemberDto,
   ) {
     // Verify the event exists and the current user has access
-    await this.findById(eventId, userId, userRole);
+    const event = await this.findById(eventId, userId, userRole);
 
     const isAdmin = await this.isEventAdmin(eventId, userId, userRole);
     if (!isAdmin) {
@@ -303,15 +291,56 @@ export class EventsService {
       );
     }
 
-    // Check target user exists
-    const targetUser = await this.db
-      .select()
-      .from(users)
-      .where(eq(users.id, dto.userId))
-      .limit(1);
+    if (!dto.userId && !dto.email) {
+      throw new BadRequestException('Either userId or email must be provided');
+    }
 
-    if (targetUser.length === 0) {
-      throw new NotFoundException(`User with ID ${dto.userId} not found`);
+    let targetUserId: string;
+    let isNewUser = false;
+    let targetEmail: string | null = null;
+
+    if (dto.userId) {
+      const existingUser = await this.db
+        .select()
+        .from(users)
+        .where(eq(users.id, dto.userId))
+        .limit(1);
+
+      if (existingUser.length === 0) {
+        throw new NotFoundException(`User with ID ${dto.userId} not found`);
+      }
+
+      targetUserId = existingUser[0].id;
+      targetEmail = existingUser[0].email;
+    } else {
+      const normalizedEmail = dto.email!.toLowerCase().trim();
+      targetEmail = normalizedEmail;
+
+      const existingByEmail = await this.db
+        .select()
+        .from(users)
+        .where(eq(users.email, normalizedEmail))
+        .limit(1);
+
+      if (existingByEmail.length > 0) {
+        targetUserId = existingByEmail[0].id;
+      } else {
+        const namePart = normalizedEmail.split('@')[0] || 'New member';
+        const createdUser = await this.db
+          .insert(users)
+          .values({
+            id: crypto.randomUUID(),
+            email: normalizedEmail,
+            emailVerified: false,
+            name: namePart,
+            role: 'user',
+            isActive: true,
+          })
+          .returning();
+
+        targetUserId = createdUser[0].id;
+        isNewUser = true;
+      }
     }
 
     // Check if already a member
@@ -321,7 +350,7 @@ export class EventsService {
       .where(
         and(
           eq(eventMembers.eventId, eventId),
-          eq(eventMembers.userId, dto.userId),
+          eq(eventMembers.userId, targetUserId),
         ),
       )
       .limit(1);
@@ -334,13 +363,51 @@ export class EventsService {
       .insert(eventMembers)
       .values({
         eventId,
-        userId: dto.userId,
+        userId: targetUserId,
         role: dto.role,
         invitedBy: userId,
       })
       .returning();
 
+    if (targetEmail) {
+      void this.sendEventInviteEmail({
+        email: targetEmail,
+        eventName: event.name,
+        role: dto.role,
+        isNewUser,
+      });
+    }
+
     return result[0];
+  }
+
+  private async sendEventInviteEmail(args: {
+    email: string;
+    eventName: string;
+    role: string;
+    isNewUser: boolean;
+  }): Promise<void> {
+    try {
+      const greeting = args.isNewUser
+        ? 'An account has been created for you on ClosedLoop.'
+        : 'You have been added to a new event.';
+      const html = `
+        <div style="font-family: sans-serif; padding: 20px;">
+          <h2>You're on the team for ${args.eventName}</h2>
+          <p>${greeting}</p>
+          <p>You have been invited as <strong>${args.role}</strong>.</p>
+          <p>Sign in with your email (${args.email}) to access the event.</p>
+        </div>
+      `;
+      await this.emailService.send({
+        to: args.email,
+        subject: `You've been added to ${args.eventName}`,
+        html,
+      });
+    } catch (err) {
+      // Email failures should not break the membership creation.
+      console.error('Failed to send event invite email', err);
+    }
   }
 
   async getMembers(eventId: string) {
@@ -431,10 +498,7 @@ export class EventsService {
       )
       .limit(1);
 
-    if (
-      membership.length > 0 &&
-      (membership[0].role === 'organizer' || membership[0].role === 'admin')
-    ) {
+    if (membership.length > 0 && membership[0].role === 'admin') {
       return true;
     }
 

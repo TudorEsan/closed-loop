@@ -9,7 +9,6 @@ import {
   Query,
 } from '@nestjs/common';
 import { ApiTags, ApiOperation } from '@nestjs/swagger';
-import { Roles } from '@common/decorators/roles.decorator';
 import { CurrentUser } from '@common/decorators/current-user.decorator';
 import { EventsService } from './events.service.js';
 import { CreateEventDto } from './dto/create-event.dto.js';
@@ -24,7 +23,6 @@ export class EventsController {
   constructor(private readonly eventsService: EventsService) {}
 
   @Post()
-  @Roles('super_admin', 'admin')
   @ApiOperation({ summary: 'Create a new event' })
   create(
     @CurrentUser() user: { id: string; role: string },
@@ -34,7 +32,6 @@ export class EventsController {
   }
 
   @Get()
-  @Roles('super_admin', 'admin', 'operator')
   @ApiOperation({ summary: 'List events with optional filters' })
   findAll(
     @CurrentUser() user: { id: string; role: string },
@@ -44,7 +41,6 @@ export class EventsController {
   }
 
   @Get(':id')
-  @Roles('super_admin', 'admin', 'operator')
   @ApiOperation({ summary: 'Get event details by ID' })
   findById(
     @Param('id') id: string,
@@ -54,7 +50,6 @@ export class EventsController {
   }
 
   @Patch(':id')
-  @Roles('super_admin', 'admin')
   @ApiOperation({ summary: 'Update event details' })
   update(
     @Param('id') id: string,
@@ -65,7 +60,6 @@ export class EventsController {
   }
 
   @Patch(':id/status')
-  @Roles('super_admin', 'admin')
   @ApiOperation({ summary: 'Transition event lifecycle status' })
   updateStatus(
     @Param('id') id: string,
@@ -76,7 +70,6 @@ export class EventsController {
   }
 
   @Delete(':id')
-  @Roles('super_admin', 'admin')
   @ApiOperation({ summary: 'Delete an event (draft only)' })
   delete(
     @Param('id') id: string,
@@ -86,7 +79,6 @@ export class EventsController {
   }
 
   @Post(':id/members')
-  @Roles('super_admin', 'admin')
   @ApiOperation({ summary: 'Add a team member to the event' })
   addMember(
     @Param('id') id: string,
@@ -97,14 +89,12 @@ export class EventsController {
   }
 
   @Get(':id/members')
-  @Roles('super_admin', 'admin', 'operator')
   @ApiOperation({ summary: 'List event team members' })
   getMembers(@Param('id') id: string) {
     return this.eventsService.getMembers(id);
   }
 
   @Delete(':id/members/:memberId')
-  @Roles('super_admin', 'admin')
   @ApiOperation({ summary: 'Remove a team member from the event' })
   removeMember(
     @Param('id') id: string,

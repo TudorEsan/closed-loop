@@ -3,6 +3,7 @@ import { emailOTPClient } from 'better-auth/client/plugins';
 import * as SecureStore from 'expo-secure-store';
 
 import { config } from './config';
+import { setStoredScopeId } from './scope';
 
 const TOKEN_KEY = 'softpos.bearer-token';
 
@@ -59,7 +60,7 @@ export type AuthUser = {
   id: string;
   email: string;
   name?: string | null;
-  role?: string | null;
+  role?: 'super_admin' | 'user' | null;
   phone?: string | null;
 };
 
@@ -100,6 +101,7 @@ export const authApi = {
       // ignore network failures, we still clear the local token below
     } finally {
       await setStoredToken(null);
+      await setStoredScopeId(null);
     }
   },
 };

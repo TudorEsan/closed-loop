@@ -6,7 +6,7 @@ export type SeededUser = {
   id: string;
   email: string;
   name: string;
-  role: 'super_admin' | 'admin' | 'operator' | 'vendor' | 'attendee';
+  role: 'super_admin' | 'user';
   isActive: boolean;
 };
 
@@ -18,7 +18,7 @@ export const seedUser = async (
     id: faker.string.uuid(),
     email: faker.internet.email().toLowerCase(),
     name: faker.person.fullName(),
-    role: 'attendee' as SeededUser['role'],
+    role: 'user' as SeededUser['role'],
     isActive: true,
     ...overrides,
   };
@@ -68,7 +68,7 @@ export const seedEventMember = async (
   db: TestDb,
   eventId: string,
   userId: string,
-  role: 'organizer' | 'admin' | 'operator' = 'admin',
+  role: 'admin' | 'operator' = 'admin',
 ): Promise<void> => {
   await db.drizzle.insert(eventMembers).values({
     eventId,

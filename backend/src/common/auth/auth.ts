@@ -13,8 +13,10 @@ const db = drizzle({ client, schema });
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 const REVIEWER_OTPS: Record<string, string> = {
-  'attendee@tudor.esan': '111111',
+  'user@tudor.esan': '111111',
   'admin@tudor.esan': '111112',
+  'untold@tudor.esan': '111113',
+  'iqos@tudor.esan': '111114',
 };
 
 export const auth = betterAuth({
@@ -42,26 +44,8 @@ export const auth = betterAuth({
   user: {
     additionalFields: {
       phone: { type: 'string', required: false },
-      role: { type: 'string', defaultValue: 'attendee', required: false },
+      role: { type: 'string', defaultValue: 'user', required: false },
       isActive: { type: 'boolean', defaultValue: true, required: false },
-    },
-  },
-  databaseHooks: {
-    user: {
-      create: {
-        after: async (user) => {
-          try {
-            await db
-              .insert(schema.wallets)
-              .values({ userId: user.id })
-              .onConflictDoNothing({ target: schema.wallets.userId });
-          } catch (err) {
-            // Do not block sign-up if wallet provisioning fails, the
-            // lazy path in WalletsService will pick it up on first use.
-            console.error('Failed to provision wallet for user', user.id, err);
-          }
-        },
-      },
     },
   },
   plugins: [

@@ -1,21 +1,34 @@
-import { useAuthContext } from '@/lib/auth-context';
+import { ActivityIndicator, View } from 'react-native';
+
+import { useScope } from '@/hooks/use-scope';
 import { AttendeeHome } from '@/components/home/attendee-home';
-import { OperatorHome } from '@/components/home/operator-home';
+import { StaffHome } from '@/components/home/staff-home';
 import { VendorHome } from '@/components/home/vendor-home';
-import { AdminHome } from '@/components/home/admin-home';
+import { theme } from '@/lib/theme';
 
 export default function HomeScreen() {
-  const { role } = useAuthContext();
+  const { scope, isLoading } = useScope();
 
-  switch (role) {
-    case 'admin':
-      return <AdminHome />;
-    case 'operator':
-      return <OperatorHome />;
-    case 'vendor':
-      return <VendorHome />;
-    case 'attendee':
-    default:
-      return <AttendeeHome />;
+  if (isLoading || !scope) {
+    return (
+      <View
+        style={{
+          flex: 1,
+          alignItems: 'center',
+          justifyContent: 'center',
+          backgroundColor: theme.colors.background,
+        }}
+      >
+        <ActivityIndicator color={theme.colors.foreground} />
+      </View>
+    );
   }
+
+  if (scope.kind === 'event') {
+    return <StaffHome event={scope.event} />;
+  }
+  if (scope.kind === 'vendor') {
+    return <VendorHome vendor={scope.vendor} />;
+  }
+  return <AttendeeHome />;
 }

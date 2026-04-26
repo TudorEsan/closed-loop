@@ -1,81 +1,163 @@
 \chapter{System Architecture}
 \label{chap:architecture}
 
-This chapter goes through the architecture of the closed-loop payment system. We start with the big picture, explain why we chose this approach over the alternatives, and then go into each component one by one. The whole idea behind the design is to keep things simple: one server, one app that works for everyone, and the balance stored directly on the NFC wristband. The system should be easy to deploy, easy to understand, and tough enough to handle what actually happens at a festival, which is that the network will have problems at some point.
+This chapter goes through the architecture of the closed-loop payment system. We start with the big picture, explain why we chose this approach over the alternatives, and then go into each component one by one. The whole idea behind the design is to keep things simple: one server, one app that works for everyone, and strive to have always network support. If network however will go down the balance will be always cached on the bracelet and used as a deciding factor if the payment will be approved or not. The system should be easy to deploy, easy to understand, and tough enough to handle what actually happens at a festival.
 
 \section{High-level overview}
 \label{sec:high-level-overview}
 
 Most existing festival payment systems need a technical team to physically go to the venue, set up local servers, deploy a private network, and babysit the infrastructure for the entire duration of the event. As we discussed in Section~\ref{subsec:campus-cards}, the standard approach at festivals like Untold involves bringing dedicated servers on-site so that the payment logic runs locally. This makes sense when the balance lives on a remote server and every transaction needs a network round-trip to authorize. In that model, if the connection between the venue and the cloud drops, nobody can pay for anything, so you bring the server to the venue to avoid that dependency.
 
-Our system takes a different path. Because the balance lives directly on the NFC wristband, the payment transaction itself does not need to reach any server at all. The vendor's phone reads the balance from the chip, deducts the amount, and writes the new balance back. This happens entirely between the phone and the wristband, with no network involved. The server is only needed for things that happen before the event (creating the event, registering vendors, processing top-ups) and after the event (settlement, reporting). During the event itself, the server receives transaction logs from vendor devices when they happen to have connectivity, but the actual payment flow does not depend on it.
+Our system takes a different path. We aim to always have reliable internet access using Starlink as the primary uplink, paired with a redundant network topology that keeps terminals talking to the server even when individual links degrade. The wristband-as-cache fallback exists for the residual edge cases, but the goal is to never need it.
 
 This means there is no need to deploy anything at the festival venue. No local servers, no private network infrastructure, no IT team on-site. The organizer creates an event through the admin dashboard, configures the parameters, approves the vendors, and distributes the wristbands. The vendors download the app, get whitelisted, and they are ready to accept payments. The server runs in the cloud, the same way it runs for every other festival on the platform. Nothing changes in the deployment.
 
 The system has four main components: a backend server, a mobile application for attendees and vendors, a web-based admin dashboard, and NFC wristbands that carry the actual token balance for each attendee. The server is a single, multi-tenant service that manages all festivals from one deployment. There is no need to spin up a separate server or database for each event. An admin creates an event, configures it, and the system handles the rest. The mobile app is what attendees and vendors interact with: attendees see their balance and history, and vendors use it as a soft point-of-sale terminal. Admins manage the event through a separate web dashboard that works in any browser. The wristband is where the balance actually lives during the event.
 
-Figure~\ref{fig:system-architecture} shows the high-level architecture of the system. The thing to notice is the NFC connection between the Vendor POS and the wristband at the bottom: that is the actual payment path, and it does not go through the server. Everything above that (the load balancer, the server instances, the database) is for management, reporting, and synchronization, not for processing individual payments.
+\subsection{The hybrid reconciliation model}
+\label{subsec:hybrid-overview}
+
+The core architectural decision is how the wristband and the server share responsibility for the balance. We chose what we call \textbf{Approach H, the hybrid model}: credits flow through the server and debits happen on the chip. Each side owns one direction, and the two flows never collide.
+
+The state is split across the two sides. Each wristband stores three fields per event: \texttt{balance} (the cached value the chip can spend from), \texttt{debit\_counter} (a monotonic counter the chip increments on every payment), and \texttt{credit\_counter\_seen} (the highest server-side credit sequence the chip has acknowledged). The server keeps the mirror image, again per wristband per event: \texttt{balance} (the canonical value), \texttt{debit\_counter\_seen} (the highest debit counter it has reconciled from terminals), and \texttt{credit\_counter} (incremented on every server-side credit). The balance is event-scoped, not user-scoped, so the same person attending two festivals has two independent wallets and two independent counter pairs.
+
+For this thesis demo we use a \textbf{plain NTAG-class NFC chip} without a secure element. The hybrid model does not depend on chip-side cryptography to work: it only needs the chip to store a few fields, increment a counter atomically, and keep what was last written to it. The security implications of using normal NFC, and the upgrade path to authenticated chips, are discussed in Chapter~\ref{chap:security}.
+
+Figure~\ref{fig:system-architecture} shows the high-level architecture. The thing to notice is the NFC connection between the Vendor POS and the wristband at the bottom: that is the actual debit path, and it does not go through the server. Everything above (the load balancer, the server instances, the database) handles management, reporting, top-ups, and the periodic reconciliation that brings the two sides back in sync.
 
 \begin{figure}[ht]
-    \centering
-    \includegraphics[width=0.95\textwidth]{images/system-architecture.png}
-    \caption{High-level system architecture. Payments happen directly between the vendor device and the NFC wristband without server involvement. The backend handles event management, top-ups, and transaction log synchronization. Server instances are stateless and horizontally scalable behind a load balancer.}
-    \label{fig:system-architecture}
+	\centering
+	\includegraphics[width=0.95\textwidth]{images/system-architecture.png}
+	\caption{High-level system architecture. Debits happen directly between the vendor device and the NFC wristband. Credits go through the backend, which is also responsible for top-ups, sync, and reporting. Server instances are stateless and horizontally scalable behind a load balancer.}
+	\label{fig:system-architecture}
 \end{figure}
 
-\section{Why this architecture}
-\label{sec:why-architecture}
+\section{Balance reconciliation model}
+\label{sec:reconciliation}
 
-Before settling on this design, we considered a few different approaches and went through the techniques and patterns discussed in Chapter~\ref{chap:background} to figure out which ones are actually useful in our context and which ones would just add complexity for no real benefit. The choice of where the balance lives is really the decision that shapes everything else, so it is worth comparing the options side by side and explaining what we took from the literature and what we left behind.
+A closed-loop payment system with offline-capable terminals has two writers that can mutate the balance: the server (when users top up) and the chip (when users pay vendors). During a network partition both can act on their own, and once connectivity is back the system has to converge on a correct final value. Naive solutions tend to either double-spend, double-credit, or lose money in subtle ways. Our hybrid model handles this by keeping the two writers in separate lanes that never overlap.
 
-% TODO: Add Excalidraw comparison diagram showing the three architecture options
+\subsection{State on each side}
+\label{subsec:reconciliation-state}
 
-\subsection{Architecture comparison}
-\label{subsec:architecture-comparison}
+The wristband stores three reconciliation fields per event, plus identity fields written at provisioning:
+\begin{itemize}
+	\item \texttt{balance}: the cached balance in minor units, what the chip can spend from when offline.
+	\item \texttt{debit\_counter}: a monotonic counter the chip increments by one on every chip-side debit. The chip is the only writer.
+	\item \texttt{credit\_counter\_seen}: the highest server-side credit sequence number the chip has acknowledged. Updated whenever a terminal writes a new triple back to the chip.
+	\item identity fields \texttt{bracelet\_uid} and \texttt{event\_id}, written once at provisioning.
+\end{itemize}
 
-\textbf{Option A: Server-side balance, online-only.} The wristband (or QR code, or whatever the attendee carries) is just an identifier. Every time a vendor scans it, the terminal sends a request to the server, which checks the balance, deducts the amount, and sends back a confirmation. This is the simplest model to reason about because the server is always the single source of truth. The problem is obvious: if the network goes down, payments stop completely. For a regular retail store this is fine because they have stable internet. For a festival with 50,000 people in a field, it is not.
+The server stores the mirror image, per wristband per event:
+\begin{itemize}
+	\item \texttt{balance}: the canonical balance.
+	\item \texttt{credit\_counter}: a monotonic counter the server increments by one on every server-side credit. The server is the only writer.
+	\item \texttt{debit\_counter\_seen}: the highest \texttt{debit\_counter} value the server has reconciled from any terminal.
+\end{itemize}
 
-\textbf{Option B: Server-side balance with local cache.} Same as Option A, but vendor terminals keep a cached copy of recent balances. When the network drops, they fall back to the cache. This sounds reasonable until you think about what happens when two vendors both have a cached balance of 50 tokens for the same user. Vendor A deducts 40, Vendor B deducts 40, and now the user has spent 80 tokens out of 50. The system only finds out after reconnection, and someone has to eat the loss. You can add spending limits to reduce the damage, but you cannot eliminate it. The more vendors go offline, the worse the problem gets.
+The two counters are independent monotonic sequences, each with one writer. The chip owns \texttt{debit\_counter}; the server keeps a read-only mirror in \texttt{debit\_counter\_seen}. The server owns \texttt{credit\_counter}; the chip keeps a read-only mirror in \texttt{credit\_counter\_seen}. Because each lane has exactly one writer, there is no merge conflict to resolve within a lane. The balance is event-scoped: the same person at two festivals has two independent wallets.
 
-\textbf{Option C: Balance on the wristband.} The NFC chip on the wristband stores the actual balance. When a vendor scans it, they read the balance from the chip, deduct the amount, and write the new balance back. No server needed. This is what we went with, and it is the same principle that makes transit card systems like Suica and Octopus work. The user can only be in one place at a time, so the wristband naturally serializes transactions. There is no stale cache and no double-spend problem during offline periods.
+For this thesis demo the wristband is a plain NTAG-class NFC chip. The hybrid model does not depend on chip-side cryptography. The security implications of normal NFC, and a future hardening path to DESFire EV2/EV3 with AES-128 mutual authentication, are discussed in Chapter~\ref{chap:security}.
 
-The tradeoff with Option C is that you need to think about physical security of the chip (what if someone tries to write a fake balance?) and about what happens if the NFC write fails mid-transaction. But these are well-understood problems with known solutions, which is a lot better than trying to solve distributed consensus between dozens of offline terminals. We go into the security aspects later in this chapter and in more detail in Chapter~\ref{chap:security}.
+\subsection{Invariants}
+\label{subsec:reconciliation-invariants}
 
-Table~\ref{tab:architecture-comparison} summarizes the comparison.
+The correctness of the model rests on three invariants that must hold at all times.
+
+\begin{enumerate}
+	\item \textbf{The chip never increases its own balance.} Every chip-side mutation is a debit: \texttt{balance -= amount} together with \texttt{debit\_counter += 1}, applied as one atomic write.
+	\item \textbf{The server is the only source of credits.} Top-ups, refunds, and operator adjustments mutate the server's balance and increment \texttt{credit\_counter}. The chip picks up these credits passively on the next tap by an online terminal.
+	\item \textbf{Counters are monotonic with a single owner each.} \texttt{debit\_counter} only ever grows on the chip; \texttt{credit\_counter} only ever grows on the server. The mirror fields (\texttt{debit\_counter\_seen} and \texttt{credit\_counter\_seen}) only ever grow toward the owner's value.
+\end{enumerate}
+
+As long as these three hold, the chip and the server cannot disagree about who added money or who spent it. Reconciliation reduces to taking the union of two non-conflicting streams.
+
+\subsection{The four operations}
+\label{subsec:reconciliation-ops}
+
+\textbf{Top-up.} Always online. The server checks the payment, increments \texttt{balance} and \texttt{credit\_counter}, writes a transaction row, and acknowledges. The chip is not touched. The chip is now stale relative to the server, but that is harmless: the next tap reconciles it.
+
+\textbf{Online debit.} The terminal reads the chip and forwards the request to the server with the chip's current \texttt{debit\_counter} and \texttt{credit\_counter\_seen}. The server checks for pending credits (any sequence number greater than \texttt{credit\_counter\_seen}) and applies them as part of the same response. It then validates the debit, updates its ledger, and returns the new triple \texttt{(balance, debit\_counter, credit\_counter\_seen)} to the terminal, which writes it atomically to the chip. Pending credits and the new debit are picked up in one round trip.
+
+\textbf{Offline debit.} The terminal reads the chip, checks that the balance is enough, and performs an atomic decrement on the chip. It generates an idempotency key, queues the transaction locally with the resulting \texttt{debit\_counter} value, and serves the customer. The terminal keeps draining its queue in the background as connectivity comes and goes.
+
+\textbf{Sync.} When a terminal regains connectivity, it pushes queued transactions to the server in batches. The server applies them idempotently using the per-transaction key, updates \texttt{balance}, and advances \texttt{debit\_counter\_seen} to the highest counter value observed. Because debits are subtraction and the chip already enforced no-overdraft at the moment of each debit, the server can apply queued transactions in arrival order without strict sequencing.
+
+\subsection{Worked example}
+\label{subsec:reconciliation-example}
+
+Consider the case where a top-up and an offline debit happen at the same time. The starting state is chip \texttt{(balance=50, debit\_counter=0, credit\_counter\_seen=0)} and server \texttt{(balance=50, credit\_counter=0, debit\_counter\_seen=0)}.
+
+The user pays 10 tokens at an offline terminal. The chip becomes \texttt{(40, 1, 0)} and the terminal queues a debit of 10 with 
+\texttt{debit\_counter=1}. The server has not heard about this yet.
+
+In parallel, a partner pushes a 20-token top-up through the server. The server becomes \texttt{(70, 1, 0)}. The chip has not heard about this yet either.
+
+The user then taps an online terminal somewhere else. The terminal reads \texttt{(40, 1, 0)} from the chip and forwards it to the server. The server sees that \texttt{credit\_counter=1} is greater than the chip's 
+\texttt{credit\_counter\_seen=0}, so there is one pending credit of 20 tokens to apply. It also sees that \texttt{debit\_counter=1} is greater than  \br
+\texttt{debit\_counter\_seen=0}, so there is one chip-side debit it has not received yet, but it does not need the amount to apply the credit safely. The server writes \texttt{(60, 1, 1)} to the chip.
+
+When the offline terminal eventually syncs the queued debit of 10, the server applies it: balance goes from 70 to 60, and \texttt{debit\_counter\_seen} advances from 0 to 1. Both sides now sit at \texttt{balance=60} with \texttt{debit\_counter=1} and \texttt{credit\_counter=1}. No conflict resolution was needed because the two streams never collided.
+
+\subsection{Lost transactions}
+\label{subsec:reconciliation-lost}
+
+The model does not magically prevent loss. If a terminal dies before draining its queue, the vendor has served the customer and the chip has correctly subtracted the amount, but the server has no record. The gap shows up automatically: when the server observes that \texttt{chip.debit\_counter} exceeds \texttt{debit\_counter\_seen} plus the count of pending queued transactions tracked server-side, the difference represents lost debits.
+
+The resolution policy is to trust the chip's balance immediately, wait a configurable grace period for late syncs, and after that reconcile by writing the chip's balance to the server and logging the discrepancy for ops review. The festival absorbs the loss for those specific transactions; vendors with local receipts can claim manually if the amount is worth chasing. The exposure is bounded by the sync interval, on the order of low hundreds of euros per dead terminal at festival rates, which is an operational risk rather than a correctness bug.
+
+\subsection{Comparison with alternatives}
+\label{subsec:reconciliation-alternatives}
+
+Before settling on the hybrid model we looked at eight different ways to split the balance between the chip and the server. Table~\ref{tab:reconciliation-approaches} summarises them.
 
 \begin{table}[ht]
-\centering
-\begin{tabular}{|l|c|c|c|}
-\hline
-\textbf{Criteria} & \textbf{A: Online-only} & \textbf{B: Cached} & \textbf{C: On wristband} \\
-\hline
-Works offline & No & Partially & Yes \\
-\hline
-Double-spend risk & None & High offline & None \\
-\hline
-Server dependency & Every tx & Every tx + cache & Sync only \\
-\hline
-On-site infrastructure & Required & Required & Not needed \\
-\hline
-Physical tamper risk & None & None & Needs secure chip \\
-\hline
-Complexity & Low & High & Medium \\
-\hline
-\end{tabular}
-\caption{Comparison of the three architectural approaches for storing the user balance.}
-\label{tab:architecture-comparison}
+	\centering
+	\small
+	\begin{tabular}{|l|l|l|l|l|l|}
+		\hline
+		\textbf{Approach} & \textbf{Writer model} & \textbf{Offline} & \textbf{Conflicts} & \textbf{Complexity} & \textbf{Loss profile} \\
+		\hline
+		A. Pure server & Server only & None & None & Low & None when online; total stop offline \\
+		\hline
+		B. Server-wins cache & Server + terminal cache & Partial & Cache divergence & Medium & Double-spend across terminals \\
+		\hline
+		C. Single counter & Chip writes balance + counter & Full & Hidden divergence on equal counters & Medium & Silent inconsistency \\
+		\hline
+		D. Two counters (chip-only) & Chip writes both & Full & Mostly avoided & Medium & Credits stuck behind chip \\
+		\hline
+		E. Event log on chip & Chip stores event list & Full & Replay merge & High & Chip storage runs out \\
+		\hline
+		F. Chip-wins & Chip is canonical & Full & Server reconstructs & Medium & Server cannot enforce credits \\
+		\hline
+		G. PN-counter CRDT & Both sides increment per-actor counters & Full & CRDT merge & High & Bounded but heavy state \\
+		\hline
+		H. Hybrid & Server credits, chip debits & Full & None in common case & Medium & Bounded by sync interval \\
+		\hline
+	\end{tabular}
+	\caption{Eight approaches to balance reconciliation between the chip and the server, evaluated for offline support, conflict handling, complexity, and loss profile.}
+	\label{tab:reconciliation-approaches}
 \end{table}
+
+We picked H for three reasons. First, the mental model is the cleanest: each side owns one direction, so there is nothing to merge in the common case. Second, the lane separation means addition and subtraction commute, so the system stays correct under any interleaving of offline debits and online credits without needing vector clocks or CRDTs~\cite{Shapiro2011}. Third, this lane separation makes the lost-transaction case from the use cases (UC6) trivial to detect: a single integer comparison between \texttt{chip.debit\_counter} and \texttt{debit\_counter\_seen} tells you exactly how many debits the server is missing.
+
+The other approaches all have a sharp edge somewhere. A and B are not viable for a festival in a field. C has a known correctness bug where chip and server can hold equal counters but divergent balances after concurrent operations in different directions. D, F, and E all give one side too much authority and create an asymmetry that bites later. G works but pulls in a CRDT runtime to solve a problem that does not really exist once you split the writers.
+
+\section{Lessons from related systems and patterns}
+\label{sec:why-architecture}
+
+The hybrid model did not appear out of thin air. It mixes ideas from transit cards, commercial festival systems, EMV, and the distributed systems literature. This section walks through what we kept and what we left behind.
 
 \subsection{What we learned from existing systems}
 \label{subsec:lessons-existing}
 
-In Chapter~\ref{chap:background} we looked at transit cards, commercial festival payment systems, and the EMV offline authorization model. Each one influenced our design in different ways.
+In Chapter~\ref{chap:background} we looked at transit cards, commercial festival payment systems, and the EMV offline authorization model. Each one shaped a different part of the design.
 
-Transit card systems like Suica and Octopus (Section~\ref{subsec:transit-cards}) are basically the proof that Option C works at scale. Suica processes millions of transactions per day with sub-second speed, all because the balance lives on the FeliCa chip and the gate does not need to call any server. Our wristband model takes the same core idea: the balance is on the chip, the terminal reads it, deducts, and writes back. The difference is that Suica runs on fixed gates maintained by professionals in train stations with dedicated private networks, while we run on random phones carried by festival vendors in a field. So the principle transfers, but the implementation details are quite different. We also borrowed the security model from FeliCa, specifically the mutual authentication between the chip and the reader, which we implement using MIFARE DESFire's AES-128 protocol instead of FeliCa's proprietary encryption. The idea is the same: both sides prove to each other that they are legitimate before any data gets exchanged.
+Transit card systems like Suica and Octopus (Section~\ref{subsec:transit-cards}) are the proof that an on-chip balance works at scale. Suica processes millions of transactions per day with sub-second speed because the balance lives on the FeliCa chip and the gate does not need to call any server. Our wristband borrows that core idea: the chip carries the spendable balance, the terminal reads it, debits, and writes back. The difference is that Suica runs on fixed gates maintained by professionals in train stations with dedicated private networks, while we run on regular phones carried by festival vendors in a field. So the principle transfers, but the implementation details are quite different. Suica is also chip-only on the spending side and back-office on the credit side, which is the same split we use in the hybrid model.
 
-From the commercial festival systems like Tappit and Intellitix (Section~\ref{subsec:campus-cards}), we mainly learned what we do not want to do. These systems require an IT team to go to the venue, set up local servers, deploy a private network, and manage the whole thing for the duration of the event. That works for a company with dedicated operations staff, but it does not work if the goal is a system that a small organizer can deploy by themselves. The conversations we had with people who worked on the Untold deployment confirmed this: even with dedicated on-site infrastructure, top-up synchronization delays of two to four hours were common when the Wi-Fi got bad. Our architecture avoids this entirely because there are no on-site servers to maintain. The wristband handles payments locally, and the cloud server only needs to be reachable for top-ups and sync, which can tolerate delays without blocking the actual payment flow.
+From the commercial festival systems like Tappit and Intellitix (Section~\ref{subsec:campus-cards}), we mainly learned what we do not want to do. These systems require an IT team to go to the venue, set up local servers, deploy a private network, and manage the whole thing for the duration of the event. That works for a company with dedicated operations staff, but it does not work if the goal is a system that a small organizer can deploy by themselves. The conversations we had with people who worked on the Untold deployment confirmed this: even with dedicated on-site infrastructure, top-up synchronization delays of two to four hours were common when the Wi-Fi got bad. Our architecture avoids this entirely because there are no on-site servers to maintain. The chip handles offline debits, and the cloud server only needs to be reachable for top-ups and sync.
 
-The EMV offline authorization model (Section~\ref{subsec:emv}) gave us the idea of using spending limits as a risk control mechanism. EMV cards carry parameters that define how much they can spend offline before they have to go online for authorization. We use a similar concept: the event admin can configure maximum transaction amounts and maximum total offline spend per wristband. This is mostly relevant as a safety net for the edge case where someone does manage to tamper with a wristband, it limits the potential damage. But unlike EMV, where the card self-reports its own state and the terminal has to trust it (which, as Murdoch et al.~\cite{Murdoch2010} showed, is exploitable), our DESFire wristbands authenticate cryptographically before every read and write. The terminal does not take the wristband's word for it, it verifies through the shared AES key.
+The EMV offline authorization model (Section~\ref{subsec:emv}) gave us the idea of using spending limits as a risk control. EMV cards carry parameters that define how much they can spend offline before they have to go online for authorization. We use a similar concept: the event admin can configure maximum transaction amounts and a maximum total offline spend per wristband. This is mostly a safety net for the edge case where someone does manage to tamper with a chip, it limits the damage. EMV also has the well-known weakness Murdoch et al.~\cite{Murdoch2010} showed, where the card self-reports its state and the terminal has to trust it. We discuss the equivalent question for our plain-NFC chip and the path to authenticated chips in Chapter~\ref{chap:security}.
 
 \subsection{What we took from the architectural patterns}
 \label{subsec:lessons-patterns}
@@ -84,15 +166,15 @@ In Section~\ref{sec:offline-first} we covered several architectural patterns for
 
 \textbf{Local-first software} (Section~\ref{subsec:local-first}) is a nice philosophy, but as we discussed in Chapter~\ref{chap:background}, it does not fit payment systems well. Kleppmann et al.~\cite{Kleppmann2019} designed it for collaborative applications where merging conflicting edits is annoying but acceptable. With money, you cannot just merge two conflicting balance updates and hope for the best. Our system borrows the basic idea of keeping a local copy of data so the app works without the network, but the server remains the source of truth and offline transactions are treated as provisional. It is a weaker version of local-first, and that is the right call for a system where financial correctness actually matters.
 
-\textbf{CRDTs} (Section~\ref{subsec:crdts}) are an interesting solution for data convergence in distributed systems, but they turned out to be overkill for what we need. CRDTs guarantee that all replicas converge to the same value regardless of the order updates arrive, which sounds great until you realize they cannot enforce constraints like ``the balance must not go below zero.'' In our case, since the balance lives on the wristband, we do not really have a distributed data convergence problem in the first place. The wristband is the single copy of the balance during the event. There is nothing to converge. The server's copy is just a log of what happened, reconstructed from the transaction events that vendor devices upload. So CRDTs would add complexity to solve a problem that our architecture does not have.
+\textbf{CRDTs} (Section~\ref{subsec:crdts})~\cite{Shapiro2011} are an interesting solution for data convergence in distributed systems, but they turned out to be overkill for what we need. CRDTs guarantee that all replicas converge to the same value regardless of the order updates arrive, which sounds great until you realize they cannot enforce constraints like ``the balance must not go below zero.'' The hybrid model makes the convergence problem trivial without a CRDT runtime: each side writes only to its own lane, and the merge is just addition and subtraction with one monotonic counter per lane. A PN-counter would work, but it would carry per-actor state and a generic merge function for a problem that lane separation already solves with two integers.
 
 \textbf{Event sourcing} (Section~\ref{subsec:event-sourcing}) is the one pattern we actually use directly. Every transaction that happens on a vendor device is recorded as an immutable event with a timestamp, a device ID, a wristband ID, and the amount. When the device is online, these events are sent to the server immediately. When it is offline, they queue up locally and get pushed as a batch when connectivity returns. The server reconstructs the state of each wallet by replaying these events. This gives us a full audit trail of everything that happened, which is important for settlement and for the event organizer to see where the money went. We do not use CQRS in the formal sense (separate read and write models), but in practice the vendor app does maintain a local read cache of recent transactions that is separate from the write queue, which is a similar idea.
 
-\textbf{Edge computing} (Section~\ref{subsec:edge-computing}) shows up in our architecture at two levels. The first and more obvious one is the vendor phones themselves. Each phone runs the payment logic locally: read the wristband, validate the balance, deduct, write back. The cloud server coordinates and collects data, but it is not in the critical path of a payment. We also pushed the state further out than a typical edge setup, all the way to the wristband itself, so the edge node (the phone) does not even need to maintain a local copy of the balance. It reads the authoritative state directly from the chip every time. The second level is the server deployment itself. We deploy on Railway, which lets us pick the region where the container and the database run. So for festivals in Romania or elsewhere in Europe, the backend sits in a European data center with low latency to the vendor devices, instead of routing everything through some server in the US. For the operations that do need the server (top-ups, sync, admin dashboard), this makes a noticeable difference in responsiveness. And if the platform ever expands to other continents, spinning up another region on Railway is just a configuration change, no need to touch the application code.
+\textbf{Edge computing} (Section~\ref{subsec:edge-computing}) shows up at two levels. The first and more obvious one is the vendor phones. Each phone runs the debit logic locally: read the chip, check the balance, decrement, write back, and queue the transaction for sync. The cloud server is not in the critical path of an offline debit. The state that matters for spending sits on the chip itself, so the edge node (the phone) only has to keep the local sync queue, not a shadow copy of the balance. The second level is the server deployment itself. We deploy on Railway, which lets us pick the region where the container and the database run, so the backend sits close to the festivals it serves. For the operations that do need the server (top-ups, sync, admin dashboard), this makes a noticeable difference in responsiveness. Spinning up another region is just a configuration change.
 
-\textbf{The CAP theorem} (Section~\ref{subsec:cap-theorem}) told us what we already knew intuitively: during a network partition at a festival, we have to choose between consistency and availability, and refusing transactions because the Wi-Fi dropped is not acceptable. Our architecture sidesteps the hardest part of this tradeoff by putting the balance on the wristband. With Option B (server-side balance with cache), you are fully in CAP territory because the cached balances on different terminals can diverge and you get double-spend. With Option C (balance on wristband), the wristband itself acts as a single, physically consistent copy that moves with the user. There is no partition between the balance and the terminal that is reading it, because they are in direct NFC contact. The CAP tradeoff still applies to the synchronization of transaction logs with the server, but there the worst case is delayed reporting, not double-spending, which is a much smaller problem.
+\textbf{The CAP theorem} (Section~\ref{subsec:cap-theorem}) told us what we already knew intuitively: during a network partition at a festival, we have to choose between consistency and availability, and refusing transactions because the Wi-Fi dropped is not acceptable. The hybrid model sidesteps the hardest part of this tradeoff by giving the chip authority over the debit lane. The chip is a single, physically consistent copy of the spendable balance that moves with the user, so during an offline period there is no merge problem because there is nothing else to merge with. The CAP tradeoff still applies to the synchronization of transaction logs with the server, but there the worst case is delayed reporting and bounded loss, not double-spending.
 
-So to sum it up: from the existing systems we took the on-chip balance model (transit cards), spending limits as a safety net (EMV), and the lesson that on-site infrastructure should be avoided (festival systems). From the architectural patterns, we took event sourcing for the transaction log and edge computing as the general execution model, but we left behind local-first's strong local ownership model and CRDTs because the wristband balance model makes them unnecessary.
+So to sum it up: from the existing systems we took the chip-as-debit-authority idea (transit cards), spending limits as a safety net (EMV), and the lesson that on-site infrastructure should be avoided (festival systems). From the architectural patterns, we took event sourcing for the transaction log and edge computing as the general execution model, and we left behind local-first's strong local ownership model and CRDTs because the lane separation in the hybrid model makes them unnecessary.
 
 \section{NFC wristbands and offline support}
 \label{sec:wristband-offline}
@@ -105,13 +187,13 @@ Since the balance lives on the wristband, the offline story becomes much simpler
 The transaction flow between the vendor device and the wristband goes like this:
 
 \begin{enumerate}
-    \item The vendor enters the amount (or selects items from a product catalog) on their phone.
-    \item The customer taps their wristband against the phone's NFC reader.
-    \item The app reads the current balance and transaction counter from the wristband.
-    \item The app checks that the balance is sufficient.
-    \item The app writes the new (lower) balance and an incremented counter back to the wristband.
-    \item Only after a successful write confirmation, the transaction is recorded as completed in the local log.
-    \item If the write fails (customer pulled their wrist away too quickly, interference, etc.), the transaction is marked as failed and the vendor is prompted to retry.
+	\item The vendor enters the amount (or selects items from a product catalog) on their phone.
+	\item The customer taps their wristband against the phone's NFC reader.
+	\item The app reads the current balance and transaction counter from the wristband.
+	\item The app checks that the balance is sufficient.
+	\item The app writes the new (lower) balance and an incremented counter back to the wristband.
+	\item Only after a successful write confirmation, the transaction is recorded as completed in the local log.
+	\item If the write fails (customer pulled their wrist away too quickly, interference, etc.), the transaction is marked as failed and the vendor is prompted to retry.
 \end{enumerate}
 
 This ordering is important. The vendor device never records a successful payment unless the wristband was actually updated. The worst case scenario is that the vendor has to ask the customer to tap again, which is a small inconvenience but not a financial problem.
@@ -123,40 +205,23 @@ During normal online operation, vendor terminals send each transaction to the se
 
 When the network goes down, vendor terminals keep processing payments exactly as before. The wristband interaction does not change at all. The only difference is that transactions accumulate in the local queue on the vendor device instead of being sent to the server. Once connectivity returns, the device pushes its queued transactions to the server in a batch.
 
-\subsection{Reconciliation}
-\label{subsec:reconciliation}
-
-When a vendor device syncs its offline transactions, the server processes them in timestamp order and updates the central ledger. Because the wristband model prevents double-spending (the balance was physically deducted at the time of purchase), there are no balance conflicts to resolve in the normal case. The server just records the transactions it did not know about yet.
-
-However, there is one situation where the server balance and the wristband balance can diverge: top-ups. If an attendee tops up through the app (paying with Stripe), the server records the new balance, but the wristband still has the old balance until someone physically writes the update to the chip at a top-up station or online terminal. In the meantime, the user might have spent tokens offline. When the wristband finally gets the top-up written, the system needs to reconcile these two states. The server flags any discrepancy for manual review by the event admin.
-
-The two to four hour synchronization delay that we learned about from the Untold festival deployment (Section~\ref{subsec:campus-cards}) is specifically about this problem: the top-up happens, but the wristband has not been updated yet. With our architecture, this is reduced because the top-up is explicitly a two-step process. The attendee knows they need to tap their wristband at a station to actually load the tokens, rather than expecting the balance to appear on its own.
+The full mechanics of how queued debits and pending credits converge with the server's ledger are covered in Section~\ref{sec:reconciliation}. From the point of view of the offline flow, what matters is that the chip's atomic decrement is authoritative, and the server picks up the queued debit as soon as the terminal can reach it.
 
 \subsection{Top-ups: the one thing that needs the network}
 \label{subsec:topups}
 
-Topping up is the one operation that cannot happen offline. When an attendee loads tokens onto their wristband, real money needs to move from their bank account through Stripe and into the event operator's account. This requires an internet connection.
+Topping up is the one operation that cannot happen offline. When an attendee loads tokens onto their wristband, real money needs to move from their bank account through Stripe and into the event operator's account. This requires an internet connection. Restricting top-ups to online-only is also what keeps the credit lane fully under server control, which is the foundation of the reconciliation model described above.
 
-Top-ups can happen in two ways. First, attendees can top up through the app before or during the event, using Stripe. Once the payment clears, the server records the new balance. The attendee then needs to visit a top-up station (or any online vendor terminal) where the new balance is written to their wristband. Second, there can be dedicated cash top-up stations at the event where attendees hand over cash and the operator writes tokens to their wristband directly.
+Top-ups can happen in two ways. First, attendees can top up through the app before or during the event, using Stripe. Once the payment clears, the server records the new balance and increments \texttt{credit\_counter}. The attendee does not need to do anything special: the next time their wristband is read by any vendor terminal (online), the pending credit is picked up automatically and written to the chip as part of that interaction. Second, dedicated cash top-up stations at the event take cash and submit the credit through the server, which then writes the new balance to the wristband on the spot. In both cases, the server is the only writer of credits, and the chip only ever receives credits via an authenticated server response.
 
 \subsection{Security of the wristband balance}
 \label{subsec:wristband-security-intro}
 
-Storing the balance on the wristband opens up questions that you do not have with a server-side model. If the balance is just a number written to an NFC chip, what stops someone from using their phone to give themselves more tokens?
+Storing the balance on the wristband opens up questions that a server-side model does not have. If the balance is just a number written to an NFC chip, what stops someone from using their phone to give themselves more tokens?
 
-The answer depends on the chip. Cheap MIFARE Classic chips, as Garcia et al.~\cite{Garcia2008} demonstrated, have broken encryption and can be cloned or modified without too much effort. This is why we use MIFARE DESFire EV2 or EV3 chips, which support AES-128 encryption and mutual authentication between the chip and the reader. With these chips, writing to the balance requires a secret key that is stored securely on both the chip and the vendor terminal. Without the key, you cannot modify the balance.
+For this thesis demo we use a plain NTAG-class NFC chip. The hybrid reconciliation model from Section~\ref{sec:reconciliation} does not depend on chip-side cryptography to be correct: the counters and the lane separation give the system its convergence properties regardless of whether the chip is authenticated. The price of using normal NFC is that the chip cannot defend itself against a determined attacker who reads, modifies, or clones the data files. Cheap MIFARE Classic chips, as Garcia et al.~\cite{Garcia2008} demonstrated, are particularly easy to break, and plain NTAG chips do not even claim to be secure. Mitigations like \texttt{debit\_counter} chain checks, server-side anomaly detection, and bounded offline spend limits raise the bar but do not remove the threat.
 
-There are three main threats we need to address:
-
-\textbf{Balance tampering.} Someone tries to modify the balance on their wristband to give themselves more tokens. With DESFire EV3, all read and write operations on the relevant data files require authentication with the AES key. The chip itself enforces this at the hardware level, so even if someone has physical access to the wristband and a phone with an NFC reader, they cannot change the balance without knowing the key.
-
-\textbf{Cloning.} Someone tries to copy their wristband onto another chip so they can use the same balance twice. DESFire chips have a unique, factory-programmed identifier (UID) that cannot be changed or duplicated. The system can bind the balance data to this UID, so even if someone managed to copy the data files (which they cannot without the key), the clone would have a different UID and would be rejected by the vendor terminal.
-
-\textbf{Secure communication with the soft POS.} The vendor's phone acts as the POS terminal, and the communication between the app and the NFC chip needs to be protected. DESFire EV3 supports secure messaging, which means the data exchanged between the chip and the reader is encrypted and authenticated in both directions. An attacker cannot eavesdrop on the NFC communication to extract the key, and cannot inject fake commands to the chip.
-
-Each transaction also includes a rolling counter that chains transactions together. If someone did manage to tamper with the balance somehow, the chain would break, and the system would detect it the next time the wristband is scanned by a legitimate terminal.
-
-We discuss these security considerations in much more detail in Chapter~\ref{chap:security}, including the threat model, the key management strategy, and what happens when the system detects a compromised wristband.
+The full threat model, the upgrade path to authenticated chips like DESFire EV2/EV3 with AES-128 mutual authentication, the key management strategy, and the procedure for handling a detected compromise are all covered in Chapter~\ref{chap:security}.
 
 \section{The mobile application}
 \label{sec:mobile-app}

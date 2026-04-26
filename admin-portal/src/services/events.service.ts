@@ -37,8 +37,11 @@ export const eventsService = {
     return api.get<EventMember[]>(`/events/${eventId}/members`);
   },
 
-  addMember(eventId: string, userId: string, role: EventMemberRole) {
-    return api.post<EventMember>(`/events/${eventId}/members`, { userId, role });
+  addMember(
+    eventId: string,
+    payload: { userId?: string; email?: string; role: EventMemberRole },
+  ) {
+    return api.post<EventMember>(`/events/${eventId}/members`, payload);
   },
 
   removeMember(eventId: string, memberId: string) {

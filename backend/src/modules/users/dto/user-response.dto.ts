@@ -15,8 +15,8 @@ export class UserResponseDto {
   phone: string | null;
 
   @ApiProperty({
-    description: 'User role',
-    enum: ['super_admin', 'admin', 'operator', 'vendor', 'attendee'],
+    description: 'Global role. Per-event/per-vendor authority comes from membership rows.',
+    enum: ['super_admin', 'user'],
   })
   role: string;
 

@@ -21,7 +21,7 @@ export const users = pgTable('user', {
     .defaultNow(),
   // Custom fields
   phone: varchar('phone', { length: 50 }),
-  role: userRoleEnum('role').notNull().default('attendee'),
+  role: userRoleEnum('role').notNull().default('user'),
   isActive: boolean('is_active').notNull().default(true),
 });
 

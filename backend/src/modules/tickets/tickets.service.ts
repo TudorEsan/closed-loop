@@ -1,26 +1,23 @@
 import {
   BadRequestException,
   ConflictException,
-  ForbiddenException,
   Inject,
   Injectable,
   Logger,
   NotFoundException,
 } from '@nestjs/common';
-import { and, desc, eq, ilike, or, type SQL } from 'drizzle-orm';
+import { and, desc, eq, ilike, type SQL } from 'drizzle-orm';
 import { randomBytes } from 'crypto';
 import * as QRCode from 'qrcode';
 
 import { DRIZZLE } from '@common/database/drizzle.module';
 import { DrizzleClient } from '@common/database/drizzle.client';
+import { ScopeService } from '@common/auth/scope.service';
 import {
   auditLogs,
   eventBracelets,
-  eventMembers,
   eventTickets,
-  events,
   users,
-  wallets,
 } from '@common/database/schemas';
 import { EmailService } from '@common/email/email.service';
 import { BraceletTokenService } from '../bracelets/bracelet-token.service';
@@ -43,6 +40,7 @@ export class TicketsService {
     @Inject(DRIZZLE) private readonly db: DrizzleClient,
     private readonly tokens: BraceletTokenService,
     private readonly email: EmailService,
+    private readonly scope: ScopeService,
   ) {}
 
   async issue(
@@ -52,11 +50,13 @@ export class TicketsService {
     dto: IssueTicketDto,
     ipAddress: string | null,
   ) {
-    const event = await this.requireManageableEvent(
-      eventId,
+    const { event } = await this.scope.requireEventRole(
       adminId,
       adminRole,
+      eventId,
+      'admin',
     );
+    this.assertEventOpen(event.status);
 
     const normalizedEmail = dto.email.trim().toLowerCase();
     const expiresAt = this.tokens.expiryFromEventEnd(new Date(event.endDate));
@@ -124,7 +124,7 @@ export class TicketsService {
     callerRole: string,
     query: ListTicketsDto,
   ) {
-    await this.requireEventAccess(eventId, callerId, callerRole);
+    await this.scope.requireEventRole(callerId, callerRole, eventId);
 
     const conditions: SQL<unknown>[] = [eq(eventTickets.eventId, eventId)];
     if (query.status) {
@@ -151,7 +151,14 @@ export class TicketsService {
     adminRole: string,
     ipAddress: string | null,
   ) {
-    await this.requireManageableEvent(eventId, adminId, adminRole);
+    const { event } = await this.scope.requireEventRole(
+      adminId,
+      adminRole,
+      eventId,
+      'admin',
+    );
+    this.assertEventOpen(event.status);
+
     const current = await this.requireTicket(eventId, ticketId);
 
     if (current.status !== 'pending') {
@@ -195,24 +202,18 @@ export class TicketsService {
       throw new NotFoundException('Ticket not found or already used');
     }
 
-    const event = await this.requireEvent(ticket.eventId);
-    const isAdmin = await this.isEventAdmin(
-      event.id,
+    // Operators (any event member) and admins can redeem at the gate.
+    const { event } = await this.scope.requireEventRole(
       operatorId,
       operatorRole,
-      event.organizerId,
+      ticket.eventId,
+      'operator',
     );
-    const isOperator =
-      operatorRole === 'operator' &&
-      (await this.isEventMember(event.id, operatorId));
-    if (!isAdmin && !isOperator) {
-      throw new ForbiddenException(
-        'Only event admins or assigned operators can redeem tickets at the gate',
-      );
-    }
 
     if (event.status === 'closed') {
-      throw new BadRequestException('Event is closed, tickets cannot be redeemed');
+      throw new BadRequestException(
+        'Event is closed, tickets cannot be redeemed',
+      );
     }
 
     if (ticket.status === 'redeemed') {
@@ -295,6 +296,14 @@ export class TicketsService {
 
   // ---- helpers ----
 
+  private assertEventOpen(status: string) {
+    if (status === 'closed') {
+      throw new BadRequestException(
+        'Event is closed, tickets cannot be issued',
+      );
+    }
+  }
+
   private toPublic(row: typeof eventTickets.$inferSelect) {
     return {
       id: row.id,
@@ -332,106 +341,9 @@ export class TicketsService {
     return rows[0];
   }
 
-  private async requireEvent(eventId: string) {
-    const event = await this.db
-      .select()
-      .from(events)
-      .where(eq(events.id, eventId))
-      .limit(1);
-    if (event.length === 0) {
-      throw new NotFoundException(`Event with ID ${eventId} not found`);
-    }
-    return event[0];
-  }
-
-  private async requireManageableEvent(
-    eventId: string,
-    userId: string,
-    userRole: string,
-  ) {
-    const event = await this.requireEvent(eventId);
-    const allowed = await this.isEventAdmin(
-      eventId,
-      userId,
-      userRole,
-      event.organizerId,
-    );
-    if (!allowed) {
-      throw new ForbiddenException(
-        'Only super admins or event admins can manage tickets',
-      );
-    }
-    if (event.status === 'closed') {
-      throw new BadRequestException(
-        'Event is closed, tickets cannot be issued',
-      );
-    }
-    return event;
-  }
-
-  private async requireEventAccess(
-    eventId: string,
-    userId: string,
-    userRole: string,
-  ) {
-    const event = await this.requireEvent(eventId);
-    if (userRole === 'super_admin') return event;
-    if (await this.isEventAdmin(eventId, userId, userRole, event.organizerId)) {
-      return event;
-    }
-    if (
-      userRole === 'operator' &&
-      (await this.isEventMember(eventId, userId))
-    ) {
-      return event;
-    }
-    throw new ForbiddenException('You do not have access to this event');
-  }
-
-  private async isEventAdmin(
-    eventId: string,
-    userId: string,
-    userRole: string,
-    organizerId: string,
-  ): Promise<boolean> {
-    if (userRole === 'super_admin') return true;
-    if (organizerId === userId) return true;
-    const membership = await this.db
-      .select({ id: eventMembers.id })
-      .from(eventMembers)
-      .where(
-        and(
-          eq(eventMembers.eventId, eventId),
-          eq(eventMembers.userId, userId),
-          or(
-            eq(eventMembers.role, 'organizer'),
-            eq(eventMembers.role, 'admin'),
-          ),
-        ),
-      )
-      .limit(1);
-    return membership.length > 0;
-  }
-
-  private async isEventMember(
-    eventId: string,
-    userId: string,
-  ): Promise<boolean> {
-    const rows = await this.db
-      .select({ id: eventMembers.id })
-      .from(eventMembers)
-      .where(
-        and(eq(eventMembers.eventId, eventId), eq(eventMembers.userId, userId)),
-      )
-      .limit(1);
-    return rows.length > 0;
-  }
-
-  // Find or create the user behind a ticket's email. Created users are
-  // attendees with a verified email (the email-verification happened
-  // implicitly when the operator scanned a ticket sent to that address).
-  // Wallet is provisioned alongside since the better-auth user.create
-  // hook does not fire on direct inserts.
+  // Find or create the user behind a ticket's email. Created users become
+  // regular users with a verified email (the email-verification happens
+  // implicitly when the operator scans a ticket sent to that address).
   private async upsertUserByEmail(email: string): Promise<string> {
     const existing = await this.db
       .select({ id: users.id, isActive: users.isActive })
@@ -449,18 +361,12 @@ export class TicketsService {
 
     const id = crypto.randomUUID();
     const fallbackName = email.split('@')[0] || 'Attendee';
-    await this.db.transaction(async (tx) => {
-      await tx.insert(users).values({
-        id,
-        email,
-        name: fallbackName,
-        emailVerified: true,
-        role: 'attendee',
-      });
-      await tx
-        .insert(wallets)
-        .values({ userId: id })
-        .onConflictDoNothing({ target: wallets.userId });
+    await this.db.insert(users).values({
+      id,
+      email,
+      name: fallbackName,
+      emailVerified: true,
+      role: 'user',
     });
     return id;
   }

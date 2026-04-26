@@ -19,56 +19,54 @@
 \contentsline {subsection}{\numberline {2.3.3}Transaction Ordering and Why Timestamps Are Enough}{21}{subsection.2.3.3}%
 \contentsline {chapter}{\numberline {3}System Architecture}{23}{chapter.3}%
 \contentsline {section}{\numberline {3.1}High-level overview}{23}{section.3.1}%
-\contentsline {section}{\numberline {3.2}Why this architecture}{24}{section.3.2}%
-\contentsline {subsection}{\numberline {3.2.1}Architecture comparison}{24}{subsection.3.2.1}%
-\contentsline {subsection}{\numberline {3.2.2}What we learned from existing systems}{26}{subsection.3.2.2}%
-\contentsline {subsection}{\numberline {3.2.3}What we took from the architectural patterns}{27}{subsection.3.2.3}%
-\contentsline {section}{\numberline {3.3}NFC wristbands and offline support}{29}{section.3.3}%
-\contentsline {subsection}{\numberline {3.3.1}How a payment works}{29}{subsection.3.3.1}%
-\contentsline {subsection}{\numberline {3.3.2}Offline operation}{30}{subsection.3.3.2}%
-\contentsline {subsection}{\numberline {3.3.3}Reconciliation}{30}{subsection.3.3.3}%
-\contentsline {subsection}{\numberline {3.3.4}Top-ups: the one thing that needs the network}{31}{subsection.3.3.4}%
-\contentsline {subsection}{\numberline {3.3.5}Security of the wristband balance}{31}{subsection.3.3.5}%
-\contentsline {section}{\numberline {3.4}The mobile application}{32}{section.3.4}%
-\contentsline {subsection}{\numberline {3.4.1}Attendee view}{32}{subsection.3.4.1}%
-\contentsline {subsection}{\numberline {3.4.2}Vendor POS mode}{32}{subsection.3.4.2}%
-\contentsline {subsection}{\numberline {3.4.3}Device security checks}{33}{subsection.3.4.3}%
-\contentsline {section}{\numberline {3.5}Admin dashboard}{33}{section.3.5}%
-\contentsline {section}{\numberline {3.6}Backend server}{34}{section.3.6}%
-\contentsline {subsection}{\numberline {3.6.1}Why a single service, not microservices}{34}{subsection.3.6.1}%
-\contentsline {subsection}{\numberline {3.6.2}Multi-tenancy}{35}{subsection.3.6.2}%
-\contentsline {subsection}{\numberline {3.6.3}Horizontal scalability}{35}{subsection.3.6.3}%
-\contentsline {section}{\numberline {3.7}Database: PostgreSQL}{36}{section.3.7}%
-\contentsline {subsection}{\numberline {3.7.1}Why PostgreSQL}{36}{subsection.3.7.1}%
-\contentsline {subsection}{\numberline {3.7.2}Why a single database is enough}{36}{subsection.3.7.2}%
-\contentsline {chapter}{\numberline {4}Implementation}{38}{chapter.4}%
-\contentsline {section}{\numberline {4.1}NFC wristband integration}{39}{section.4.1}%
-\contentsline {subsection}{\numberline {4.1.1}DESFire authentication flow}{39}{subsection.4.1.1}%
-\contentsline {subsection}{\numberline {4.1.2}Balance read/write protocol}{39}{subsection.4.1.2}%
-\contentsline {section}{\numberline {4.2}Mobile application}{39}{section.4.2}%
-\contentsline {subsection}{\numberline {4.2.1}Attendee screens}{39}{subsection.4.2.1}%
-\contentsline {subsection}{\numberline {4.2.2}Vendor POS mode}{39}{subsection.4.2.2}%
-\contentsline {subsection}{\numberline {4.2.3}Device security checks}{39}{subsection.4.2.3}%
-\contentsline {section}{\numberline {4.3}Admin dashboard}{39}{section.4.3}%
-\contentsline {section}{\numberline {4.4}Backend server}{39}{section.4.4}%
-\contentsline {subsection}{\numberline {4.4.1}Authentication and authorization}{39}{subsection.4.4.1}%
-\contentsline {subsection}{\numberline {4.4.2}Event management module}{39}{subsection.4.4.2}%
-\contentsline {subsection}{\numberline {4.4.3}Sync and reconciliation}{39}{subsection.4.4.3}%
-\contentsline {subsection}{\numberline {4.4.4}Stripe integration}{39}{subsection.4.4.4}%
-\contentsline {section}{\numberline {4.5}Database implementation}{39}{section.4.5}%
-\contentsline {section}{\numberline {4.6}Offline transaction queue and sync protocol}{39}{section.4.6}%
-\contentsline {chapter}{\numberline {5}Security Considerations}{40}{chapter.5}%
-\contentsline {section}{\numberline {5.1}Authentication and Authorization}{40}{section.5.1}%
-\contentsline {section}{\numberline {5.2}Wallet Integrity and Double-Spend Prevention}{40}{section.5.2}%
-\contentsline {subsection}{\numberline {5.2.1}Online Mode}{40}{subsection.5.2.1}%
-\contentsline {subsection}{\numberline {5.2.2}Offline Mode}{40}{subsection.5.2.2}%
-\contentsline {section}{\numberline {5.3}Offline Trust Model}{40}{section.5.3}%
-\contentsline {section}{\numberline {5.4}Stripe and Payment Security}{40}{section.5.4}%
-\contentsline {section}{\numberline {5.5}Data Protection}{40}{section.5.5}%
-\contentsline {chapter}{\numberline {6}Discussion}{41}{chapter.6}%
-\contentsline {section}{\numberline {6.1}Design Trade-offs}{41}{section.6.1}%
-\contentsline {section}{\numberline {6.2}Comparison with Existing Solutions}{41}{section.6.2}%
-\contentsline {section}{\numberline {6.3}Limitations}{41}{section.6.3}%
-\contentsline {section}{\numberline {6.4}Further Improvements}{41}{section.6.4}%
-\contentsline {chapter}{\numberline {7}Conclusions}{42}{chapter.7}%
-\contentsline {chapter}{Bibliography}{43}{chapter*.2}%
+\contentsline {subsection}{\numberline {3.1.1}The hybrid reconciliation model}{24}{subsection.3.1.1}%
+\contentsline {section}{\numberline {3.2}Balance reconciliation model}{25}{section.3.2}%
+\contentsline {subsection}{\numberline {3.2.1}State on each side}{25}{subsection.3.2.1}%
+\contentsline {subsection}{\numberline {3.2.2}Invariants}{26}{subsection.3.2.2}%
+\contentsline {subsection}{\numberline {3.2.3}The four operations}{27}{subsection.3.2.3}%
+\contentsline {subsection}{\numberline {3.2.4}Worked example}{27}{subsection.3.2.4}%
+\contentsline {subsection}{\numberline {3.2.5}Lost transactions}{28}{subsection.3.2.5}%
+\contentsline {subsection}{\numberline {3.2.6}Comparison with alternatives}{28}{subsection.3.2.6}%
+\contentsline {section}{\numberline {3.3}Lessons from related systems and patterns}{29}{section.3.3}%
+\contentsline {subsection}{\numberline {3.3.1}What we learned from existing systems}{29}{subsection.3.3.1}%
+\contentsline {subsection}{\numberline {3.3.2}What we took from the architectural patterns}{30}{subsection.3.3.2}%
+\contentsline {section}{\numberline {3.4}NFC wristbands and offline support}{32}{section.3.4}%
+\contentsline {subsection}{\numberline {3.4.1}How a payment works}{32}{subsection.3.4.1}%
+\contentsline {subsection}{\numberline {3.4.2}Offline operation}{33}{subsection.3.4.2}%
+\contentsline {subsection}{\numberline {3.4.3}Top-ups: the one thing that needs the network}{33}{subsection.3.4.3}%
+\contentsline {subsection}{\numberline {3.4.4}Security of the wristband balance}{33}{subsection.3.4.4}%
+\contentsline {section}{\numberline {3.5}The mobile application}{34}{section.3.5}%
+\contentsline {subsection}{\numberline {3.5.1}Attendee view}{34}{subsection.3.5.1}%
+\contentsline {subsection}{\numberline {3.5.2}Vendor POS mode}{34}{subsection.3.5.2}%
+\contentsline {subsection}{\numberline {3.5.3}Device security checks}{35}{subsection.3.5.3}%
+\contentsline {section}{\numberline {3.6}Admin dashboard}{35}{section.3.6}%
+\contentsline {section}{\numberline {3.7}Backend server}{36}{section.3.7}%
+\contentsline {subsection}{\numberline {3.7.1}Why a single service, not microservices}{36}{subsection.3.7.1}%
+\contentsline {subsection}{\numberline {3.7.2}Multi-tenancy}{37}{subsection.3.7.2}%
+\contentsline {subsection}{\numberline {3.7.3}Horizontal scalability}{37}{subsection.3.7.3}%
+\contentsline {section}{\numberline {3.8}Database: PostgreSQL}{38}{section.3.8}%
+\contentsline {subsection}{\numberline {3.8.1}Why PostgreSQL}{38}{subsection.3.8.1}%
+\contentsline {subsection}{\numberline {3.8.2}Why a single database is enough}{38}{subsection.3.8.2}%
+\contentsline {chapter}{\numberline {4}Implementation}{40}{chapter.4}%
+\contentsline {section}{\numberline {4.1}Implementation overview}{40}{section.4.1}%
+\contentsline {section}{\numberline {4.2}Database schema for the hybrid model}{41}{section.4.2}%
+\contentsline {section}{\numberline {4.3}The reconciliation service and sync endpoint}{42}{section.4.3}%
+\contentsline {section}{\numberline {4.4}Chip data layout and HMAC}{44}{section.4.4}%
+\contentsline {section}{\numberline {4.5}Online debit path}{45}{section.4.5}%
+\contentsline {section}{\numberline {4.6}Offline debit path and the queue}{46}{section.4.6}%
+\contentsline {section}{\numberline {4.7}Topup path}{47}{section.4.7}%
+\contentsline {chapter}{\numberline {5}Security Considerations}{48}{chapter.5}%
+\contentsline {section}{\numberline {5.1}Authentication and Authorization}{48}{section.5.1}%
+\contentsline {section}{\numberline {5.2}Wallet Integrity and Double-Spend Prevention}{48}{section.5.2}%
+\contentsline {subsection}{\numberline {5.2.1}Online Mode}{48}{subsection.5.2.1}%
+\contentsline {subsection}{\numberline {5.2.2}Offline Mode}{48}{subsection.5.2.2}%
+\contentsline {section}{\numberline {5.3}Offline Trust Model}{48}{section.5.3}%
+\contentsline {section}{\numberline {5.4}Stripe and Payment Security}{48}{section.5.4}%
+\contentsline {section}{\numberline {5.5}Data Protection}{48}{section.5.5}%
+\contentsline {chapter}{\numberline {6}Discussion}{49}{chapter.6}%
+\contentsline {section}{\numberline {6.1}Design Trade-offs}{49}{section.6.1}%
+\contentsline {section}{\numberline {6.2}Comparison with Existing Solutions}{49}{section.6.2}%
+\contentsline {section}{\numberline {6.3}Limitations}{49}{section.6.3}%
+\contentsline {section}{\numberline {6.4}Further Improvements}{49}{section.6.4}%
+\contentsline {chapter}{\numberline {7}Conclusions}{50}{chapter.7}%
+\contentsline {chapter}{Bibliography}{51}{chapter*.2}%

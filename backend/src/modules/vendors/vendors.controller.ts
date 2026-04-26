@@ -9,7 +9,6 @@ import {
   Body,
 } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth } from '@nestjs/swagger';
-import { Roles } from '@common/decorators/roles.decorator';
 import { CurrentUser } from '@common/decorators/current-user.decorator';
 import { VendorsService } from './vendors.service';
 import { CreateVendorDto } from './dto/create-vendor.dto';
@@ -17,7 +16,6 @@ import { UpdateVendorDto } from './dto/update-vendor.dto';
 import { UpdateVendorStatusDto } from './dto/update-vendor-status.dto';
 import { UpdateCommissionDto } from './dto/update-commission.dto';
 import { VendorQueryDto } from './dto/vendor-query.dto';
-import { InviteMemberDto } from './dto/invite-member.dto';
 import { UpdateMemberRoleDto } from './dto/update-member-role.dto';
 
 @ApiTags('Vendors')
@@ -27,7 +25,6 @@ export class VendorsController {
   constructor(private readonly vendorsService: VendorsService) {}
 
   @Post()
-  @Roles('super_admin', 'admin', 'vendor')
   async create(
     @Param('eventId') eventId: string,
     @Body() dto: CreateVendorDto,
@@ -37,7 +34,6 @@ export class VendorsController {
   }
 
   @Get()
-  @Roles('super_admin', 'admin', 'operator', 'vendor')
   async findAll(
     @Param('eventId') eventId: string,
     @Query() query: VendorQueryDto,
@@ -52,7 +48,6 @@ export class VendorsController {
   }
 
   @Get(':id')
-  @Roles('super_admin', 'admin', 'operator', 'vendor')
   async findOne(
     @Param('eventId') eventId: string,
     @Param('id') id: string,
@@ -62,7 +57,6 @@ export class VendorsController {
   }
 
   @Patch(':id')
-  @Roles('super_admin', 'admin', 'vendor')
   async update(
     @Param('eventId') eventId: string,
     @Param('id') id: string,
@@ -73,7 +67,6 @@ export class VendorsController {
   }
 
   @Patch(':id/status')
-  @Roles('super_admin', 'admin')
   async updateStatus(
     @Param('eventId') eventId: string,
     @Param('id') id: string,
@@ -90,7 +83,6 @@ export class VendorsController {
   }
 
   @Patch(':id/commission')
-  @Roles('super_admin', 'admin')
   async updateCommission(
     @Param('eventId') eventId: string,
     @Param('id') id: string,
@@ -107,7 +99,6 @@ export class VendorsController {
   }
 
   @Delete(':id')
-  @Roles('super_admin', 'admin')
   async remove(
     @Param('eventId') eventId: string,
     @Param('id') id: string,
@@ -119,7 +110,6 @@ export class VendorsController {
   // ---- Vendor Members ----
 
   @Get(':vendorId/members')
-  @Roles('super_admin', 'admin', 'vendor')
   async findMembers(
     @Param('eventId') eventId: string,
     @Param('vendorId') vendorId: string,
@@ -133,25 +123,7 @@ export class VendorsController {
     );
   }
 
-  @Post(':vendorId/members/invite')
-  @Roles('super_admin', 'admin', 'vendor')
-  async inviteMember(
-    @Param('eventId') eventId: string,
-    @Param('vendorId') vendorId: string,
-    @Body() dto: InviteMemberDto,
-    @CurrentUser() user: { id: string; role: string },
-  ) {
-    return this.vendorsService.inviteMember(
-      eventId,
-      vendorId,
-      user.id,
-      user.role,
-      dto,
-    );
-  }
-
   @Patch(':vendorId/members/:memberId')
-  @Roles('super_admin', 'admin', 'vendor')
   async updateMemberRole(
     @Param('eventId') eventId: string,
     @Param('vendorId') vendorId: string,
@@ -170,7 +142,6 @@ export class VendorsController {
   }
 
   @Delete(':vendorId/members/:memberId')
-  @Roles('super_admin', 'admin', 'vendor')
   async removeMember(
     @Param('eventId') eventId: string,
     @Param('vendorId') vendorId: string,
@@ -184,22 +155,5 @@ export class VendorsController {
       user.id,
       user.role,
     );
-  }
-}
-
-// Separate controller for invitation acceptance (not nested under events)
-@ApiTags('Vendor Invitations')
-@ApiBearerAuth()
-@Controller('vendor-invitations')
-export class VendorInvitationsController {
-  constructor(private readonly vendorsService: VendorsService) {}
-
-  @Post(':token/accept')
-  @Roles('super_admin', 'admin', 'vendor', 'attendee')
-  async acceptInvitation(
-    @Param('token') token: string,
-    @CurrentUser() user: { id: string; role: string },
-  ) {
-    return this.vendorsService.acceptInvitation(token, user.id);
   }
 }

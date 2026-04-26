@@ -1,13 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsIn } from 'class-validator';
 
-const VALID_ROLES = [
-  'super_admin',
-  'admin',
-  'operator',
-  'vendor',
-  'attendee',
-] as const;
+const VALID_ROLES = ['super_admin', 'user'] as const;
 
 export class UpdateRoleDto {
   @ApiProperty({

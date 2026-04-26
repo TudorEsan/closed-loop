@@ -994,6 +994,7 @@ function AddMemberDialog({
   const queryClient = useQueryClient();
   const [searchEmail, setSearchEmail] = useState('');
   const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [inviteEmail, setInviteEmail] = useState<string | null>(null);
   const [selectedRole, setSelectedRole] = useState<EventMemberRole>('operator');
 
   const debouncedEmail = useDebounce(searchEmail, 300);
@@ -1005,14 +1006,26 @@ function AddMemberDialog({
     enabled: debouncedEmail.length >= 3,
   });
 
+  const isValidEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+
   const addMutation = useMutation({
-    mutationFn: () =>
-      eventsService.addMember(eventId, selectedUser!.id, selectedRole),
+    mutationFn: () => {
+      if (selectedUser) {
+        return eventsService.addMember(eventId, {
+          userId: selectedUser.id,
+          role: selectedRole,
+        });
+      }
+      return eventsService.addMember(eventId, {
+        email: inviteEmail!,
+        role: selectedRole,
+      });
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: ['events', eventId, 'members'],
       });
-      toast.success('Member added');
+      toast.success(inviteEmail ? 'Invitation sent' : 'Member added');
       onOpenChange(false);
       resetForm();
     },
@@ -1024,6 +1037,7 @@ function AddMemberDialog({
   const resetForm = useCallback(() => {
     setSearchEmail('');
     setSelectedUser(null);
+    setInviteEmail(null);
     setSelectedRole('operator');
   }, []);
 
@@ -1042,7 +1056,7 @@ function AddMemberDialog({
         </DialogHeader>
 
         <div className="space-y-4">
-          {!selectedUser ? (
+          {!selectedUser && !inviteEmail ? (
             <div className="space-y-2">
               <Field>
                 <FieldLabel htmlFor="search-email">Search by email</FieldLabel>
@@ -1082,20 +1096,59 @@ function AddMemberDialog({
                 </div>
               )}
 
-              {searchResults && searchResults.length === 0 && debouncedEmail.length >= 3 && (
-                <p className="py-2 text-sm text-muted-foreground">
-                  No users found for that email.
-                </p>
-              )}
+              {searchResults &&
+                searchResults.length === 0 &&
+                debouncedEmail.length >= 3 && (
+                  <div className="space-y-2 rounded-lg border border-dashed p-3">
+                    <p className="text-sm text-muted-foreground">
+                      No users found for that email.
+                    </p>
+                    {isValidEmail(debouncedEmail) ? (
+                      <Button
+                        type="button"
+                        variant="outline"
+                        size="sm"
+                        className="w-full"
+                        onClick={() => setInviteEmail(debouncedEmail)}
+                      >
+                        Invite {debouncedEmail}
+                      </Button>
+                    ) : (
+                      <p className="text-xs text-muted-foreground">
+                        Enter a full email address to send an invite.
+                      </p>
+                    )}
+                  </div>
+                )}
             </div>
           ) : (
             <div className="space-y-4">
               <div className="flex items-center gap-3 rounded-lg border p-3">
                 <div className="min-w-0 flex-1">
-                  <p className="truncate font-medium">{selectedUser.name}</p>
-                  <p className="truncate text-sm text-muted-foreground">{selectedUser.email}</p>
+                  {selectedUser ? (
+                    <>
+                      <p className="truncate font-medium">{selectedUser.name}</p>
+                      <p className="truncate text-sm text-muted-foreground">
+                        {selectedUser.email}
+                      </p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="truncate font-medium">New invite</p>
+                      <p className="truncate text-sm text-muted-foreground">
+                        {inviteEmail}
+                      </p>
+                    </>
+                  )}
                 </div>
-                <Button variant="ghost" size="sm" onClick={() => setSelectedUser(null)}>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => {
+                    setSelectedUser(null);
+                    setInviteEmail(null);
+                  }}
+                >
                   Change
                 </Button>
               </div>
@@ -1126,10 +1179,10 @@ function AddMemberDialog({
           </Button>
           <Button
             onClick={() => addMutation.mutate()}
-            disabled={!selectedUser || addMutation.isPending}
+            disabled={(!selectedUser && !inviteEmail) || addMutation.isPending}
           >
             {addMutation.isPending && <Loader2 className="size-4 animate-spin" />}
-            Add Member
+            {inviteEmail ? 'Send Invite' : 'Add Member'}
           </Button>
         </DialogFooter>
       </DialogContent>

@@ -1,7 +1,6 @@
 import {
   BadRequestException,
   ConflictException,
-  ForbiddenException,
   Inject,
   Injectable,
   NotFoundException,
@@ -9,14 +8,13 @@ import {
 import { and, desc, eq, ilike, lt, or, type SQL } from 'drizzle-orm';
 import { DRIZZLE } from '@common/database/drizzle.module';
 import { DrizzleClient } from '@common/database/drizzle.client';
+import { ScopeService } from '@common/auth/scope.service';
 import {
   auditLogs,
   eventBracelets,
-  eventMembers,
   events,
+  transactions,
   users,
-  vendors,
-  vendorMembers,
 } from '@common/database/schemas';
 import { LinkBraceletDto } from './dto/link-bracelet.dto';
 import { ReplaceBraceletDto } from './dto/replace-bracelet.dto';
@@ -37,6 +35,7 @@ export class BraceletsService {
   constructor(
     @Inject(DRIZZLE) private readonly db: DrizzleClient,
     private readonly tokens: BraceletTokenService,
+    private readonly scope: ScopeService,
   ) {}
 
   async link(
@@ -46,11 +45,13 @@ export class BraceletsService {
     dto: LinkBraceletDto,
     ipAddress: string | null,
   ) {
-    const event = await this.requireManageableEvent(
-      eventId,
+    const { event } = await this.scope.requireEventRole(
       adminId,
       adminRole,
+      eventId,
+      'admin',
     );
+    this.assertEventOpen(event.status);
 
     const targetUser = await this.db
       .select({ id: users.id, isActive: users.isActive })
@@ -105,11 +106,11 @@ export class BraceletsService {
 
   async list(
     eventId: string,
-    adminId: string,
-    adminRole: string,
+    callerId: string,
+    callerRole: string,
     query: ListBraceletsDto,
   ) {
-    await this.requireEventAccess(eventId, adminId, adminRole);
+    await this.scope.requireEventRole(callerId, callerRole, eventId);
 
     const { status, search, limit = 20, cursor } = query;
     const conditions: SQL<unknown>[] = [eq(eventBracelets.eventId, eventId)];
@@ -164,20 +165,22 @@ export class BraceletsService {
   async findOne(
     eventId: string,
     assignmentId: string,
-    adminId: string,
-    adminRole: string,
+    callerId: string,
+    callerRole: string,
   ) {
-    await this.requireEventAccess(eventId, adminId, adminRole);
+    await this.scope.requireEventRole(callerId, callerRole, eventId);
     return this.requireAssignment(eventId, assignmentId);
   }
 
   async findByUid(
     eventId: string,
     uid: string,
-    adminId: string,
-    adminRole: string,
+    callerId: string,
+    callerRole: string,
   ) {
-    await this.requireEventAccess(eventId, adminId, adminRole);
+    // Vendor cashiers also need to look up bracelets at the gate, so this
+    // accepts both event members and vendor members.
+    await this.scope.requireEventOrVendorAccess(callerId, callerRole, eventId);
 
     const rows = await this.db
       .select()
@@ -208,7 +211,14 @@ export class BraceletsService {
     dto: RevokeBraceletDto,
     ipAddress: string | null,
   ) {
-    await this.requireManageableEvent(eventId, adminId, adminRole);
+    const { event } = await this.scope.requireEventRole(
+      adminId,
+      adminRole,
+      eventId,
+      'admin',
+    );
+    this.assertEventOpen(event.status);
+
     const current = await this.requireAssignment(eventId, assignmentId);
 
     if (current.status !== 'active') {
@@ -252,11 +262,14 @@ export class BraceletsService {
     dto: ReplaceBraceletDto,
     ipAddress: string | null,
   ) {
-    const event = await this.requireManageableEvent(
-      eventId,
+    const { event } = await this.scope.requireEventRole(
       adminId,
       adminRole,
+      eventId,
+      'admin',
     );
+    this.assertEventOpen(event.status);
+
     const current = await this.requireAssignment(eventId, assignmentId);
 
     if (current.status !== 'active') {
@@ -327,10 +340,69 @@ export class BraceletsService {
     }
   }
 
-  // Attendee-facing list of festivals the user is part of. With the
-  // ticket-based linking flow, "being part of a festival" means having
-  // an active wristband for it. The QR is no longer issued from the
-  // user's app, it is delivered by email and redeemed at the gate.
+  // Attendee-facing list of their active bracelets across events. Each row
+  // carries the live balance and the counters since the bracelet IS the
+  // wallet now.
+  async myBracelets(userId: string) {
+    const rows = await this.db
+      .select()
+      .from(eventBracelets)
+      .where(
+        and(
+          eq(eventBracelets.userId, userId),
+          eq(eventBracelets.status, 'active'),
+        ),
+      )
+      .orderBy(desc(eventBracelets.linkedAt));
+    return { bracelets: rows };
+  }
+
+  async myBraceletTransactions(
+    userId: string,
+    braceletId: string,
+    params: { limit?: number; cursor?: string } = {},
+  ) {
+    const owned = await this.db
+      .select()
+      .from(eventBracelets)
+      .where(
+        and(
+          eq(eventBracelets.id, braceletId),
+          eq(eventBracelets.userId, userId),
+        ),
+      )
+      .limit(1);
+    if (owned.length === 0) {
+      throw new NotFoundException('Bracelet not found');
+    }
+
+    const limit = Math.min(params.limit ?? 20, 100);
+    const conditions: SQL<unknown>[] = [
+      eq(transactions.eventBraceletId, braceletId),
+    ];
+    if (params.cursor) {
+      const cursorRow = await this.db
+        .select({ createdAt: transactions.createdAt })
+        .from(transactions)
+        .where(eq(transactions.id, params.cursor))
+        .limit(1);
+      if (cursorRow.length > 0) {
+        conditions.push(lt(transactions.createdAt, cursorRow[0].createdAt));
+      }
+    }
+    const rows = await this.db
+      .select()
+      .from(transactions)
+      .where(and(...conditions))
+      .orderBy(desc(transactions.createdAt))
+      .limit(limit + 1);
+
+    const hasMore = rows.length > limit;
+    const items = hasMore ? rows.slice(0, limit) : rows;
+    const nextCursor = hasMore ? items[items.length - 1].id : null;
+    return { transactions: items, nextCursor };
+  }
+
   async myEvents(userId: string) {
     const rows = await this.db
       .select({
@@ -356,7 +428,7 @@ export class BraceletsService {
   }
 
   async syncBundle(eventId: string, callerId: string, callerRole: string) {
-    await this.requireEventAccess(eventId, callerId, callerRole);
+    await this.scope.requireEventOrVendorAccess(callerId, callerRole, eventId);
 
     const rows = await this.db
       .select()
@@ -377,6 +449,14 @@ export class BraceletsService {
   }
 
   // ---- Helpers ----
+
+  private assertEventOpen(status: string) {
+    if (status === 'closed') {
+      throw new BadRequestException(
+        'Event is closed, bracelet links cannot change',
+      );
+    }
+  }
 
   private toAssignmentWithToken(row: typeof eventBracelets.$inferSelect) {
     const payload: BraceletTokenPayload = {
@@ -409,118 +489,6 @@ export class BraceletsService {
       throw new NotFoundException('Bracelet assignment not found');
     }
     return rows[0];
-  }
-
-  private async requireManageableEvent(
-    eventId: string,
-    userId: string,
-    userRole: string,
-  ) {
-    const event = await this.requireEvent(eventId);
-    const allowed = await this.isEventAdmin(
-      eventId,
-      userId,
-      userRole,
-      event.organizerId,
-    );
-    if (!allowed) {
-      throw new ForbiddenException(
-        'Only super admins or event admins can manage bracelets',
-      );
-    }
-    if (event.status === 'closed') {
-      throw new BadRequestException(
-        'Event is closed, bracelet links cannot change',
-      );
-    }
-    return event;
-  }
-
-  private async requireEventAccess(
-    eventId: string,
-    userId: string,
-    userRole: string,
-  ) {
-    const event = await this.requireEvent(eventId);
-    if (userRole === 'super_admin') return event;
-
-    if (await this.isEventAdmin(eventId, userId, userRole, event.organizerId)) {
-      return event;
-    }
-
-    if (userRole === 'vendor' || userRole === 'operator') {
-      if (await this.isVendorMemberAtEvent(eventId, userId)) return event;
-    }
-
-    throw new ForbiddenException('You do not have access to this event');
-  }
-
-  private async isEventMember(
-    eventId: string,
-    userId: string,
-  ): Promise<boolean> {
-    const rows = await this.db
-      .select({ id: eventMembers.id })
-      .from(eventMembers)
-      .where(
-        and(eq(eventMembers.eventId, eventId), eq(eventMembers.userId, userId)),
-      )
-      .limit(1);
-    return rows.length > 0;
-  }
-
-  private async isVendorMemberAtEvent(
-    eventId: string,
-    userId: string,
-  ): Promise<boolean> {
-    const rows = await this.db
-      .select({ id: vendorMembers.id })
-      .from(vendorMembers)
-      .innerJoin(vendors, eq(vendors.id, vendorMembers.vendorId))
-      .where(
-        and(eq(vendorMembers.userId, userId), eq(vendors.eventId, eventId)),
-      )
-      .limit(1);
-    return rows.length > 0;
-  }
-
-  private async requireEvent(eventId: string) {
-    const event = await this.db
-      .select()
-      .from(events)
-      .where(eq(events.id, eventId))
-      .limit(1);
-    if (event.length === 0) {
-      throw new NotFoundException(`Event with ID ${eventId} not found`);
-    }
-    return event[0];
-  }
-
-  private async isEventAdmin(
-    eventId: string,
-    userId: string,
-    userRole: string,
-    organizerId: string,
-  ): Promise<boolean> {
-    if (userRole === 'super_admin') return true;
-    if (organizerId === userId) return true;
-
-    const membership = await this.db
-      .select()
-      .from(eventMembers)
-      .where(
-        and(
-          eq(eventMembers.eventId, eventId),
-          eq(eventMembers.userId, userId),
-          or(
-            eq(eventMembers.role, 'organizer'),
-            eq(eventMembers.role, 'admin'),
-          ),
-        ),
-      )
-      .limit(1);
-
-    return membership.length > 0;
   }
 
   private async writeAudit(args: {

@@ -1,45 +1,27 @@
 import { useEffect, useRef, useState } from 'react';
 import { Alert, Platform, Pressable, Text, View } from 'react-native';
-import Animated, {
-  Easing,
-  cancelAnimation,
-  useAnimatedStyle,
-  useSharedValue,
-  withDelay,
-  withRepeat,
-  withTiming,
-} from 'react-native-reanimated';
 import { Stack, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { Spinner } from 'heroui-native';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
-import { Screen } from '@/components/ui';
+import { NfcPulse, Screen } from '@/components/ui';
 import { extractErrorMessage } from '@/lib/api';
+import { useNfcRead } from '@/hooks/use-nfc-read';
 import { braceletsApi, type RedeemTicketResponse } from '@/lib/api/bracelets';
 
 type Step = 'scan-qr' | 'read-nfc' | 'submitting' | 'done';
-
-let NfcManager: typeof import('react-native-nfc-manager').default | null = null;
-let NfcTech: typeof import('react-native-nfc-manager').NfcTech | null = null;
-try {
-  const mod = require('react-native-nfc-manager');
-  NfcManager = mod.default;
-  NfcTech = mod.NfcTech;
-} catch {
-  NfcManager = null;
-}
 
 export default function LinkBraceletScreen() {
   const [step, setStep] = useState<Step>('scan-qr');
   const [permission, requestPermission] = useCameraPermissions();
   const [token, setToken] = useState<string | null>(null);
-  const [isScanning, setIsScanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [result, setResult] = useState<RedeemTicketResponse | null>(null);
   const lastScanRef = useRef<number>(0);
   const queryClient = useQueryClient();
+  const nfc = useNfcRead();
 
   const redeemMutation = useMutation({
     mutationFn: (input: { token: string; uid: string }) =>
@@ -74,46 +56,23 @@ export default function LinkBraceletScreen() {
   }
 
   async function readNfc() {
-    if (!token || isScanning) return;
-    if (!NfcManager || !NfcTech) {
+    if (!token || nfc.isScanning) return;
+    if (!nfc.isAvailable) {
       Alert.alert(
         'NFC not available',
         'This device does not support NFC reading.',
       );
       return;
     }
+    nfc.clearError();
     setError(null);
-    setIsScanning(true);
-    try {
-      await NfcManager.start();
-      await NfcManager.requestTechnology(NfcTech.NfcA);
-      const tag = await NfcManager.getTag();
-      const uid = tag?.id ?? null;
-      if (!uid) {
-        throw new Error('Could not read the tag UID');
-      }
-      submit(uid);
-    } catch (e) {
-      const msg = extractErrorMessage(e);
-      if (msg && !/cancel/i.test(msg)) setError(msg);
-    } finally {
-      try {
-        await NfcManager.cancelTechnologyRequest();
-      } catch {
-        // ignore
-      }
-      setIsScanning(false);
-    }
+    const res = await nfc.read();
+    if (res.uid) submit(res.uid);
+    else if (res.error) setError(res.error);
   }
 
   async function cancelScan() {
-    if (!NfcManager) return;
-    try {
-      await NfcManager.cancelTechnologyRequest();
-    } catch {
-      // ignore
-    }
-    setIsScanning(false);
+    await nfc.cancel();
   }
 
   function submit(uid: string) {
@@ -155,7 +114,7 @@ export default function LinkBraceletScreen() {
         <ReadNfcStep
           onTap={readNfc}
           onCancel={cancelScan}
-          isScanning={isScanning}
+          isScanning={nfc.isScanning}
           isSubmitting={step === 'submitting'}
           error={error}
         />
@@ -352,62 +311,3 @@ function DoneStep({
   );
 }
 
-function NfcPulse({ active }: { active: boolean }) {
-  return (
-    <>
-      <PulseRing active={active} delay={0} />
-      <PulseRing active={active} delay={500} />
-      <PulseRing active={active} delay={1000} />
-    </>
-  );
-}
-
-function PulseRing({ active, delay }: { active: boolean; delay: number }) {
-  const progress = useSharedValue(0);
-
-  useEffect(() => {
-    if (active) {
-      progress.value = 0;
-      progress.value = withDelay(
-        delay,
-        withRepeat(
-          withTiming(1, { duration: 1500, easing: Easing.out(Easing.ease) }),
-          -1,
-          false,
-        ),
-      );
-    } else {
-      cancelAnimation(progress);
-      progress.value = withTiming(0, { duration: 200 });
-    }
-    return () => {
-      cancelAnimation(progress);
-    };
-  }, [active, delay, progress]);
-
-  const style = useAnimatedStyle(() => {
-    const scale = 1 + progress.value * 1.4;
-    const opacity = active ? (1 - progress.value) * 0.55 : 0;
-    return {
-      transform: [{ scale }],
-      opacity,
-    };
-  });
-
-  return (
-    <Animated.View
-      pointerEvents="none"
-      style={[
-        {
-          position: 'absolute',
-          width: 128,
-          height: 128,
-          borderRadius: 64,
-          borderWidth: 2,
-          borderColor: '#ffffff',
-        },
-        style,
-      ]}
-    />
-  );
-}
