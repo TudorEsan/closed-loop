@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.26 (TeX Live 2024) (preloaded format=pdflatex 2024.3.24)  4 APR 2026 11:55
+This is pdfTeX, Version 3.141592653-2.6-1.40.26 (TeX Live 2024) (preloaded format=pdflatex 2024.3.24)  26 APR 2026 15:00
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -697,16 +697,7 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 (fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
 
 [28]
-
-Package fancyhdr Warning: \headheight is too small (12.0pt): 
-(fancyhdr)                Make it at least 14.49998pt, for example:
-(fancyhdr)                \setlength{\headheight}{14.49998pt}.
-(fancyhdr)                You might also make \topmargin smaller to compensate:
-
-(fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
-
-[29]
-Overfull \hbox (4.76527pt too wide) in paragraph at lines 122--123
+Overfull \hbox (4.76527pt too wide) in paragraph at lines 118--119
 \OT1/ppl/m/n/12 During nor-mal on-line op-er-a-tion, ven-dor ter-mi-nals send e
 ach trans-ac-tion to the server
  []
@@ -719,10 +710,67 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 
 (fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
 
+[29]
+LaTeX Font Info:    Trying to load font information for OT1+pcr on input line 1
+31.
+ (/usr/local/texlive/2024/texmf-dist/tex/latex/psnfss/ot1pcr.fd
+File: ot1pcr.fd 2001/06/04 font definitions for OT1/pcr.
+)
+Overfull \hbox (101.25853pt too wide) in paragraph at lines 131--132
+\OT1/pcr/m/n/12 debit[]counter \OT1/ppl/m/n/12 (a mono-tonic counter in-cre-men
+ted on ev-ery chip-side debit), \OT1/pcr/m/n/12 credit[]counter[]seen
+ []
+
+
+Overfull \hbox (24.98367pt too wide) in paragraph at lines 133--134
+[]\OT1/ppl/m/n/12 The server main-tains per-wallet: \OT1/pcr/m/n/12 balance \OT
+1/ppl/m/n/12 (the canon-i-cal bal-ance), \OT1/pcr/m/n/12 credit[]counter
+ []
+
+
+Overfull \hbox (6.04631pt too wide) in paragraph at lines 135--136
+[]\OT1/ppl/m/n/12 The two coun-ters are in-de-pen-dent mono-tonic se-quences, e
+ach with a sin-gle writer.
+ []
+
+
+Overfull \hbox (42.87965pt too wide) in paragraph at lines 135--136
+\OT1/ppl/m/n/12 The chip owns \OT1/pcr/m/n/12 debit[]counter\OT1/ppl/m/n/12 ; t
+he server is a read-only mir-ror via \OT1/pcr/m/n/12 debit[]counter[]seen\OT1/p
+pl/m/n/12 .
+ []
+
+
+Overfull \hbox (57.27965pt too wide) in paragraph at lines 135--136
+\OT1/ppl/m/n/12 The server owns \OT1/pcr/m/n/12 credit[]counter\OT1/ppl/m/n/12 
+; the chip is a read-only mir-ror via \OT1/pcr/m/n/12 credit[]counter[]seen\OT1
+/ppl/m/n/12 .
+ []
+
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 14.49998pt, for example:
+(fancyhdr)                \setlength{\headheight}{14.49998pt}.
+(fancyhdr)                You might also make \topmargin smaller to compensate:
+
+(fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
+
 [30]
-Overfull \hbox (5.88214pt too wide) in paragraph at lines 155--156
-\OT1/ppl/m/n/12 pro-tected. DES-Fire EV3 sup-ports se-cure mes-sag-ing, which m
-eans the data ex-changed
+Overfull \hbox (46.91048pt too wide) in paragraph at lines 152--153
+\OT1/ppl/m/n/12 checks for pend-ing cred-its (any with se-quence num-ber greate
+r than \OT1/pcr/m/n/12 credit[]counter[]seen\OT1/ppl/m/n/12 )
+ []
+
+
+Overfull \hbox (55.25053pt too wide) in paragraph at lines 160--161
+\OT1/ppl/m/n/12 Consider the canon-i-cal hard case. A user starts with chip \OT
+1/pcr/m/n/12 (50, debit=6, credit[]seen=0)
+ []
+
+
+Overfull \hbox (52.68289pt too wide) in paragraph at lines 160--161
+\OT1/ppl/m/n/12 rently, a 20-token top-up lands on the server, tak-ing it to \O
+T1/pcr/m/n/12 (70, credit=1, debit[]seen=6)\OT1/ppl/m/n/12 .
  []
 
 
@@ -734,9 +782,16 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 (fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
 
 [31]
-Overfull \hbox (4.45444pt too wide) in paragraph at lines 174--175
-\OT1/ppl/m/n/12 When an ad-min has whitelisted a de-vice from the ad-min dash-b
-oard, the app switches
+Overfull \hbox (75.37523pt too wide) in paragraph at lines 162--163
+\OT1/ppl/m/n/12 to-kens to ap-ply. It also ob-serves that \OT1/pcr/m/n/12 debit
+[]counter=7 \OT1/ppl/m/n/12 is greater than \OT1/pcr/m/n/12 debit[]counter[]see
+n=6\OT1/ppl/m/n/12 ,
+ []
+
+
+Overfull \hbox (8.45053pt too wide) in paragraph at lines 166--167
+\OT1/pcr/m/n/12 debit[]counter[]seen \OT1/ppl/m/n/12 plus the count of pend-ing
+ queued trans-ac-tions tracked server-
  []
 
 
@@ -757,6 +812,11 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 (fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
 
 [33]
+Overfull \hbox (5.88214pt too wide) in paragraph at lines 196--197
+\OT1/ppl/m/n/12 pro-tected. DES-Fire EV3 sup-ports se-cure mes-sag-ing, which m
+eans the data ex-changed
+ []
+
 
 Package fancyhdr Warning: \headheight is too small (12.0pt): 
 (fancyhdr)                Make it at least 14.49998pt, for example:
@@ -766,14 +826,9 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 (fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
 
 [34]
-LaTeX Font Info:    Trying to load font information for OT1+pcr on input line 2
-21.
- (/usr/local/texlive/2024/texmf-dist/tex/latex/psnfss/ot1pcr.fd
-File: ot1pcr.fd 2001/06/04 font definitions for OT1/pcr.
-)
-Overfull \hbox (2.24538pt too wide) in paragraph at lines 221--222
-\OT1/ppl/m/n/12 The server han-dles all fes-ti-vals from a sin-gle de-ploy-ment
-. Ev-ery ta-ble in the database
+Overfull \hbox (4.45444pt too wide) in paragraph at lines 215--216
+\OT1/ppl/m/n/12 When an ad-min has whitelisted a de-vice from the ad-min dash-b
+oard, the app switches
  []
 
 
@@ -793,7 +848,12 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 
 (fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
 
-[36]) (./chapters/chapter5_implementation.tex
+[36]
+Overfull \hbox (2.24538pt too wide) in paragraph at lines 262--263
+\OT1/ppl/m/n/12 The server han-dles all fes-ti-vals from a sin-gle de-ploy-ment
+. Ev-ery ta-ble in the database
+ []
+
 
 Package fancyhdr Warning: \headheight is too small (12.0pt): 
 (fancyhdr)                Make it at least 14.49998pt, for example:
@@ -803,8 +863,26 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 (fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
 
 [37]
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 14.49998pt, for example:
+(fancyhdr)                \setlength{\headheight}{14.49998pt}.
+(fancyhdr)                You might also make \topmargin smaller to compensate:
+
+(fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
+
+[38]) (./chapters/chapter5_implementation.tex
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 14.49998pt, for example:
+(fancyhdr)                \setlength{\headheight}{14.49998pt}.
+(fancyhdr)                You might also make \topmargin smaller to compensate:
+
+(fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
+
+[39]
 Chapter 4.
-) (./chapters/chapter6_security.tex [38
+) (./chapters/chapter6_security.tex [40
 
 ]
 Overfull \vbox (12.17249pt too high) has occurred while \output is active []
@@ -818,17 +896,17 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 
 (fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
 
-[39]
+[41]
 Chapter 5.
-) (./chapters/chapter7_discussion.tex [40
+) (./chapters/chapter7_discussion.tex [42
 
 ]
 Chapter 6.
-) (./chapters/chapter8_conclusions.tex [41
+) (./chapters/chapter8_conclusions.tex [43
 
 ]
 Chapter 7.
-) (./main.bbl [42
+) (./main.bbl [44
 
 ]
 Underfull \hbox (badness 2221) in paragraph at lines 18--22
@@ -836,7 +914,7 @@ Underfull \hbox (badness 2221) in paragraph at lines 18--22
 . co . uk / news / 16 /
  []
 
-[43
+[45
 
 ]
 Underfull \hbox (badness 1769) in paragraph at lines 74--78
@@ -880,7 +958,7 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 
 (fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
 
-[44]
+[46]
 Underfull \hbox (badness 4403) in paragraph at lines 149--154
 []\OT1/ppl/m/n/12 Greg Young.  CQRS doc-u-ments.  []$\OT1/pcr/m/n/12 https : / 
 / cqrs . files .
@@ -895,17 +973,17 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 
 (fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
 
-[45] (./main.aux)
+[47] (./main.aux)
  ***********
 LaTeX2e <2023-11-01> patch level 1
 L3 programming layer <2024-02-20>
  ***********
 Package rerunfilecheck Info: File `main.out' has not changed.
-(rerunfilecheck)             Checksum: 243C71CD3FE329BCC02BB6FE6CDE4259;12900.
+(rerunfilecheck)             Checksum: 41488FABBE0ED6BD1EABD9557FB1FEA9;12976.
  ) 
 Here is how much of TeX's memory you used:
- 10833 strings out of 474116
- 173109 string characters out of 5743682
+ 10843 strings out of 474116
+ 173203 string characters out of 5743682
  1941187 words of memory out of 5000000
  32874 multiletter control sequences out of 15000+600000
  571626 words of font info for 67 fonts, out of 8000000 for 9000
@@ -919,10 +997,10 @@ texlive/2024/texmf-dist/fonts/type1/urw/palatino/uplb8a.pfb></usr/local/texlive
 /2024/texmf-dist/fonts/type1/urw/palatino/uplr8a.pfb></usr/local/texlive/2024/t
 exmf-dist/fonts/type1/urw/palatino/uplr8a.pfb></usr/local/texlive/2024/texmf-di
 st/fonts/type1/urw/palatino/uplri8a.pfb>
-Output written on main.pdf (51 pages, 585040 bytes).
+Output written on main.pdf (53 pages, 592643 bytes).
 PDF statistics:
- 787 PDF objects out of 1000 (max. 8388607)
- 706 compressed objects within 8 object streams
- 158 named destinations out of 1000 (max. 500000)
+ 803 PDF objects out of 1000 (max. 8388607)
+ 720 compressed objects within 8 object streams
+ 168 named destinations out of 1000 (max. 500000)
  595 words of extra memory for PDF output out of 10000 (max. 10000000)
 
