@@ -86,13 +86,15 @@ As long as these three hold, the chip and the server cannot disagree about who a
 \subsection{Worked example}
 \label{subsec:reconciliation-example}
 
-Consider the canonical hard case where a top-up and an offline debit happen at the same time. The starting state is chip \texttt{(balance=50, debit\_counter=0, credit\_counter\_seen=0)} and server \texttt{(balance=50, credit\_counter=0, debit\_counter\_seen=0)}.
+Consider the case where a top-up and an offline debit happen at the same time. The starting state is chip \texttt{(balance=50, debit\_counter=0, credit\_counter\_seen=0)} and server \texttt{(balance=50, credit\_counter=0, debit\_counter\_seen=0)}.
 
-The user pays 10 tokens at an offline terminal. The chip becomes \texttt{(40, 1, 0)} and the terminal queues a debit of 10 with \texttt{debit\_counter=1}. The server has not heard about this yet.
+The user pays 10 tokens at an offline terminal. The chip becomes \texttt{(40, 1, 0)} and the terminal queues a debit of 10 with 
+\texttt{debit\_counter=1}. The server has not heard about this yet.
 
 In parallel, a partner pushes a 20-token top-up through the server. The server becomes \texttt{(70, 1, 0)}. The chip has not heard about this yet either.
 
-The user then taps an online terminal somewhere else. The terminal reads \texttt{(40, 1, 0)} from the chip and forwards it to the server. The server sees that \texttt{credit\_counter=1} is greater than the chip's \texttt{credit\_counter\_seen=0}, so there is one pending credit of 20 tokens to apply. It also sees that \texttt{debit\_counter=1} is greater than \texttt{debit\_counter\_seen=0}, so there is one chip-side debit it has not received yet, but it does not need the amount to apply the credit safely. The server writes \texttt{(60, 1, 1)} to the chip.
+The user then taps an online terminal somewhere else. The terminal reads \texttt{(40, 1, 0)} from the chip and forwards it to the server. The server sees that \texttt{credit\_counter=1} is greater than the chip's \texttt{credit\_counter\_seen=0}, so there is one pending credit of 20 tokens to apply. It also sees that \texttt{debit\_counter=1} is greater than 
+\texttt{debit\_counter\_seen=0}, so there is one chip-side debit it has not received yet, but it does not need the amount to apply the credit safely. The server writes \texttt{(60, 1, 1)} to the chip.
 
 When the offline terminal eventually syncs the queued debit of 10, the server applies it: balance goes from 70 to 60, and \texttt{debit\_counter\_seen} advances from 0 to 1. Both sides now sit at \texttt{balance=60} with \texttt{debit\_counter=1} and \texttt{credit\_counter=1}. No conflict resolution was needed because the two streams never collided.
 

@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.26 (TeX Live 2024) (preloaded format=pdflatex 2024.3.24)  26 APR 2026 15:32
+This is pdfTeX, Version 3.141592653-2.6-1.40.26 (TeX Live 2024) (preloaded format=pdflatex 2024.3.24)  26 APR 2026 16:29
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -718,9 +718,9 @@ ebit[]counter, credit[]counter[]seen)
  []
 
 
-Overfull \hbox (140.38164pt too wide) in paragraph at lines 89--90
-\OT1/pcr/m/n/12 credit[]counter[]seen=0) \OT1/ppl/m/n/12 and server \OT1/pcr/m/
-n/12 (balance=50, credit[]counter=0, debit[]counter[]seen=0)\OT1/ppl/m/n/12 . 
+Overfull \hbox (30.91673pt too wide) in paragraph at lines 89--90
+\OT1/ppl/m/n/12 start-ing state is chip \OT1/pcr/m/n/12 (balance=50, debit[]cou
+nter=0, credit[]counter[]seen=0)
  []
 
 
@@ -732,29 +732,29 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 (fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
 
 [27]
-Overfull \hbox (39.18288pt too wide) in paragraph at lines 95--96
+Overfull \hbox (39.18288pt too wide) in paragraph at lines 96--98
 \OT1/pcr/m/n/12 1, 0) \OT1/ppl/m/n/12 from the chip and for-wards it to the ser
 ver. The server sees that \OT1/pcr/m/n/12 credit[]counter=1
  []
 
 
-Overfull \hbox (77.77556pt too wide) in paragraph at lines 95--96
+Overfull \hbox (77.77556pt too wide) in paragraph at lines 96--98
 \OT1/ppl/m/n/12 of 20 to-kens to ap-ply. It also sees that \OT1/pcr/m/n/12 debi
 t[]counter=1 \OT1/ppl/m/n/12 is greater than \OT1/pcr/m/n/12 debit[]counter[]se
 en=0\OT1/ppl/m/n/12 ,
  []
 
 
-Overfull \hbox (14.12886pt too wide) in paragraph at lines 97--98
+Overfull \hbox (14.12886pt too wide) in paragraph at lines 99--100
 \OT1/ppl/m/n/12 Both sides now sit at \OT1/pcr/m/n/12 balance=60 \OT1/ppl/m/n/1
 2 with \OT1/pcr/m/n/12 debit[]counter=1 \OT1/ppl/m/n/12 and \OT1/pcr/m/n/12 cre
 dit[]counter=1\OT1/ppl/m/n/12 .
  []
 
 LaTeX Font Info:    External font `cmex10' loaded for size
-(Font)              <10.95> on input line 114.
+(Font)              <10.95> on input line 116.
 
-Overfull \hbox (408.63097pt too wide) in paragraph at lines 114--135
+Overfull \hbox (408.63097pt too wide) in paragraph at lines 116--137
  [][] 
  []
 
@@ -794,7 +794,7 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 (fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
 
 [31]
-Overfull \hbox (4.76527pt too wide) in paragraph at lines 201--202
+Overfull \hbox (4.76527pt too wide) in paragraph at lines 203--204
 \OT1/ppl/m/n/12 During nor-mal on-line op-er-a-tion, ven-dor ter-mi-nals send e
 ach trans-ac-tion to the server
  []
@@ -817,7 +817,7 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 (fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
 
 [33]
-Overfull \hbox (4.45444pt too wide) in paragraph at lines 236--237
+Overfull \hbox (4.45444pt too wide) in paragraph at lines 238--239
 \OT1/ppl/m/n/12 When an ad-min has whitelisted a de-vice from the ad-min dash-b
 oard, the app switches
  []
@@ -849,7 +849,7 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 (fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
 
 [36]
-Overfull \hbox (2.24538pt too wide) in paragraph at lines 283--284
+Overfull \hbox (2.24538pt too wide) in paragraph at lines 285--286
 \OT1/ppl/m/n/12 The server han-dles all fes-ti-vals from a sin-gle de-ploy-ment
 . Ev-ery ta-ble in the database
  []
@@ -997,7 +997,7 @@ texlive/2024/texmf-dist/fonts/type1/urw/palatino/uplb8a.pfb></usr/local/texlive
 /2024/texmf-dist/fonts/type1/urw/palatino/uplr8a.pfb></usr/local/texlive/2024/t
 exmf-dist/fonts/type1/urw/palatino/uplr8a.pfb></usr/local/texlive/2024/texmf-di
 st/fonts/type1/urw/palatino/uplri8a.pfb>
-Output written on main.pdf (53 pages, 593542 bytes).
+Output written on main.pdf (53 pages, 593531 bytes).
 PDF statistics:
  834 PDF objects out of 1000 (max. 8388607)
  751 compressed objects within 8 object streams
