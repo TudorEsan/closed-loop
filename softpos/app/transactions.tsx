@@ -10,7 +10,7 @@ export default function TransactionsScreen() {
 
   const items: Transaction[] = (
     query.data?.pages.flatMap((p) => p.transactions) ?? []
-  ).filter((tx) => tx.type === 'payment');
+  ).filter((tx) => tx.type === 'debit');
 
   return (
     <Screen edgeTop={false}>

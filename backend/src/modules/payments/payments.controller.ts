@@ -32,10 +32,6 @@ export class PaymentsController {
     @Inject(PAYMENT_PROVIDER) private readonly provider: PaymentProvider,
   ) {}
 
-  // Mobile app calls this with the bracelet it is wearing and the desired
-  // amount, gets back a client secret that the Stripe SDK can use to present
-  // the PaymentSheet. The credit lands on that exact bracelet, balance is
-  // event-scoped now.
   @Post('bracelets/topup/intent')
   @ApiOperation({
     summary: 'Create a topup payment intent for a bracelet the caller owns',
@@ -51,10 +47,6 @@ export class PaymentsController {
     );
   }
 
-  // Webhook from the payment provider. Public so the provider can reach it,
-  // signature is verified inside parseWebhook so forged events are rejected.
-  // The route uses the raw request body (configured in main.ts) so the
-  // signature check works against the exact bytes the provider sent.
   @Public()
   @Post('payments/webhook')
   @HttpCode(HttpStatus.OK)

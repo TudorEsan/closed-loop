@@ -6,7 +6,7 @@ import Animated, {
   LinearTransition,
   ZoomIn,
 } from "react-native-reanimated";
-import { router } from "expo-router";
+import { router, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
 import { extractErrorMessage } from "@/lib/api";
@@ -16,6 +16,9 @@ import { Button } from "heroui-native";
 const MIN_AMOUNT = 5;
 
 export default function TopUpScreen() {
+  const params = useLocalSearchParams<{ braceletId?: string }>();
+  const braceletId = params.braceletId ?? null;
+
   const [amount, setAmount] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
@@ -42,7 +45,7 @@ export default function TopUpScreen() {
 
   const parsedAmount = parseFloat(amount || "0");
   const meetsMinimum = parsedAmount >= MIN_AMOUNT;
-  const isDisabled = !meetsMinimum || topUpMutation.isPending;
+  const isDisabled = !meetsMinimum || !braceletId || topUpMutation.isPending;
 
   function handleKeyPress(key: string) {
     setError(null);
@@ -69,8 +72,11 @@ export default function TopUpScreen() {
   }
 
   function handleSubmit() {
-    if (!meetsMinimum) return;
-    topUpMutation.mutate(Math.round(parsedAmount * 100));
+    if (!meetsMinimum || !braceletId) return;
+    topUpMutation.mutate({
+      eventBraceletId: braceletId,
+      amountCents: Math.round(parsedAmount * 100),
+    });
   }
 
   const displayAmount = amount.length === 0 ? "0" : amount;
@@ -129,6 +135,10 @@ export default function TopUpScreen() {
         >
           {topUpMutation.isPending ? (
             <ActivityIndicator color="#ffffff" />
+          ) : !braceletId ? (
+            <Text className="text-base font-semibold text-background">
+              Pick a bracelet first
+            </Text>
           ) : (
             <View className="flex-row items-end gap-1">
               <Text className="text-base font-semibold text-background">

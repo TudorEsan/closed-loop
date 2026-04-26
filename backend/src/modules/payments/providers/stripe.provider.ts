@@ -14,10 +14,6 @@ import {
 } from './payment-provider.interface';
 import { PaymentsConfig } from '@app/common/types/payments.types';
 
-// Local minimal shapes for the bits of Stripe we actually touch. We could
-// pull these from the Stripe namespace, but the cjs entry only re-exports
-// the constructor, so duplicating the four fields we need is simpler than
-// fighting the type resolution.
 type StripePaymentIntentLike = {
   id: string;
   client_secret: string | null;

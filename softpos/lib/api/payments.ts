@@ -9,15 +9,14 @@ export type TopupIntentResponse = {
   amount: number;
 };
 
-// Talks to the backend payments module. Provider-agnostic on purpose, the
-// mobile side does not care whether stripe or something else is on the
-// other end as long as the response shape stays the same.
+// Topup intent is now scoped to a specific bracelet (one per event), since
+// the wallets table is gone and balance lives on event_bracelets.
 export const paymentsApi = {
   async createTopupIntent(
-    body: { amount: number },
+    body: { eventBraceletId: string; amount: number },
   ): Promise<TopupIntentResponse> {
     const res = await api.post<TopupIntentResponse>(
-      `/wallets/me/topup/intent`,
+      `/bracelets/topup/intent`,
       body,
     );
     return res.data;

@@ -1,9 +1,13 @@
 import { api } from '../api';
-import type { EventSummary } from '@/types/api';
+import type { EventBracelet, EventSummary, Transaction } from '@/types/api';
 
 export type MyEventRow = EventSummary & {
   location: string | null;
   linkedWristbandUid: string | null;
+};
+
+export type MyBraceletRow = EventBracelet & {
+  eventName?: string;
 };
 
 export type RedeemTicketResponse = {
@@ -25,6 +29,18 @@ export const braceletsApi = {
   async myEvents(): Promise<MyEventRow[]> {
     const res = await api.get<{ events: MyEventRow[] }>('/me/events');
     return res.data.events ?? [];
+  },
+
+  async myBracelets(): Promise<MyBraceletRow[]> {
+    const res = await api.get<{ bracelets: MyBraceletRow[] }>('/me/bracelets');
+    return res.data.bracelets ?? [];
+  },
+
+  async myTransactions(
+    params?: { limit?: number; cursor?: string },
+  ): Promise<{ transactions: Transaction[]; nextCursor: string | null }> {
+    const res = await api.get('/me/transactions', { params });
+    return res.data;
   },
 
   async redeemTicket(args: {

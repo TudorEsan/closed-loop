@@ -180,7 +180,7 @@ export function VendorHome({ vendor }: { vendor: VendorMembership }) {
 
 function ChargeRow({ tx }: { tx: Transaction }) {
   const meta = tx.metadata as { customerName?: string } | null;
-  const isRefund = tx.type === 'refund';
+  const isRefund = tx.type === 'credit';
   return (
     <ActivityRow
       icon={isRefund ? 'return-up-back' : 'card-outline'}
@@ -215,7 +215,7 @@ function filterToday(items: Transaction[]): Transaction[] {
   const today = new Date().toDateString();
   return items.filter(
     (tx) =>
-      tx.type !== 'refund' &&
+      tx.type === 'debit' &&
       new Date(tx.serverTimestamp).toDateString() === today,
   );
 }

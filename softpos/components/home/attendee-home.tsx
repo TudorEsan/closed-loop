@@ -22,22 +22,24 @@ import {
   TopupButton,
 } from '@/components/ui';
 import { ScopeChip } from '@/components/scope/scope-chip';
-import { useRecentTransactions, useWallet } from '@/hooks';
+import { useMyBracelets, useRecentTransactions } from '@/hooks';
 import type { Transaction } from '@/types/api';
+import type { MyBraceletRow } from '@/lib/api/bracelets';
 
 const CURRENCIES_IMAGE = require('@/assets/background.png');
 
 export function AttendeeHome() {
   const mutedColor = useThemeColor('muted');
 
-  const walletQuery = useWallet();
+  const braceletsQuery = useMyBracelets();
   const txQuery = useRecentTransactions(10);
 
-  const walletError = walletQuery.error
-    ? extractErrorMessage(walletQuery.error)
+  const braceletsError = braceletsQuery.error
+    ? extractErrorMessage(braceletsQuery.error)
     : null;
   const txError = txQuery.error ? extractErrorMessage(txQuery.error) : null;
 
+  const bracelets: MyBraceletRow[] = braceletsQuery.data ?? [];
   const transactions: Transaction[] = txQuery.data?.transactions ?? [];
 
   const scrollY = useSharedValue(0);
@@ -46,7 +48,7 @@ export function AttendeeHome() {
   });
 
   async function handleRefresh() {
-    await Promise.all([walletQuery.refetch(), txQuery.refetch()]);
+    await Promise.all([braceletsQuery.refetch(), txQuery.refetch()]);
   }
 
   return (
@@ -59,7 +61,7 @@ export function AttendeeHome() {
         scrollIndicatorInsets={{ top: BLUR_HEADER_HEIGHT }}
         refreshControl={
           <RefreshControl
-            refreshing={walletQuery.isFetching || txQuery.isFetching}
+            refreshing={braceletsQuery.isFetching || txQuery.isFetching}
             onRefresh={handleRefresh}
             progressViewOffset={BLUR_HEADER_HEIGHT}
           />
@@ -68,39 +70,23 @@ export function AttendeeHome() {
         <View style={{ height: BLUR_HEADER_HEIGHT }} />
 
         <View className="px-5">
-          <ImageBackground
-            source={CURRENCIES_IMAGE}
-            resizeMode="cover"
-            imageStyle={{ borderRadius: 24 }}
-            className="overflow-hidden rounded-3xl border border-white h-52"
-          >
-            <View className="px-6 py-8 items-center">
-              <Text className="text-muted text-sm font-medium">
-                Global Balance
-              </Text>
-              <View className="flex-row items-center mt-2">
-                {walletQuery.isLoading ? (
-                  <Spinner color="#ffffff" />
-                ) : (
-                  <Text className="text-black text-4xl font-bold tracking-tight">
-                    {walletError
-                      ? '—'
-                      : formatBalance(walletQuery.data?.balance ?? 0)}
-                  </Text>
-                )}
-              </View>
-
-              <View style={{ height: 48, width: 160 }}>
-                <TopupButton />
-              </View>
+          {braceletsQuery.isLoading ? (
+            <View className="items-center py-10">
+              <Spinner color={mutedColor} />
             </View>
-          </ImageBackground>
-
-          {walletError ? (
-            <Text className="mt-4 text-xs text-danger">
-              Could not load your balance. {walletError}
+          ) : braceletsError ? (
+            <Text className="text-xs text-danger">
+              Could not load your bracelets. {braceletsError}
             </Text>
-          ) : null}
+          ) : bracelets.length === 0 ? (
+            <NoBraceletsCard />
+          ) : (
+            <View className="gap-4">
+              {bracelets.map((bracelet) => (
+                <BraceletCard key={bracelet.id} bracelet={bracelet} />
+              ))}
+            </View>
+          )}
 
           <View className="mt-8 mb-3 flex-row items-center justify-between">
             <Text className="text-xl font-semibold text-foreground">
@@ -110,9 +96,7 @@ export function AttendeeHome() {
               onPress={() => router.push('/transactions')}
               hitSlop={6}
             >
-              <Text className="text-sm font-medium">
-                View all
-              </Text>
+              <Text className="text-sm font-medium">View all</Text>
             </Pressable>
           </View>
 
@@ -125,7 +109,7 @@ export function AttendeeHome() {
               Could not load transactions. {txError}
             </Text>
           ) : transactions.length === 0 ? (
-            <EmptyState />
+            <EmptyActivity />
           ) : (
             <View>
               {transactions.slice(0, 6).map((tx, idx) => (
@@ -146,18 +130,66 @@ export function AttendeeHome() {
   );
 }
 
+function BraceletCard({ bracelet }: { bracelet: MyBraceletRow }) {
+  return (
+    <ImageBackground
+      source={CURRENCIES_IMAGE}
+      resizeMode="cover"
+      imageStyle={{ borderRadius: 24 }}
+      className="overflow-hidden rounded-3xl border border-white"
+    >
+      <View className="px-6 py-7 items-center">
+        <Text
+          className="text-muted text-sm font-medium"
+          numberOfLines={1}
+        >
+          {bracelet.eventName ?? 'Festival balance'}
+        </Text>
+        <Text className="mt-2 text-black text-4xl font-bold tracking-tight">
+          {formatBalance(bracelet.balance)}
+        </Text>
+
+        <View style={{ height: 48, width: 160 }} className="mt-3">
+          <TopupButton
+            onPress={() =>
+              router.push({
+                pathname: '/topup',
+                params: { braceletId: bracelet.id },
+              })
+            }
+          />
+        </View>
+      </View>
+    </ImageBackground>
+  );
+}
+
+function NoBraceletsCard() {
+  return (
+    <View className="items-center rounded-3xl bg-surface px-6 py-10">
+      <View className="mb-3 h-12 w-12 items-center justify-center rounded-full bg-surface-secondary">
+        <Ionicons name="hardware-chip-outline" size={22} color="#0a0a0a" />
+      </View>
+      <Text className="text-base font-semibold text-foreground">
+        No bracelets yet
+      </Text>
+      <Text className="mt-1 text-center text-sm text-muted">
+        Once a festival links your bracelet at the gate, it shows up here so
+        you can top up and spend.
+      </Text>
+    </View>
+  );
+}
+
 type IconStyle = {
   bg: string;
   fg: string;
-  icon: 'add' | 'return-up-back' | 'beer-outline' | 'bag-handle-outline';
+  icon: 'add' | 'beer-outline' | 'bag-handle-outline';
 };
 
 function iconStyleFor(tx: Transaction): IconStyle {
-  if (tx.type === 'topup_cash' || tx.type === 'topup_online') {
+  if (tx.type === 'credit') {
     return { bg: '#dcfce7', fg: '#15803d', icon: 'add' };
-  }
-  if (tx.type === 'refund') {
-    return { bg: '#dcfce7', fg: '#15803d', icon: 'return-up-back' };
   }
   const meta = tx.metadata as { vendorName?: string } | null;
   const seed = (meta?.vendorName ?? tx.id).charCodeAt(0) % 2;
@@ -168,7 +200,7 @@ function iconStyleFor(tx: Transaction): IconStyle {
 
 function AttendeeTxRow({ tx }: { tx: Transaction }) {
   const style = iconStyleFor(tx);
-  const isCredit = tx.type !== 'payment';
+  const isCredit = tx.type === 'credit';
   const amountText = `${isCredit ? '+' : '-'}${formatBalance(Math.abs(tx.amount))}`;
   return (
     <ActivityRow
@@ -184,18 +216,15 @@ function AttendeeTxRow({ tx }: { tx: Transaction }) {
 }
 
 function activityTitle(tx: Transaction): string {
-  if (tx.type === 'topup_cash' || tx.type === 'topup_online') return 'Top-up';
-  if (tx.type === 'refund') return 'Refund';
-  const meta = tx.metadata as { eventName?: string; vendorName?: string } | null;
-  return meta?.eventName ?? meta?.vendorName ?? 'Payment';
+  if (tx.type === 'credit') return 'Top-up';
+  const meta = tx.metadata as { vendorName?: string } | null;
+  return meta?.vendorName ?? 'Payment';
 }
 
 function activitySubtitle(tx: Transaction): string {
-  if (tx.type === 'topup_cash') return 'Cash top-up';
-  if (tx.type === 'topup_online') return 'Online top-up';
-  if (tx.type === 'refund') return 'Refund';
-  const meta = tx.metadata as { vendorName?: string; category?: string } | null;
-  return meta?.category ?? meta?.vendorName ?? 'Payment';
+  if (tx.type === 'credit') return tx.eventName ?? 'Top-up';
+  const meta = tx.metadata as { category?: string } | null;
+  return meta?.category ?? tx.eventName ?? 'Payment';
 }
 
 function formatBalance(minor: number): string {
@@ -228,7 +257,7 @@ function formatTimestamp(iso: string): string {
   return `${dateLabel}, ${time}`;
 }
 
-function EmptyState() {
+function EmptyActivity() {
   return (
     <View className="items-center rounded-2xl bg-surface px-6 py-10">
       <View className="mb-3 h-12 w-12 items-center justify-center rounded-full bg-surface-secondary">

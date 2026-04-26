@@ -41,10 +41,6 @@ export class PaymentsService {
     this.currency = paymentsConfig.currency;
   }
 
-  // Step 1 of the topup flow. The mobile app calls this with the bracelet
-  // it is currently wearing, we ask the provider for a payment intent,
-  // persist our own row, and return the client secret. The bracelet is the
-  // wallet, so the bracelet id is what gets credited on webhook success.
   async createTopupIntent(
     userId: string,
     eventBraceletId: string,

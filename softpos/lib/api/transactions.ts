@@ -2,8 +2,7 @@ import { api } from '../api';
 import type { Transaction } from '@/types/api';
 
 export type ChargeBody = {
-  walletId?: string;
-  wristbandUid?: string;
+  wristbandUid: string;
   amount: number;
   deviceId: string;
   idempotencyKey: string;

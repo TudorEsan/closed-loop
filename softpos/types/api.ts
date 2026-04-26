@@ -45,40 +45,40 @@ export type EventSummary = {
   status: string;
 };
 
-export type Wallet = {
+export type EventBracelet = {
   id: string;
+  eventId: string;
   userId: string;
-  balance: number; // in minor units (cents)
-  wristbandUid: string | null;
-  status: 'active' | 'frozen' | 'closed';
+  wristbandUid: string;
+  status: 'active' | 'revoked' | 'replaced';
+  balance: number;
+  debitCounterSeen: number;
+  creditCounter: number;
+  linkedAt: string;
   createdAt: string;
   updatedAt: string;
 };
 
-export type TransactionType =
-  | 'payment'
-  | 'topup_online'
-  | 'topup_cash'
-  | 'refund'
-  | 'cashout';
+export type TransactionType = 'debit' | 'credit';
 export type TransactionStatus = 'pending' | 'completed' | 'failed' | 'flagged';
 
 export type Transaction = {
   id: string;
-  // Null for topups (topups are user-level, not event-scoped). Set for
-  // POS spending transactions.
-  eventId: string | null;
-  walletId: string;
+  eventBraceletId: string;
   vendorId: string | null;
-  deviceId: string | null;
   operatorId: string | null;
   type: TransactionType;
   amount: number;
   status: TransactionStatus;
   offline: boolean;
+  debitCounter: number | null;
+  creditCounter: number | null;
   serverTimestamp: string;
   createdAt: string;
   metadata?: Record<string, unknown> | null;
+  // Filled in by /me/transactions, the event the bracelet belongs to.
+  eventId?: string;
+  eventName?: string;
 };
 
 export type VendorStatus = 'pending' | 'approved' | 'rejected' | 'suspended';

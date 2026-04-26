@@ -1,6 +1,6 @@
 import { useInfiniteQuery, useQuery } from '@tanstack/react-query';
 
-import { walletsApi } from '@/lib/api/wallets';
+import { braceletsApi } from '@/lib/api/bracelets';
 import { useAuthContext } from '@/lib/auth-context';
 
 export const RECENT_TRANSACTIONS_QUERY_KEY = ['transactions'] as const;
@@ -10,7 +10,7 @@ export function useRecentTransactions(limit = 10) {
   const { session } = useAuthContext();
   return useQuery({
     queryKey: RECENT_TRANSACTIONS_QUERY_KEY,
-    queryFn: () => walletsApi.listMyTransactions({ limit }),
+    queryFn: () => braceletsApi.myTransactions({ limit }),
     enabled: !!session,
     retry: false,
   });
@@ -21,7 +21,7 @@ export function useTransactionsInfinite(pageSize = 20) {
     queryKey: FULL_TRANSACTIONS_QUERY_KEY,
     initialPageParam: undefined as string | undefined,
     queryFn: ({ pageParam }) =>
-      walletsApi.listMyTransactions({
+      braceletsApi.myTransactions({
         limit: pageSize,
         cursor: pageParam,
       }),

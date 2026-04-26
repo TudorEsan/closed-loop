@@ -20,9 +20,6 @@ import { RevokeBraceletDto } from './dto/revoke-bracelet.dto';
 const ipFromRequest = (req: Request): string | null =>
   req.ip || req.socket.remoteAddress || null;
 
-// Authorization for these endpoints lives in BraceletsService via ScopeService.
-// We don't gate on a global role here because event/vendor authority comes
-// from membership rows, not from `users.role`.
 @ApiTags('Bracelets')
 @ApiBearerAuth()
 @Controller()
@@ -37,6 +34,18 @@ export class BraceletsController {
   @Get('me/bracelets')
   async myBracelets(@CurrentUser() user: { id: string }) {
     return this.bracelets.myBracelets(user.id);
+  }
+
+  @Get('me/transactions')
+  async myTransactions(
+    @CurrentUser() user: { id: string },
+    @Query('limit') limit?: string,
+    @Query('cursor') cursor?: string,
+  ) {
+    return this.bracelets.myTransactions(user.id, {
+      limit: limit ? parseInt(limit, 10) : undefined,
+      cursor,
+    });
   }
 
   @Get('me/bracelets/:id/transactions')

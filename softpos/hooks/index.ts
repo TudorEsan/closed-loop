@@ -1,5 +1,5 @@
 export { useAuth, type UseAuthValue } from './use-auth';
-export { useWallet, WALLET_QUERY_KEY } from './use-wallet';
+export { useMyBracelets, MY_BRACELETS_QUERY_KEY } from './use-my-bracelets';
 export {
   useRecentTransactions,
   useTransactionsInfinite,

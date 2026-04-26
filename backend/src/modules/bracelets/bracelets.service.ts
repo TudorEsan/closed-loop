@@ -345,8 +345,12 @@ export class BraceletsService {
   // wallet now.
   async myBracelets(userId: string) {
     const rows = await this.db
-      .select()
+      .select({
+        bracelet: eventBracelets,
+        eventName: events.name,
+      })
       .from(eventBracelets)
+      .innerJoin(events, eq(events.id, eventBracelets.eventId))
       .where(
         and(
           eq(eventBracelets.userId, userId),
@@ -354,7 +358,9 @@ export class BraceletsService {
         ),
       )
       .orderBy(desc(eventBracelets.linkedAt));
-    return { bracelets: rows };
+    return {
+      bracelets: rows.map((r) => ({ ...r.bracelet, eventName: r.eventName })),
+    };
   }
 
   async myBraceletTransactions(
@@ -401,6 +407,55 @@ export class BraceletsService {
     const items = hasMore ? rows.slice(0, limit) : rows;
     const nextCursor = hasMore ? items[items.length - 1].id : null;
     return { transactions: items, nextCursor };
+  }
+
+  async myTransactions(
+    userId: string,
+    params: { limit?: number; cursor?: string } = {},
+  ) {
+    const limit = Math.min(params.limit ?? 20, 100);
+    const conditions: SQL<unknown>[] = [eq(eventBracelets.userId, userId)];
+    if (params.cursor) {
+      const cursorRow = await this.db
+        .select({ createdAt: transactions.createdAt })
+        .from(transactions)
+        .where(eq(transactions.id, params.cursor))
+        .limit(1);
+      if (cursorRow.length > 0) {
+        conditions.push(lt(transactions.createdAt, cursorRow[0].createdAt));
+      }
+    }
+
+    const rows = await this.db
+      .select({
+        transaction: transactions,
+        eventId: events.id,
+        eventName: events.name,
+      })
+      .from(transactions)
+      .innerJoin(
+        eventBracelets,
+        eq(eventBracelets.id, transactions.eventBraceletId),
+      )
+      .innerJoin(events, eq(events.id, eventBracelets.eventId))
+      .where(and(...conditions))
+      .orderBy(desc(transactions.createdAt))
+      .limit(limit + 1);
+
+    const hasMore = rows.length > limit;
+    const items = hasMore ? rows.slice(0, limit) : rows;
+    const nextCursor = hasMore
+      ? items[items.length - 1].transaction.id
+      : null;
+
+    return {
+      transactions: items.map((r) => ({
+        ...r.transaction,
+        eventId: r.eventId,
+        eventName: r.eventName,
+      })),
+      nextCursor,
+    };
   }
 
   async myEvents(userId: string) {

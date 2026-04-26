@@ -13,12 +13,6 @@ import { braceletAssignmentStatusEnum } from './enums';
 import { users } from './auth';
 import { events } from './events';
 
-// Festival-scoped link between a wristband UID and a user, plus the live
-// balance and counters that make this row act as the wallet for the event.
-// One wristband can be linked to one user per event at a time, and one user
-// can hold one active bracelet per event at a time. Older assignments stay
-// around with status 'revoked' or 'replaced' for audit and offline
-// reconciliation.
 export const eventBracelets = pgTable(
   'event_bracelets',
   {
@@ -33,14 +27,12 @@ export const eventBracelets = pgTable(
       .references(() => users.id),
     wristbandUid: varchar('wristband_uid', { length: 255 }).notNull(),
     status: braceletAssignmentStatusEnum('status').notNull().default('active'),
-    // The bracelet IS the wallet now: balance lives here, scoped to the
-    // event. debit_counter_seen mirrors the chip's monotonic debit counter
-    // and only moves up when we apply a debit (online charge or offline
-    // batch sync). credit_counter is server-owned and bumps on every
-    // successful credit (topup, refund) to give the chip a freshness check.
+
+    // balance of the server
     balance: integer('balance').notNull().default(0),
     debitCounterSeen: integer('debit_counter_seen').notNull().default(0),
     creditCounter: integer('credit_counter').notNull().default(0),
+
     linkedAt: timestamp('linked_at', { withTimezone: true })
       .notNull()
       .defaultNow(),

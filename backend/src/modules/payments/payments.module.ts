@@ -5,8 +5,6 @@ import { PaymentsService } from './payments.service';
 import { StripePaymentProvider } from './providers/stripe.provider';
 import { PAYMENT_PROVIDER } from './providers/payment-provider.interface';
 
-// To swap providers, change which class is bound to PAYMENT_PROVIDER below.
-// The service never imports the concrete adapter directly.
 @Module({
   controllers: [PaymentsController],
   providers: [
