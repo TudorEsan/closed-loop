@@ -81,64 +81,72 @@
 \newlabel{chap:architecture}{{3}{23}{System Architecture}{chapter.3}{}}
 \@writefile{toc}{\contentsline {section}{\numberline {3.1}High-level overview}{23}{section.3.1}\protected@file@percent }
 \newlabel{sec:high-level-overview}{{3.1}{23}{High-level overview}{section.3.1}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {3.2}Why this architecture}{24}{section.3.2}\protected@file@percent }
-\newlabel{sec:why-architecture}{{3.2}{24}{Why this architecture}{section.3.2}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.2.1}Architecture comparison}{24}{subsection.3.2.1}\protected@file@percent }
-\newlabel{subsec:architecture-comparison}{{3.2.1}{24}{Architecture comparison}{subsection.3.2.1}{}}
-\@writefile{lof}{\contentsline {figure}{\numberline {3.1}{\ignorespaces High-level system architecture. Payments happen directly between the vendor device and the NFC wristband without server involvement. The backend handles event management, top-ups, and transaction log synchronization. Server instances are stateless and horizontally scalable behind a load balancer.}}{25}{figure.3.1}\protected@file@percent }
-\newlabel{fig:system-architecture}{{3.1}{25}{High-level system architecture. Payments happen directly between the vendor device and the NFC wristband without server involvement. The backend handles event management, top-ups, and transaction log synchronization. Server instances are stateless and horizontally scalable behind a load balancer}{figure.3.1}{}}
-\@writefile{lot}{\contentsline {table}{\numberline {3.1}{\ignorespaces Comparison of the three architectural approaches for storing the user balance.}}{26}{table.3.1}\protected@file@percent }
-\newlabel{tab:architecture-comparison}{{3.1}{26}{Comparison of the three architectural approaches for storing the user balance}{table.3.1}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.2.2}What we learned from existing systems}{26}{subsection.3.2.2}\protected@file@percent }
-\newlabel{subsec:lessons-existing}{{3.2.2}{26}{What we learned from existing systems}{subsection.3.2.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.1.1}The hybrid reconciliation model}{24}{subsection.3.1.1}\protected@file@percent }
+\newlabel{subsec:hybrid-overview}{{3.1.1}{24}{The hybrid reconciliation model}{subsection.3.1.1}{}}
+\@writefile{lof}{\contentsline {figure}{\numberline {3.1}{\ignorespaces High-level system architecture. Debits happen directly between the vendor device and the NFC wristband. Credits go through the backend, which is also responsible for top-ups, sync, and reporting. Server instances are stateless and horizontally scalable behind a load balancer.}}{25}{figure.3.1}\protected@file@percent }
+\newlabel{fig:system-architecture}{{3.1}{25}{High-level system architecture. Debits happen directly between the vendor device and the NFC wristband. Credits go through the backend, which is also responsible for top-ups, sync, and reporting. Server instances are stateless and horizontally scalable behind a load balancer}{figure.3.1}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {3.2}Balance reconciliation model}{25}{section.3.2}\protected@file@percent }
+\newlabel{sec:reconciliation}{{3.2}{25}{Balance reconciliation model}{section.3.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2.1}State on each side}{25}{subsection.3.2.1}\protected@file@percent }
+\newlabel{subsec:reconciliation-state}{{3.2.1}{25}{State on each side}{subsection.3.2.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2.2}Invariants}{26}{subsection.3.2.2}\protected@file@percent }
+\newlabel{subsec:reconciliation-invariants}{{3.2.2}{26}{Invariants}{subsection.3.2.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2.3}The four operations}{27}{subsection.3.2.3}\protected@file@percent }
+\newlabel{subsec:reconciliation-ops}{{3.2.3}{27}{The four operations}{subsection.3.2.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2.4}Worked example}{27}{subsection.3.2.4}\protected@file@percent }
+\newlabel{subsec:reconciliation-example}{{3.2.4}{27}{Worked example}{subsection.3.2.4}{}}
+\citation{Shapiro2011}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2.5}Lost transactions}{28}{subsection.3.2.5}\protected@file@percent }
+\newlabel{subsec:reconciliation-lost}{{3.2.5}{28}{Lost transactions}{subsection.3.2.5}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.2.6}Comparison with alternatives}{28}{subsection.3.2.6}\protected@file@percent }
+\newlabel{subsec:reconciliation-alternatives}{{3.2.6}{28}{Comparison with alternatives}{subsection.3.2.6}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {3.1}{\ignorespaces Eight approaches to balance reconciliation between the chip and the server, evaluated for offline support, conflict handling, complexity, and loss profile.}}{29}{table.3.1}\protected@file@percent }
+\newlabel{tab:reconciliation-approaches}{{3.1}{29}{Eight approaches to balance reconciliation between the chip and the server, evaluated for offline support, conflict handling, complexity, and loss profile}{table.3.1}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {3.3}Lessons from related systems and patterns}{29}{section.3.3}\protected@file@percent }
+\newlabel{sec:why-architecture}{{3.3}{29}{Lessons from related systems and patterns}{section.3.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.3.1}What we learned from existing systems}{29}{subsection.3.3.1}\protected@file@percent }
+\newlabel{subsec:lessons-existing}{{3.3.1}{29}{What we learned from existing systems}{subsection.3.3.1}{}}
 \citation{Murdoch2010}
 \citation{Kleppmann2019}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.2.3}What we took from the architectural patterns}{27}{subsection.3.2.3}\protected@file@percent }
-\newlabel{subsec:lessons-patterns}{{3.2.3}{27}{What we took from the architectural patterns}{subsection.3.2.3}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {3.3}NFC wristbands and offline support}{29}{section.3.3}\protected@file@percent }
-\newlabel{sec:wristband-offline}{{3.3}{29}{NFC wristbands and offline support}{section.3.3}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.3.1}How a payment works}{29}{subsection.3.3.1}\protected@file@percent }
-\newlabel{subsec:how-payment-works}{{3.3.1}{29}{How a payment works}{subsection.3.3.1}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.3.2}Offline operation}{30}{subsection.3.3.2}\protected@file@percent }
-\newlabel{subsec:offline-operation}{{3.3.2}{30}{Offline operation}{subsection.3.3.2}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.3.3}Balance reconciliation model}{30}{subsection.3.3.3}\protected@file@percent }
-\newlabel{subsec:balance-reconciliation}{{3.3.3}{30}{Balance reconciliation model}{subsection.3.3.3}{}}
-\@writefile{toc}{\contentsline {subsubsection}{State and counters}{30}{section*.2}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{Invariants}{31}{section*.3}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{Operations}{31}{section*.4}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{Concurrent top-up and offline debit}{32}{section*.5}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{Lost transactions}{32}{section*.6}\protected@file@percent }
-\@writefile{toc}{\contentsline {subsubsection}{Why this model}{32}{section*.7}\protected@file@percent }
+\citation{Shapiro2011}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.3.2}What we took from the architectural patterns}{30}{subsection.3.3.2}\protected@file@percent }
+\newlabel{subsec:lessons-patterns}{{3.3.2}{30}{What we took from the architectural patterns}{subsection.3.3.2}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {3.4}NFC wristbands and offline support}{32}{section.3.4}\protected@file@percent }
+\newlabel{sec:wristband-offline}{{3.4}{32}{NFC wristbands and offline support}{section.3.4}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.4.1}How a payment works}{32}{subsection.3.4.1}\protected@file@percent }
+\newlabel{subsec:how-payment-works}{{3.4.1}{32}{How a payment works}{subsection.3.4.1}{}}
 \citation{Garcia2008}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.3.4}Top-ups: the one thing that needs the network}{33}{subsection.3.3.4}\protected@file@percent }
-\newlabel{subsec:topups}{{3.3.4}{33}{Top-ups: the one thing that needs the network}{subsection.3.3.4}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.3.5}Security of the wristband balance}{33}{subsection.3.3.5}\protected@file@percent }
-\newlabel{subsec:wristband-security-intro}{{3.3.5}{33}{Security of the wristband balance}{subsection.3.3.5}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {3.4}The mobile application}{34}{section.3.4}\protected@file@percent }
-\newlabel{sec:mobile-app}{{3.4}{34}{The mobile application}{section.3.4}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.4.1}Attendee view}{35}{subsection.3.4.1}\protected@file@percent }
-\newlabel{subsec:attendee-view}{{3.4.1}{35}{Attendee view}{subsection.3.4.1}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.4.2}Vendor POS mode}{35}{subsection.3.4.2}\protected@file@percent }
-\newlabel{subsec:vendor-pos}{{3.4.2}{35}{Vendor POS mode}{subsection.3.4.2}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.4.3}Device security checks}{35}{subsection.3.4.3}\protected@file@percent }
-\newlabel{subsec:device-security}{{3.4.3}{35}{Device security checks}{subsection.3.4.3}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {3.5}Admin dashboard}{36}{section.3.5}\protected@file@percent }
-\newlabel{sec:admin-dashboard}{{3.5}{36}{Admin dashboard}{section.3.5}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {3.6}Backend server}{36}{section.3.6}\protected@file@percent }
-\newlabel{sec:backend-server}{{3.6}{36}{Backend server}{section.3.6}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.6.1}Why a single service, not microservices}{37}{subsection.3.6.1}\protected@file@percent }
-\newlabel{subsec:why-monolith}{{3.6.1}{37}{Why a single service, not microservices}{subsection.3.6.1}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.6.2}Multi-tenancy}{37}{subsection.3.6.2}\protected@file@percent }
-\newlabel{subsec:multi-tenancy}{{3.6.2}{37}{Multi-tenancy}{subsection.3.6.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.4.2}Offline operation}{33}{subsection.3.4.2}\protected@file@percent }
+\newlabel{subsec:offline-operation}{{3.4.2}{33}{Offline operation}{subsection.3.4.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.4.3}Top-ups: the one thing that needs the network}{33}{subsection.3.4.3}\protected@file@percent }
+\newlabel{subsec:topups}{{3.4.3}{33}{Top-ups: the one thing that needs the network}{subsection.3.4.3}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.4.4}Security of the wristband balance}{33}{subsection.3.4.4}\protected@file@percent }
+\newlabel{subsec:wristband-security-intro}{{3.4.4}{33}{Security of the wristband balance}{subsection.3.4.4}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {3.5}The mobile application}{34}{section.3.5}\protected@file@percent }
+\newlabel{sec:mobile-app}{{3.5}{34}{The mobile application}{section.3.5}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.5.1}Attendee view}{34}{subsection.3.5.1}\protected@file@percent }
+\newlabel{subsec:attendee-view}{{3.5.1}{34}{Attendee view}{subsection.3.5.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.5.2}Vendor POS mode}{34}{subsection.3.5.2}\protected@file@percent }
+\newlabel{subsec:vendor-pos}{{3.5.2}{34}{Vendor POS mode}{subsection.3.5.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.5.3}Device security checks}{35}{subsection.3.5.3}\protected@file@percent }
+\newlabel{subsec:device-security}{{3.5.3}{35}{Device security checks}{subsection.3.5.3}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {3.6}Admin dashboard}{35}{section.3.6}\protected@file@percent }
+\newlabel{sec:admin-dashboard}{{3.6}{35}{Admin dashboard}{section.3.6}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {3.7}Backend server}{36}{section.3.7}\protected@file@percent }
+\newlabel{sec:backend-server}{{3.7}{36}{Backend server}{section.3.7}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.7.1}Why a single service, not microservices}{36}{subsection.3.7.1}\protected@file@percent }
+\newlabel{subsec:why-monolith}{{3.7.1}{36}{Why a single service, not microservices}{subsection.3.7.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.7.2}Multi-tenancy}{37}{subsection.3.7.2}\protected@file@percent }
+\newlabel{subsec:multi-tenancy}{{3.7.2}{37}{Multi-tenancy}{subsection.3.7.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.7.3}Horizontal scalability}{37}{subsection.3.7.3}\protected@file@percent }
+\newlabel{subsec:horizontal-scalability}{{3.7.3}{37}{Horizontal scalability}{subsection.3.7.3}{}}
 \citation{OpenAIPostgres2026}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.6.3}Horizontal scalability}{38}{subsection.3.6.3}\protected@file@percent }
-\newlabel{subsec:horizontal-scalability}{{3.6.3}{38}{Horizontal scalability}{subsection.3.6.3}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {3.7}Database: PostgreSQL}{38}{section.3.7}\protected@file@percent }
-\newlabel{sec:database}{{3.7}{38}{Database: PostgreSQL}{section.3.7}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.7.1}Why PostgreSQL}{38}{subsection.3.7.1}\protected@file@percent }
-\newlabel{subsec:why-postgres}{{3.7.1}{38}{Why PostgreSQL}{subsection.3.7.1}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {3.7.2}Why a single database is enough}{39}{subsection.3.7.2}\protected@file@percent }
-\newlabel{subsec:single-database}{{3.7.2}{39}{Why a single database is enough}{subsection.3.7.2}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {3.8}Database: PostgreSQL}{38}{section.3.8}\protected@file@percent }
+\newlabel{sec:database}{{3.8}{38}{Database: PostgreSQL}{section.3.8}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.8.1}Why PostgreSQL}{38}{subsection.3.8.1}\protected@file@percent }
+\newlabel{subsec:why-postgres}{{3.8.1}{38}{Why PostgreSQL}{subsection.3.8.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {3.8.2}Why a single database is enough}{38}{subsection.3.8.2}\protected@file@percent }
+\newlabel{subsec:single-database}{{3.8.2}{38}{Why a single database is enough}{subsection.3.8.2}{}}
 \@writefile{toc}{\contentsline {chapter}{\numberline {4}Implementation}{40}{chapter.4}\protected@file@percent }
 \@writefile{lof}{\addvspace {10\p@ }}
 \@writefile{lot}{\addvspace {10\p@ }}
@@ -216,7 +224,7 @@
 \bibcite{Fowler2005}{Fow05}
 \bibcite{Garcia2008}{GdKGM{$^{+}$}08}
 \bibcite{Gilbert2002}{GL02}
-\@writefile{toc}{\contentsline {chapter}{Bibliography}{45}{chapter*.8}\protected@file@percent }
+\@writefile{toc}{\contentsline {chapter}{Bibliography}{45}{chapter*.2}\protected@file@percent }
 \bibcite{Kleppmann2017json}{KB17}
 \bibcite{Kleppmann2019}{KWvHM19}
 \bibcite{Murdoch2010}{MDAB10}

@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.26 (TeX Live 2024) (preloaded format=pdflatex 2024.3.24)  26 APR 2026 15:00
+This is pdfTeX, Version 3.141592653-2.6-1.40.26 (TeX Live 2024) (preloaded format=pdflatex 2024.3.24)  26 APR 2026 16:29
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -502,7 +502,7 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 (fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
 
 [9]
-<images/felica-mutual-authentication.png, id=465, 849.1725pt x 671.50874pt>
+<images/felica-mutual-authentication.png, id=496, 849.1725pt x 671.50874pt>
 File: images/felica-mutual-authentication.png Graphic file (type png)
 <use images/felica-mutual-authentication.png>
 Package pdftex.def Info: images/felica-mutual-authentication.png  used on input
@@ -645,13 +645,22 @@ Chapter 3.
 [23
 
 ]
-<images/system-architecture.png, id=565, 1016.1162pt x 799.3062pt>
+LaTeX Font Info:    Trying to load font information for OT1+pcr on input line 2
+2.
+ (/usr/local/texlive/2024/texmf-dist/tex/latex/psnfss/ot1pcr.fd
+File: ot1pcr.fd 2001/06/04 font definitions for OT1/pcr.
+)
+Overfull \hbox (23.85852pt too wide) in paragraph at lines 22--23
+\OT1/ppl/m/n/12 mono-tonic counter the chip in-cre-ments on ev-ery pay-ment), a
+nd \OT1/pcr/m/n/12 credit[]counter[]seen
+ []
+
+<images/system-architecture.png, id=596, 1016.1162pt x 799.3062pt>
 File: images/system-architecture.png Graphic file (type png)
 <use images/system-architecture.png>
-Package pdftex.def Info: images/system-architecture.png  used on input line 21.
+Package pdftex.def Info: images/system-architecture.png  used on input line 30.
 
 (pdftex.def)             Requested size: 418.96548pt x 329.57152pt.
-
 
 Package fancyhdr Warning: \headheight is too small (12.0pt): 
 (fancyhdr)                Make it at least 14.49998pt, for example:
@@ -661,6 +670,11 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 (fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
 
 [24]
+LaTeX Font Info:    Trying to load font information for TS1+ppl on input line 4
+5.
+ (/usr/local/texlive/2024/texmf-dist/tex/latex/psnfss/ts1ppl.fd
+File: ts1ppl.fd 2001/06/04 font definitions for TS1/ppl.
+)
 
 Package fancyhdr Warning: \headheight is too small (12.0pt): 
 (fancyhdr)                Make it at least 14.49998pt, for example:
@@ -670,6 +684,19 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 (fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
 
 [25 <./images/system-architecture.png>]
+Overfull \hbox (58.97144pt too wide) in paragraph at lines 58--59
+\OT1/ppl/m/n/12 The chip owns \OT1/pcr/m/n/12 debit[]counter\OT1/ppl/m/n/12 ; t
+he server keeps a read-only mir-ror in \OT1/pcr/m/n/12 debit[]counter[]seen\OT1
+/ppl/m/n/12 .
+ []
+
+
+Overfull \hbox (73.37143pt too wide) in paragraph at lines 58--59
+\OT1/ppl/m/n/12 The server owns \OT1/pcr/m/n/12 credit[]counter\OT1/ppl/m/n/12 
+; the chip keeps a read-only mir-ror in \OT1/pcr/m/n/12 credit[]counter[]seen\O
+T1/ppl/m/n/12 .
+ []
+
 
 Package fancyhdr Warning: \headheight is too small (12.0pt): 
 (fancyhdr)                Make it at least 14.49998pt, for example:
@@ -679,6 +706,23 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 (fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
 
 [26]
+Overfull \hbox (20.23482pt too wide) in paragraph at lines 80--81
+\OT1/ppl/m/n/12 checks for pend-ing cred-its (any se-quence num-ber greater tha
+n \OT1/pcr/m/n/12 credit[]counter[]seen\OT1/ppl/m/n/12 )
+ []
+
+
+Overfull \hbox (50.53612pt too wide) in paragraph at lines 80--81
+\OT1/ppl/m/n/12 ledger, and re-turns the new triple \OT1/pcr/m/n/12 (balance, d
+ebit[]counter, credit[]counter[]seen)
+ []
+
+
+Overfull \hbox (30.91673pt too wide) in paragraph at lines 89--90
+\OT1/ppl/m/n/12 start-ing state is chip \OT1/pcr/m/n/12 (balance=50, debit[]cou
+nter=0, credit[]counter[]seen=0)
+ []
+
 
 Package fancyhdr Warning: \headheight is too small (12.0pt): 
 (fancyhdr)                Make it at least 14.49998pt, for example:
@@ -688,6 +732,32 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 (fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
 
 [27]
+Overfull \hbox (39.18288pt too wide) in paragraph at lines 96--98
+\OT1/pcr/m/n/12 1, 0) \OT1/ppl/m/n/12 from the chip and for-wards it to the ser
+ver. The server sees that \OT1/pcr/m/n/12 credit[]counter=1
+ []
+
+
+Overfull \hbox (77.77556pt too wide) in paragraph at lines 96--98
+\OT1/ppl/m/n/12 of 20 to-kens to ap-ply. It also sees that \OT1/pcr/m/n/12 debi
+t[]counter=1 \OT1/ppl/m/n/12 is greater than \OT1/pcr/m/n/12 debit[]counter[]se
+en=0\OT1/ppl/m/n/12 ,
+ []
+
+
+Overfull \hbox (14.12886pt too wide) in paragraph at lines 99--100
+\OT1/ppl/m/n/12 Both sides now sit at \OT1/pcr/m/n/12 balance=60 \OT1/ppl/m/n/1
+2 with \OT1/pcr/m/n/12 debit[]counter=1 \OT1/ppl/m/n/12 and \OT1/pcr/m/n/12 cre
+dit[]counter=1\OT1/ppl/m/n/12 .
+ []
+
+LaTeX Font Info:    External font `cmex10' loaded for size
+(Font)              <10.95> on input line 116.
+
+Overfull \hbox (408.63097pt too wide) in paragraph at lines 116--137
+ [][] 
+ []
+
 
 Package fancyhdr Warning: \headheight is too small (12.0pt): 
 (fancyhdr)                Make it at least 14.49998pt, for example:
@@ -697,11 +767,6 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 (fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
 
 [28]
-Overfull \hbox (4.76527pt too wide) in paragraph at lines 118--119
-\OT1/ppl/m/n/12 During nor-mal on-line op-er-a-tion, ven-dor ter-mi-nals send e
-ach trans-ac-tion to the server
- []
-
 
 Package fancyhdr Warning: \headheight is too small (12.0pt): 
 (fancyhdr)                Make it at least 14.49998pt, for example:
@@ -711,42 +776,6 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 (fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
 
 [29]
-LaTeX Font Info:    Trying to load font information for OT1+pcr on input line 1
-31.
- (/usr/local/texlive/2024/texmf-dist/tex/latex/psnfss/ot1pcr.fd
-File: ot1pcr.fd 2001/06/04 font definitions for OT1/pcr.
-)
-Overfull \hbox (101.25853pt too wide) in paragraph at lines 131--132
-\OT1/pcr/m/n/12 debit[]counter \OT1/ppl/m/n/12 (a mono-tonic counter in-cre-men
-ted on ev-ery chip-side debit), \OT1/pcr/m/n/12 credit[]counter[]seen
- []
-
-
-Overfull \hbox (24.98367pt too wide) in paragraph at lines 133--134
-[]\OT1/ppl/m/n/12 The server main-tains per-wallet: \OT1/pcr/m/n/12 balance \OT
-1/ppl/m/n/12 (the canon-i-cal bal-ance), \OT1/pcr/m/n/12 credit[]counter
- []
-
-
-Overfull \hbox (6.04631pt too wide) in paragraph at lines 135--136
-[]\OT1/ppl/m/n/12 The two coun-ters are in-de-pen-dent mono-tonic se-quences, e
-ach with a sin-gle writer.
- []
-
-
-Overfull \hbox (42.87965pt too wide) in paragraph at lines 135--136
-\OT1/ppl/m/n/12 The chip owns \OT1/pcr/m/n/12 debit[]counter\OT1/ppl/m/n/12 ; t
-he server is a read-only mir-ror via \OT1/pcr/m/n/12 debit[]counter[]seen\OT1/p
-pl/m/n/12 .
- []
-
-
-Overfull \hbox (57.27965pt too wide) in paragraph at lines 135--136
-\OT1/ppl/m/n/12 The server owns \OT1/pcr/m/n/12 credit[]counter\OT1/ppl/m/n/12 
-; the chip is a read-only mir-ror via \OT1/pcr/m/n/12 credit[]counter[]seen\OT1
-/ppl/m/n/12 .
- []
-
 
 Package fancyhdr Warning: \headheight is too small (12.0pt): 
 (fancyhdr)                Make it at least 14.49998pt, for example:
@@ -756,23 +785,6 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 (fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
 
 [30]
-Overfull \hbox (46.91048pt too wide) in paragraph at lines 152--153
-\OT1/ppl/m/n/12 checks for pend-ing cred-its (any with se-quence num-ber greate
-r than \OT1/pcr/m/n/12 credit[]counter[]seen\OT1/ppl/m/n/12 )
- []
-
-
-Overfull \hbox (55.25053pt too wide) in paragraph at lines 160--161
-\OT1/ppl/m/n/12 Consider the canon-i-cal hard case. A user starts with chip \OT
-1/pcr/m/n/12 (50, debit=6, credit[]seen=0)
- []
-
-
-Overfull \hbox (52.68289pt too wide) in paragraph at lines 160--161
-\OT1/ppl/m/n/12 rently, a 20-token top-up lands on the server, tak-ing it to \O
-T1/pcr/m/n/12 (70, credit=1, debit[]seen=6)\OT1/ppl/m/n/12 .
- []
-
 
 Package fancyhdr Warning: \headheight is too small (12.0pt): 
 (fancyhdr)                Make it at least 14.49998pt, for example:
@@ -782,16 +794,9 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 (fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
 
 [31]
-Overfull \hbox (75.37523pt too wide) in paragraph at lines 162--163
-\OT1/ppl/m/n/12 to-kens to ap-ply. It also ob-serves that \OT1/pcr/m/n/12 debit
-[]counter=7 \OT1/ppl/m/n/12 is greater than \OT1/pcr/m/n/12 debit[]counter[]see
-n=6\OT1/ppl/m/n/12 ,
- []
-
-
-Overfull \hbox (8.45053pt too wide) in paragraph at lines 166--167
-\OT1/pcr/m/n/12 debit[]counter[]seen \OT1/ppl/m/n/12 plus the count of pend-ing
- queued trans-ac-tions tracked server-
+Overfull \hbox (4.76527pt too wide) in paragraph at lines 203--204
+\OT1/ppl/m/n/12 During nor-mal on-line op-er-a-tion, ven-dor ter-mi-nals send e
+ach trans-ac-tion to the server
  []
 
 
@@ -812,9 +817,9 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 (fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
 
 [33]
-Overfull \hbox (5.88214pt too wide) in paragraph at lines 196--197
-\OT1/ppl/m/n/12 pro-tected. DES-Fire EV3 sup-ports se-cure mes-sag-ing, which m
-eans the data ex-changed
+Overfull \hbox (4.45444pt too wide) in paragraph at lines 238--239
+\OT1/ppl/m/n/12 When an ad-min has whitelisted a de-vice from the ad-min dash-b
+oard, the app switches
  []
 
 
@@ -826,11 +831,6 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 (fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
 
 [34]
-Overfull \hbox (4.45444pt too wide) in paragraph at lines 215--216
-\OT1/ppl/m/n/12 When an ad-min has whitelisted a de-vice from the ad-min dash-b
-oard, the app switches
- []
-
 
 Package fancyhdr Warning: \headheight is too small (12.0pt): 
 (fancyhdr)                Make it at least 14.49998pt, for example:
@@ -849,7 +849,7 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 (fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
 
 [36]
-Overfull \hbox (2.24538pt too wide) in paragraph at lines 262--263
+Overfull \hbox (2.24538pt too wide) in paragraph at lines 285--286
 \OT1/ppl/m/n/12 The server han-dles all fes-ti-vals from a sin-gle de-ploy-ment
 . Ev-ery ta-ble in the database
  []
@@ -979,14 +979,14 @@ LaTeX2e <2023-11-01> patch level 1
 L3 programming layer <2024-02-20>
  ***********
 Package rerunfilecheck Info: File `main.out' has not changed.
-(rerunfilecheck)             Checksum: 41488FABBE0ED6BD1EABD9557FB1FEA9;12976.
+(rerunfilecheck)             Checksum: BCD67A4061A918DBA2198DF233463A5B;14053.
  ) 
 Here is how much of TeX's memory you used:
- 10843 strings out of 474116
- 173203 string characters out of 5743682
+ 10893 strings out of 474116
+ 174092 string characters out of 5743682
  1941187 words of memory out of 5000000
- 32874 multiletter control sequences out of 15000+600000
- 571626 words of font info for 67 fonts, out of 8000000 for 9000
+ 32916 multiletter control sequences out of 15000+600000
+ 575187 words of font info for 76 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
  90i,12n,93p,2065b,592s stack positions out of 10000i,1000n,20000p,200000b,200000s
 </usr/local/texlive/2024/texmf-dist/fonts/type1/public/amsfonts/cm/cmmi12.pfb
@@ -997,10 +997,10 @@ texlive/2024/texmf-dist/fonts/type1/urw/palatino/uplb8a.pfb></usr/local/texlive
 /2024/texmf-dist/fonts/type1/urw/palatino/uplr8a.pfb></usr/local/texlive/2024/t
 exmf-dist/fonts/type1/urw/palatino/uplr8a.pfb></usr/local/texlive/2024/texmf-di
 st/fonts/type1/urw/palatino/uplri8a.pfb>
-Output written on main.pdf (53 pages, 592643 bytes).
+Output written on main.pdf (53 pages, 593531 bytes).
 PDF statistics:
- 803 PDF objects out of 1000 (max. 8388607)
- 720 compressed objects within 8 object streams
- 168 named destinations out of 1000 (max. 500000)
- 595 words of extra memory for PDF output out of 10000 (max. 10000000)
+ 834 PDF objects out of 1000 (max. 8388607)
+ 751 compressed objects within 8 object streams
+ 169 named destinations out of 1000 (max. 500000)
+ 643 words of extra memory for PDF output out of 10000 (max. 10000000)
 
