@@ -1,5 +1,4 @@
 import {
-  Alert,
   ImageBackground,
   Pressable,
   RefreshControl,
@@ -16,11 +15,13 @@ import { Spinner, useThemeColor } from 'heroui-native';
 
 import { extractErrorMessage } from '@/lib/api';
 import {
+  ActivityRow,
   BLUR_HEADER_HEIGHT,
   BlurHeader,
   Screen,
   TopupButton,
 } from '@/components/ui';
+import { ScopeChip } from '@/components/scope/scope-chip';
 import { useRecentTransactions, useWallet } from '@/hooks';
 import type { Transaction } from '@/types/api';
 
@@ -70,8 +71,8 @@ export function AttendeeHome() {
           <ImageBackground
             source={CURRENCIES_IMAGE}
             resizeMode="cover"
-            imageStyle={{ borderRadius: 28 }}
-            className="overflow-hidden rounded-[28px] border border-white h-52"
+            imageStyle={{ borderRadius: 24 }}
+            className="overflow-hidden rounded-3xl border border-white h-52"
           >
             <View className="px-6 py-8 items-center">
               <Text className="text-muted text-sm font-medium">
@@ -89,27 +90,27 @@ export function AttendeeHome() {
                 )}
               </View>
 
-              <View className="" style={{ height: 48, width: 160 }}>
+              <View style={{ height: 48, width: 160 }}>
                 <TopupButton />
               </View>
             </View>
           </ImageBackground>
 
           {walletError ? (
-            <Text className="mt-4 text-[13px] text-danger">
+            <Text className="mt-4 text-xs text-danger">
               Could not load your balance. {walletError}
             </Text>
           ) : null}
 
           <View className="mt-8 mb-3 flex-row items-center justify-between">
-            <Text className="text-[20px] font-semibold text-foreground">
+            <Text className="text-xl font-semibold text-foreground">
               Recent activity
             </Text>
             <Pressable
               onPress={() => router.push('/transactions')}
               hitSlop={6}
             >
-              <Text className="text-[14px] font-medium">
+              <Text className="text-sm font-medium">
                 View all
               </Text>
             </Pressable>
@@ -120,7 +121,7 @@ export function AttendeeHome() {
               <Spinner color={mutedColor} />
             </View>
           ) : txError ? (
-            <Text className="text-[13px] text-danger">
+            <Text className="text-xs text-danger">
               Could not load transactions. {txError}
             </Text>
           ) : transactions.length === 0 ? (
@@ -129,9 +130,9 @@ export function AttendeeHome() {
             <View>
               {transactions.slice(0, 6).map((tx, idx) => (
                 <View key={tx.id}>
-                  <ActivityRow tx={tx} />
+                  <AttendeeTxRow tx={tx} />
                   {idx < Math.min(transactions.length, 6) - 1 ? (
-                    <View className="h-px bg-separator ml-[60px]" />
+                    <View className="h-px bg-separator ml-14" />
                   ) : null}
                 </View>
               ))}
@@ -140,19 +141,7 @@ export function AttendeeHome() {
         </View>
       </Animated.ScrollView>
 
-      <BlurHeader
-        scrollY={scrollY}
-        title="Attendee"
-        right={
-          <Pressable
-            hitSlop={8}
-            onPress={() => Alert.alert('Notifications', 'Coming soon.')}
-            className="h-10 w-10 items-center justify-center"
-          >
-            <Ionicons name="notifications-outline" size={22} color="#0a0a0a" />
-          </Pressable>
-        }
-      />
+      <BlurHeader scrollY={scrollY} title="Wallet" right={<ScopeChip />} />
     </Screen>
   );
 }
@@ -160,7 +149,7 @@ export function AttendeeHome() {
 type IconStyle = {
   bg: string;
   fg: string;
-  icon: keyof typeof Ionicons.glyphMap;
+  icon: 'add' | 'return-up-back' | 'beer-outline' | 'bag-handle-outline';
 };
 
 function iconStyleFor(tx: Transaction): IconStyle {
@@ -172,43 +161,25 @@ function iconStyleFor(tx: Transaction): IconStyle {
   }
   const meta = tx.metadata as { vendorName?: string } | null;
   const seed = (meta?.vendorName ?? tx.id).charCodeAt(0) % 2;
-  const palette: IconStyle = seed === 0
+  return seed === 0
     ? { bg: '#16a34a', fg: '#ffffff', icon: 'beer-outline' }
     : { bg: '#7c3aed', fg: '#ffffff', icon: 'bag-handle-outline' };
-  return palette;
 }
 
-function ActivityRow({ tx }: { tx: Transaction }) {
+function AttendeeTxRow({ tx }: { tx: Transaction }) {
   const style = iconStyleFor(tx);
-  const title = activityTitle(tx);
-  const subtitle = activitySubtitle(tx);
   const isCredit = tx.type !== 'payment';
   const amountText = `${isCredit ? '+' : '-'}${formatBalance(Math.abs(tx.amount))}`;
-  const timeText = formatTimestamp(tx.serverTimestamp);
-
   return (
-    <View className="flex-row items-center gap-3 py-3">
-      <View
-        className="h-10 w-10 items-center justify-center rounded-full"
-        style={{ backgroundColor: style.bg }}
-      >
-        <Ionicons name={style.icon} size={18} color={style.fg} />
-      </View>
-      <View className="flex-1">
-        <Text className="text-[15px] font-semibold text-foreground" numberOfLines={1}>
-          {title}
-        </Text>
-        <Text className="mt-0.5 text-[12px] text-muted" numberOfLines={1}>
-          {subtitle}
-        </Text>
-      </View>
-      <View className="items-end">
-        <Text className="text-[15px] font-semibold text-foreground">
-          {amountText}
-        </Text>
-        <Text className="mt-0.5 text-[12px] text-muted">{timeText}</Text>
-      </View>
-    </View>
+    <ActivityRow
+      icon={style.icon}
+      iconBg={style.bg}
+      iconFg={style.fg}
+      title={activityTitle(tx)}
+      subtitle={activitySubtitle(tx)}
+      amount={amountText}
+      time={formatTimestamp(tx.serverTimestamp)}
+    />
   );
 }
 
@@ -263,10 +234,10 @@ function EmptyState() {
       <View className="mb-3 h-12 w-12 items-center justify-center rounded-full bg-surface-secondary">
         <Ionicons name="receipt-outline" size={22} color="#0a0a0a" />
       </View>
-      <Text className="text-[15px] font-semibold text-foreground">
+      <Text className="text-base font-semibold text-foreground">
         No transactions yet
       </Text>
-      <Text className="mt-1 text-center text-[13px] text-muted">
+      <Text className="mt-1 text-center text-xs text-muted">
         Your payments will appear here once you start spending.
       </Text>
     </View>

@@ -8,3 +8,5 @@ export {
 } from './use-transactions';
 export { useTopUp, TOPUP_CANCELED } from './use-topup';
 export { useMyEvents, MY_EVENTS_QUERY_KEY } from './use-my-events';
+export { useMyMemberships, MEMBERSHIPS_QUERY_KEY } from './use-memberships';
+export { useScope, type UseScopeValue } from './use-scope';

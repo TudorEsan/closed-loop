@@ -90,6 +90,8 @@ export default function RootLayout() {
                     name="transactions"
                     options={{ headerShown: true, title: "Transactions" }}
                   />
+                  <Stack.Screen name="select-scope" />
+                  <Stack.Screen name="charge" />
                 </Stack>
                 <StatusBar style="dark" />
               </AuthProvider>

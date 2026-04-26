@@ -1,13 +1,41 @@
-// Shared types that mirror what the backend returns. Kept lean — only fields
+// Shared types that mirror what the backend returns. Kept lean: only fields
 // we actually consume in the app.
 
-export type UserRole =
-  | 'super_admin'
-  | 'admin'
-  | 'organizer'
-  | 'operator'
-  | 'vendor'
-  | 'attendee';
+export type UserRole = 'super_admin' | 'user';
+
+export type EventMemberRole = 'admin' | 'operator';
+export type VendorMemberRole = 'owner' | 'manager' | 'cashier';
+
+export type EventMembership = {
+  eventId: string;
+  name: string;
+  status: string;
+  startDate: string;
+  endDate: string;
+  location: string | null;
+  role: EventMemberRole;
+  isOrganizer: boolean;
+};
+
+export type VendorMembership = {
+  vendorId: string;
+  businessName: string;
+  status: VendorStatus;
+  eventId: string;
+  eventName: string;
+  role: VendorMemberRole;
+};
+
+export type Memberships = {
+  isSuperAdmin: boolean;
+  events: EventMembership[];
+  vendors: VendorMembership[];
+};
+
+export type Scope =
+  | { kind: 'attendee' }
+  | { kind: 'event'; event: EventMembership }
+  | { kind: 'vendor'; vendor: VendorMembership };
 
 export type EventSummary = {
   id: string;
