@@ -1,56 +1,131 @@
 \chapter{Security Considerations}
 \label{chap:security}
 
-% Brief intro: why security is especially important for a payment system
-% The unique threat model of a festival environment
+A payment system fails differently from other software. A bug in a feed-ranking algorithm wastes a few seconds of attention; a bug in a wallet either gives money away or takes it from people who earned it. Festivals make this harder because the attack surface is wide and the operator is on-site for only a few days. Vendors hand their phones to teenagers, attendees swap wristbands at the gate, and the network drops out for fifteen minutes at a time. The system has to behave correctly under all of that.
+
+This chapter walks through the threat model in the order an attacker would meet it. We start with how users and devices authenticate to the API, then look at how we keep the wallet honest both online and offline, then explain why we are willing to trust a plain NFC chip with offline debits in this deployment, and finally cover Stripe and data protection. The architectural side of the reconciliation model was already covered in Chapter~\ref{chap:architecture}. Here we focus on the security properties of that model, on what an attacker can actually do, and on what stops them.
 
 \section{Authentication and Authorization}
 \label{sec:auth}
 
-% How users, vendors, and admins authenticate
-% JWT tokens, session management
-% Role-based access control: who can do what
-% Token expiration and refresh strategy
+The backend uses Better-Auth as the authentication layer, which issues signed session tokens that the mobile app and the admin dashboard send on every request. Internally these tokens follow a JWT-like structure, with a short-lived access token and a longer-lived refresh token. The access token carries the user's identifier and global role, and nothing else of value. Anything beyond identity (which event the user can touch, which vendor they belong to, whether they can issue refunds) is resolved on the server at request time, never trusted from the token.
+
+We deliberately keep the token small. Putting the full permission set into the token would mean revocation is delayed until expiry, which is the opposite of what we want when a vendor's phone is stolen mid-event. The tokens we issue have a short access lifetime (about fifteen minutes) and the refresh flow checks the user record on every renewal, so disabling an account at the dashboard takes effect within one refresh cycle.
+
+\subsection{Roles}
+\label{subsec:roles}
+
+After the role cleanup that the system underwent during this thesis, there are exactly two layers of role information stored in the database, and a couple of derived roles that only exist at the vendor scope. The two stored layers are:
+
+\begin{itemize}
+	\item \texttt{users.role}: a global role with values \texttt{super\_admin} or \texttt{user}. The \texttt{super\_admin} role is reserved for platform operators (the people running the SaaS itself, not the festival organizers).
+	\item \texttt{event\_members.role}: a per-event role with values \texttt{admin} or \texttt{operator}. \texttt{admin} can configure the event, approve vendors, run settlements; \texttt{operator} can do day-of operations like topping up bracelets at a cash booth and looking up transactions, but cannot change event configuration.
+\end{itemize}
+
+On top of that, vendors have their own membership table \texttt{vendor\_members.role} with three values: \texttt{owner}, \texttt{manager}, and \texttt{cashier}. The cashier is the person actually pressing buttons at a stand. The manager handles the menu and product list. The owner is the legal contact and the only one who can change banking details.
+
+The full permission set the API recognises is therefore: super admin, event admin, event operator, vendor owner, vendor manager, and vendor cashier, plus the attendee, which is just an authenticated user with no event or vendor membership but an active bracelet assignment in \texttt{event\_bracelets}.
+
+\subsection{The ScopeService}
+\label{subsec:scope-service}
+
+Roles by themselves are not enough. A user who is a vendor cashier at festival A must not be able to read transactions at festival B, even if the API endpoint is the same. To enforce this, every guarded controller resolves the caller's scope through a single \texttt{ScopeService} on the backend.
+
+The service exposes three methods that cover all the cases we need: \texttt{requireEventRole} (caller must be a member of this event with at least the given role), \texttt{requireVendorRole} (caller must belong to this vendor with at least the given role), and \texttt{requireEventOrVendorAccess} (caller must be either an event member or a member of any vendor at the event, used for read-only sync endpoints). Each of these throws \texttt{ForbiddenException} if the check fails, and returns the resolved entity if it succeeds, so the controller can use the row it just authorised against without a second database round trip.
+
+A useful property of this design is that elevation is implicit and ranked, never additive. The role ranks are ordered (\texttt{operator < admin}, and \texttt{cashier < manager < owner}), and \texttt{super\_admin} acts as ``admin everywhere'' by short-circuiting the check at the top of each method. The event organiser (the user listed as \texttt{events.organizer\_id}) is treated as event admin for their own events, and an event admin is treated as vendor owner for vendors at their event. The role table never duplicates rows; the privilege flows from the ownership graph.
 
 \section{Wallet Integrity and Double-Spend Prevention}
 \label{sec:double-spend}
 
-% The core security challenge of the system
+The wallet is the part of the system that holds money, so it is the part attackers care about. The reconciliation model in Chapter~\ref{chap:architecture} explains how chip and server stay in sync; this section focuses on the integrity properties that survive each of the failure modes an attacker can engineer, separated by online and offline mode because the threat model is genuinely different in each.
 
 \subsection{Online Mode}
 \label{subsec:double-spend-online}
 
-% PostgreSQL transactions ensure atomic balance updates
-% Serializable isolation or row-level locking
-% No double-spend possible when the server is the single source of truth
+When the terminal can reach the server, every debit goes through Postgres. Three properties together make double-spending impossible in this mode.
+
+\textbf{Serializable isolation on the bracelet row.} The transaction that debits a wallet runs at \texttt{SERIALIZABLE} isolation, with a row-level lock taken on the bracelet's wallet row before the balance is read. Two concurrent debits on the same bracelet cannot interleave: one wins, the other waits, and if the second one would have caused a negative balance it gets rejected at the application level rather than at the database level. We picked \texttt{SERIALIZABLE} over the more common \texttt{READ COMMITTED} because the cost (occasional retries on conflict) is small at our transaction rate and the guarantee (no anomalies, ever) means we never have to debug a phantom-read in a bank reconciliation report.
+
+\textbf{Atomic balance updates.} The debit, the counter increment, and the transaction insert all happen in the same database transaction. If any step fails, the whole thing rolls back. There is no window where the balance has been deducted but the transaction row is missing, or where the counter has advanced but the balance has not.
+
+\textbf{Idempotency keys on transactions.} Every debit request from a vendor terminal carries a client-generated \texttt{idempotency\_key} (a UUIDv4 generated before the network call). The server stores this key alongside the transaction row with a unique constraint. If the same request arrives twice (because the network hiccuped between the request and the response, and the terminal retried), the second attempt fails the unique-constraint check, the server returns the result of the first attempt, and the user is debited once.
 
 \subsection{Offline Mode}
 \label{subsec:double-spend-offline}
 
-% The problem: multiple terminals can approve transactions independently
-% Why full double-spend prevention is impossible without connectivity
-% Mitigation strategies: spending limits, balance snapshot freshness
-% Accepting controlled risk during short offline windows
+Offline mode is the harder case. The chip is acting as the authority on its own balance, the terminal queues transactions locally, and the server only finds out what happened when the terminal next syncs. Three mechanisms keep this honest.
+
+\textbf{Monotonic \texttt{debit\_counter}.} The chip's \texttt{debit\_counter} field increments by exactly one on every debit, in the same atomic write that updates the balance. The server tracks the highest value it has seen as \texttt{debit\_counter\_seen}. When a terminal eventually syncs, the server checks the sequence: every queued transaction must reference a counter that is strictly greater than the previous one and continuous with the chip's last reported value. A counter that goes backward, or skips, is an anomaly. The server flags the bracelet, freezes it, and surfaces it in the admin dashboard for staff to investigate.
+
+\textbf{Idempotency keys carry across the offline window.} The terminal generates the \texttt{idempotency\_key} the moment it commits the chip-side debit, before any sync attempt. If a queued transaction is replayed (because the terminal crashed and restored from a backup, or because two terminals somehow share a queue), the server's unique constraint catches it on the first sync and the duplicate is silently dropped.
+
+\textbf{Bounded loss model.} Even with all of the above, a terminal that physically dies before draining its queue takes whatever it had with it. The exposure is bounded by sync frequency. Concretely, with a sync interval of 30 seconds, a peak rate of 1 transaction per second per terminal, and an average ticket of 8 EUR, the worst case is roughly $30 \times 1 \times 8 = 240$ EUR per dead terminal. The festival absorbs this loss. We treat it as an operational cost in the same way a physical cash register absorbs the loss when a bag of cash falls out of an armoured van. It is bounded, predictable, and small relative to the gross revenue of the event.
+
+\subsection{NFC chip authoritativeness for offline debits}
+\label{subsec:nfc-authoritative}
+
+If the chip is just a plain NTAG-class NFC tag with no secure element, why are we willing to let it be the source of truth for offline debits at all? The short answer is that this is a closed-loop festival deployment with bounded loss, and the chip does not need to hold up against a nation-state attacker, only against the kind of person who would actually show up at a festival with a rooted phone. The longer answer is below.
+
+\subsubsection{Why a non-secure-element chip is operationally trusted}
+
+The chip stores four fields that matter: \texttt{balance}, \texttt{debit\_counter}, \texttt{credit\_counter\_seen}, and an \texttt{hmac} computed over those fields keyed by a per-bracelet HMAC key. The per-bracelet key is derived from a festival master key and the chip's UID, so each bracelet has its own key, but every terminal that has ever served the festival can derive any bracelet's key on demand. There is no secure element, no challenge-response protocol, no mutual authentication. The chip is dumb storage with an integrity tag.
+
+This is enough for our purposes for three reasons:
+
+\begin{enumerate}
+	\item \textbf{The festival is a closed loop.} Tokens can only be redeemed at vendors that the organiser has approved and whose payouts are reconciled at the end of the event. An attacker who magics ten thousand tokens onto their own bracelet still has to spend them at a real vendor, who in turn submits a transaction the server can see. Anomalies show up at settlement time, which is where the festival catches them.
+	\item \textbf{The chip cannot inflate its balance into the negative.} The terminal verifies the HMAC on read and refuses to debit a bracelet whose tag does not match. So while a determined attacker who has extracted a key can write any balance they want, a casual attacker with a phone and a tutorial cannot. The forensic trail exists either way.
+	\item \textbf{The \texttt{debit\_counter} chain is monotonic and auditable.} Every debit ever done on a bracelet is reflected in the counter. After the event, ops can replay every counter chain across all terminals' uploaded queues and find any gap, duplicate, or rollback. The chip cannot lie about its own history without leaving traces in the chain that the server reconstructs.
+\end{enumerate}
+
+\subsubsection{Threats with normal NFC and mitigations}
+
+There are three realistic attacks against a plain-NFC closed-loop wallet. We address each in turn.
+
+\textbf{Cloning.} The attacker reads a bracelet's UID, balance, debit counter, and HMAC, and writes them onto a second tag they control. They then use both tags in parallel at two different stands, hoping to spend the balance twice before the system notices. The mitigation is the reconciliation pass. As soon as both terminals come online, the server sees two debit chains starting from the same \texttt{debit\_counter} value, or two chains whose sequences interleave in a way that no real chip could produce. Either the counter goes backward (one of the clones' debit was committed against an earlier value) or the same idempotency key arrives twice for distinct amounts. The server freezes the bracelet, blocklists the UID, and pushes the blocklist to all terminals on next sync. The attacker's window is bounded by how often vendors come back online, which in practice is seconds to minutes. They get one ride before the system catches up.
+
+\textbf{Replay.} The attacker reads the chip in state $S_0$, lets the user spend down to $S_1$, and then writes $S_0$ back over the chip to undo the debits. This is a more interesting attack than cloning because it uses only the legitimate bracelet, not a duplicate. The mitigation is the same monotonic counter. The next online tap reads the chip's \texttt{debit\_counter} and finds it lower than the server's \texttt{debit\_counter\_seen}, which is impossible under the protocol's invariants. The bracelet is frozen on the spot and the attendee is sent to staff. The attacker has burned a bracelet to recover a small balance, which is not a profitable trade.
+
+\textbf{Terminal-key compromise.} The attacker roots a vendor phone (theirs or one they bought at a corner shop) and extracts the cached HMAC keys for every bracelet that has ever tapped it. This is the worst realistic threat because once the attacker has a key, they can forge any combination of balance, counter, and HMAC for the bracelets that key covers. The first line of defence is per-bracelet key derivation: a compromised terminal only exposes the keys for bracelets that have actually been served by that terminal, not the master key, so the blast radius is limited to a few thousand bracelets per compromised device rather than the whole event. The second line, in a production deployment, is to keep the festival master key in a hardware-backed keystore (Android StrongBox, iOS Secure Enclave) and only derive per-bracelet keys on demand inside that boundary. For the thesis demo we accept that a compromised terminal exposes the keys it has cached. We track which bracelets have been served by which terminal, and if a terminal is reported lost or rooted, we can blocklist its bracelet set proactively.
+
+The common thread across all three threats is that the chip's guarantees are weak on their own but strong when the server gets to watch the whole timeline. A single bracelet at a single moment can lie. A bracelet that has to stay consistent with itself across the whole event, against a server that checks the chain on every online tap, cannot.
+
+\subsubsection{Future hardening}
+
+The reconciliation protocol described in Chapter~\ref{chap:architecture} does not depend on the chip type. It works just as well with a plain NTAG-class tag as with a DESFire EV2 or EV3 secure element. For a production deployment, the recommended hardware upgrade is DESFire EV2 or EV3 with mutual AES-128 authentication. The main thing DESFire adds is that the chip itself cryptographically authenticates to the terminal before any read or write happens, which closes the cloning window almost completely. An attacker who wants to clone a DESFire bracelet has to extract the AES key from the chip, which is a hardware attack that needs laboratory equipment and is not realistic in a festival setting. Replay is closed because every read and write is bound to a per-session nonce that the chip generates. Terminal-key compromise is reduced because the terminal only ever holds the diversified key for the current bracelet, not a long-lived cache.
+
+The point of recording this here is that the thesis demo's NTAG-based chip is a deliberate cost choice, not a design constraint. The reconciliation model survives the upgrade unchanged; the chip type is a parameter, and DESFire is the parameter we would pick for the next deployment.
 
 \section{Offline Trust Model}
 \label{sec:offline-trust}
 
-% What the system trusts during offline operation
-% Vendor terminals are trusted devices (registered and authenticated)
-% Consumer identity verification: how do we know the QR/NFC is legitimate
-% Replay attack prevention: transaction IDs, timestamps, nonces
+When the terminal is offline, the question of who we trust gets sharper because the server is no longer in the loop. The trust model rests on three anchors: the terminal, the bracelet, and the chain that links them.
+
+\textbf{The vendor terminal as a trusted endpoint.} The mobile app is built and signed by us, and only signed builds can register against the API. Device registration ties a specific install to a specific vendor at a specific event, recorded server-side as an entry in the device whitelist. A device that is not on the whitelist cannot acquire the bracelet HMAC keys it needs to validate or write to a chip. If a vendor's phone is reported lost, the admin revokes its registration; the next time that device tries to sync, it is rejected, and any queued transactions still on it are flagged for manual review.
+
+\textbf{Consumer identity bound to the bracelet.} The attendee is identified by the \texttt{bracelet\_uid} on their chip, plus the active assignment in \texttt{event\_bracelets} that maps that UID to a user (or to an anonymous wallet, for users who have not registered an account). Identity verification at the chip level happens through the HMAC: the terminal will not engage with a chip whose tag does not verify against a key the terminal can derive. The server-side check, on the next online tap, confirms that the assignment is still active and that the bracelet has not been blocklisted.
+
+\textbf{Replay prevention through the chain.} The \texttt{debit\_counter} and the per-transaction \texttt{idempotency\_key} together prevent replay. The counter ensures the chip's history is strictly monotonic; the idempotency key ensures that even if a terminal somehow re-uploads a queued transaction (after a crash, a restore, a merge), the server processes it exactly once. Together they make ``the same money got spent twice'' an impossible event in normal operation, and a detectable event in the anomalous one.
 
 \section{Stripe and Payment Security}
 \label{sec:stripe-security}
 
-% PCI compliance: Stripe handles card data, we never see it
-% Webhook signature verification
-% Preventing fraudulent top-ups
+Real money enters the system through Stripe, and the security boundary there is the cleanest line in the whole architecture. We never see card numbers, CVVs, or anything else in PCI scope. The mobile app uses Stripe's SDK, which collects the card details directly from the user and sends them to Stripe's servers. What comes back to our backend is a \texttt{payment\_intent\_id} and a status. PCI compliance is inherited from Stripe rather than handled by us, which is the only sensible way to do it for a system this size.
+
+Two server-side concerns remain. First, webhooks. Stripe notifies us when a payment succeeds or fails by POSTing to a webhook endpoint, and an attacker who can guess that endpoint could try to forge a success notification to credit a wallet without paying. Stripe signs every webhook with an HMAC over the body, and our handler rejects any webhook whose signature does not verify against the signing secret stored in the server's environment. Second, idempotency on the credit side. A webhook can be delivered more than once (Stripe retries on transient failures), so the handler is written to be idempotent: it reads the \texttt{payment\_intent.status} from Stripe rather than trusting the webhook payload, and it checks that the wallet has not already been credited for this payment intent before incrementing the balance. A duplicated webhook produces zero extra credit.
+
+Fraud at the card level is handled by Stripe Radar, which scores transactions for suspicion and lets us configure thresholds for blocking, manual review, or 3D Secure step-up. Radar is not perfect, but it is far better than what we could build on our side, and getting it for free is one of the practical reasons for using Stripe in the first place.
 
 \section{Data Protection}
 \label{sec:data-protection}
 
-% What personal data the system stores
-% Encryption at rest and in transit (HTTPS, TLS)
-% GDPR considerations (if applicable)
-% Data retention and deletion policies
+The system holds two kinds of data with security implications: transaction logs (which are financial records and need to be retained for accounting) and personal data (which is regulated under GDPR and which we minimise).
+
+\textbf{Encryption in transit.} All API traffic is HTTPS with TLS 1.2 or higher. The mobile app uses certificate pinning against our backend's certificate, so a compromised CA cannot man-in-the-middle the connection without us noticing. NFC traffic is not encrypted at the radio level, but the HMAC on the chip's payload prevents tampering, and the actual amounts and balances that pass over the air do not constitute personal data on their own.
+
+\textbf{Encryption at rest.} The Postgres instance runs on Neon, which encrypts the underlying storage with AES-256. Backups are encrypted with the same scheme. Application-level encryption is used only for fields that are particularly sensitive, like Stripe customer IDs.
+
+\textbf{GDPR considerations.} The system stores the minimum amount of personal data we can get away with. The bracelet itself stores no PII at all: only the UID, the balance, the counters, and the HMAC. The mapping from UID to user is in the database, not on the chip, so a lost bracelet leaks nothing about its owner. Users can request deletion of their account; on deletion, we anonymise their record (replace the email and name with a tombstone value) but retain the transaction history with the anonymised user reference for accounting purposes. This is the standard ``right to erasure with legitimate interest'' carve-out that financial systems use.
+
+\textbf{Retention.} Transaction records are retained for the seven years required by Romanian tax law for financial documents. Personal data is purged on user deletion request as described above, except where it is part of a transaction record covered by the seven-year retention. Server logs (request logs, error logs) are retained for 90 days and then deleted automatically, which is enough to investigate incidents without becoming a liability of its own.
