@@ -150,72 +150,58 @@
 \@writefile{toc}{\contentsline {chapter}{\numberline {4}Implementation}{40}{chapter.4}\protected@file@percent }
 \@writefile{lof}{\addvspace {10\p@ }}
 \@writefile{lot}{\addvspace {10\p@ }}
-\newlabel{chap:implementation}{{4}{41}{Implementation}{chapter.4}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {4.1}NFC wristband integration}{41}{section.4.1}\protected@file@percent }
-\newlabel{sec:impl-nfc}{{4.1}{41}{NFC wristband integration}{section.4.1}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.1.1}DESFire authentication flow}{41}{subsection.4.1.1}\protected@file@percent }
-\newlabel{subsec:impl-desfire-auth}{{4.1.1}{41}{DESFire authentication flow}{subsection.4.1.1}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.1.2}Balance read/write protocol}{41}{subsection.4.1.2}\protected@file@percent }
-\newlabel{subsec:impl-balance-protocol}{{4.1.2}{41}{Balance read/write protocol}{subsection.4.1.2}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {4.2}Mobile application}{41}{section.4.2}\protected@file@percent }
-\newlabel{sec:impl-mobile-app}{{4.2}{41}{Mobile application}{section.4.2}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.2.1}Attendee screens}{41}{subsection.4.2.1}\protected@file@percent }
-\newlabel{subsec:impl-attendee}{{4.2.1}{41}{Attendee screens}{subsection.4.2.1}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.2.2}Vendor POS mode}{41}{subsection.4.2.2}\protected@file@percent }
-\newlabel{subsec:impl-vendor-pos}{{4.2.2}{41}{Vendor POS mode}{subsection.4.2.2}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.2.3}Device security checks}{41}{subsection.4.2.3}\protected@file@percent }
-\newlabel{subsec:impl-device-security}{{4.2.3}{41}{Device security checks}{subsection.4.2.3}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {4.3}Admin dashboard}{41}{section.4.3}\protected@file@percent }
-\newlabel{sec:impl-admin-dashboard}{{4.3}{41}{Admin dashboard}{section.4.3}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {4.4}Backend server}{41}{section.4.4}\protected@file@percent }
-\newlabel{sec:impl-backend}{{4.4}{41}{Backend server}{section.4.4}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.4.1}Authentication and authorization}{41}{subsection.4.4.1}\protected@file@percent }
-\newlabel{subsec:impl-auth}{{4.4.1}{41}{Authentication and authorization}{subsection.4.4.1}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.4.2}Event management module}{41}{subsection.4.4.2}\protected@file@percent }
-\newlabel{subsec:impl-event-management}{{4.4.2}{41}{Event management module}{subsection.4.4.2}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.4.3}Sync and reconciliation}{41}{subsection.4.4.3}\protected@file@percent }
-\newlabel{subsec:impl-sync}{{4.4.3}{41}{Sync and reconciliation}{subsection.4.4.3}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {4.4.4}Stripe integration}{41}{subsection.4.4.4}\protected@file@percent }
-\newlabel{subsec:impl-stripe}{{4.4.4}{41}{Stripe integration}{subsection.4.4.4}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {4.5}Database implementation}{41}{section.4.5}\protected@file@percent }
-\newlabel{sec:impl-database}{{4.5}{41}{Database implementation}{section.4.5}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {4.6}Offline transaction queue and sync protocol}{41}{section.4.6}\protected@file@percent }
-\newlabel{sec:impl-offline-sync}{{4.6}{41}{Offline transaction queue and sync protocol}{section.4.6}{}}
-\@writefile{toc}{\contentsline {chapter}{\numberline {5}Security Considerations}{42}{chapter.5}\protected@file@percent }
+\newlabel{chap:implementation}{{4}{40}{Implementation}{chapter.4}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {4.1}Implementation overview}{40}{section.4.1}\protected@file@percent }
+\newlabel{sec:impl-overview}{{4.1}{40}{Implementation overview}{section.4.1}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {4.2}Database schema for the hybrid model}{41}{section.4.2}\protected@file@percent }
+\newlabel{sec:impl-schema}{{4.2}{41}{Database schema for the hybrid model}{section.4.2}{}}
+\@writefile{lot}{\contentsline {table}{\numberline {4.1}{\ignorespaces New and changed columns introduced by the hybrid model rework.}}{42}{table.4.1}\protected@file@percent }
+\newlabel{tab:schema-changes}{{4.1}{42}{New and changed columns introduced by the hybrid model rework}{table.4.1}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {4.3}The reconciliation service and sync endpoint}{42}{section.4.3}\protected@file@percent }
+\newlabel{sec:impl-sync}{{4.3}{42}{The reconciliation service and sync endpoint}{section.4.3}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {4.4}Chip data layout and HMAC}{44}{section.4.4}\protected@file@percent }
+\newlabel{sec:impl-chip-layout}{{4.4}{44}{Chip data layout and HMAC}{section.4.4}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {4.5}Online debit path}{45}{section.4.5}\protected@file@percent }
+\newlabel{sec:impl-online-debit}{{4.5}{45}{Online debit path}{section.4.5}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {4.6}Offline debit path and the queue}{46}{section.4.6}\protected@file@percent }
+\newlabel{sec:impl-offline-debit}{{4.6}{46}{Offline debit path and the queue}{section.4.6}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {4.7}Topup path}{47}{section.4.7}\protected@file@percent }
+\newlabel{sec:impl-topup}{{4.7}{47}{Topup path}{section.4.7}{}}
+\@writefile{toc}{\contentsline {chapter}{\numberline {5}Security Considerations}{48}{chapter.5}\protected@file@percent }
 \@writefile{lof}{\addvspace {10\p@ }}
 \@writefile{lot}{\addvspace {10\p@ }}
-\newlabel{chap:security}{{5}{42}{Security Considerations}{chapter.5}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {5.1}Authentication and Authorization}{42}{section.5.1}\protected@file@percent }
-\newlabel{sec:auth}{{5.1}{42}{Authentication and Authorization}{section.5.1}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {5.2}Wallet Integrity and Double-Spend Prevention}{42}{section.5.2}\protected@file@percent }
-\newlabel{sec:double-spend}{{5.2}{42}{Wallet Integrity and Double-Spend Prevention}{section.5.2}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.2.1}Online Mode}{42}{subsection.5.2.1}\protected@file@percent }
-\newlabel{subsec:double-spend-online}{{5.2.1}{42}{Online Mode}{subsection.5.2.1}{}}
-\@writefile{toc}{\contentsline {subsection}{\numberline {5.2.2}Offline Mode}{42}{subsection.5.2.2}\protected@file@percent }
-\newlabel{subsec:double-spend-offline}{{5.2.2}{42}{Offline Mode}{subsection.5.2.2}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {5.3}Offline Trust Model}{42}{section.5.3}\protected@file@percent }
-\newlabel{sec:offline-trust}{{5.3}{42}{Offline Trust Model}{section.5.3}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {5.4}Stripe and Payment Security}{42}{section.5.4}\protected@file@percent }
-\newlabel{sec:stripe-security}{{5.4}{42}{Stripe and Payment Security}{section.5.4}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {5.5}Data Protection}{42}{section.5.5}\protected@file@percent }
-\newlabel{sec:data-protection}{{5.5}{42}{Data Protection}{section.5.5}{}}
-\@writefile{toc}{\contentsline {chapter}{\numberline {6}Discussion}{43}{chapter.6}\protected@file@percent }
+\newlabel{chap:security}{{5}{48}{Security Considerations}{chapter.5}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {5.1}Authentication and Authorization}{48}{section.5.1}\protected@file@percent }
+\newlabel{sec:auth}{{5.1}{48}{Authentication and Authorization}{section.5.1}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {5.2}Wallet Integrity and Double-Spend Prevention}{48}{section.5.2}\protected@file@percent }
+\newlabel{sec:double-spend}{{5.2}{48}{Wallet Integrity and Double-Spend Prevention}{section.5.2}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.2.1}Online Mode}{48}{subsection.5.2.1}\protected@file@percent }
+\newlabel{subsec:double-spend-online}{{5.2.1}{48}{Online Mode}{subsection.5.2.1}{}}
+\@writefile{toc}{\contentsline {subsection}{\numberline {5.2.2}Offline Mode}{48}{subsection.5.2.2}\protected@file@percent }
+\newlabel{subsec:double-spend-offline}{{5.2.2}{48}{Offline Mode}{subsection.5.2.2}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {5.3}Offline Trust Model}{48}{section.5.3}\protected@file@percent }
+\newlabel{sec:offline-trust}{{5.3}{48}{Offline Trust Model}{section.5.3}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {5.4}Stripe and Payment Security}{48}{section.5.4}\protected@file@percent }
+\newlabel{sec:stripe-security}{{5.4}{48}{Stripe and Payment Security}{section.5.4}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {5.5}Data Protection}{48}{section.5.5}\protected@file@percent }
+\newlabel{sec:data-protection}{{5.5}{48}{Data Protection}{section.5.5}{}}
+\@writefile{toc}{\contentsline {chapter}{\numberline {6}Discussion}{49}{chapter.6}\protected@file@percent }
 \@writefile{lof}{\addvspace {10\p@ }}
 \@writefile{lot}{\addvspace {10\p@ }}
-\newlabel{chap:discussion}{{6}{43}{Discussion}{chapter.6}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {6.1}Design Trade-offs}{43}{section.6.1}\protected@file@percent }
-\newlabel{sec:trade-offs}{{6.1}{43}{Design Trade-offs}{section.6.1}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {6.2}Comparison with Existing Solutions}{43}{section.6.2}\protected@file@percent }
-\newlabel{sec:comparison}{{6.2}{43}{Comparison with Existing Solutions}{section.6.2}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {6.3}Limitations}{43}{section.6.3}\protected@file@percent }
-\newlabel{sec:limitations-discussion}{{6.3}{43}{Limitations}{section.6.3}{}}
-\@writefile{toc}{\contentsline {section}{\numberline {6.4}Further Improvements}{43}{section.6.4}\protected@file@percent }
-\newlabel{sec:further-improvements}{{6.4}{43}{Further Improvements}{section.6.4}{}}
+\newlabel{chap:discussion}{{6}{49}{Discussion}{chapter.6}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {6.1}Design Trade-offs}{49}{section.6.1}\protected@file@percent }
+\newlabel{sec:trade-offs}{{6.1}{49}{Design Trade-offs}{section.6.1}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {6.2}Comparison with Existing Solutions}{49}{section.6.2}\protected@file@percent }
+\newlabel{sec:comparison}{{6.2}{49}{Comparison with Existing Solutions}{section.6.2}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {6.3}Limitations}{49}{section.6.3}\protected@file@percent }
+\newlabel{sec:limitations-discussion}{{6.3}{49}{Limitations}{section.6.3}{}}
+\@writefile{toc}{\contentsline {section}{\numberline {6.4}Further Improvements}{49}{section.6.4}\protected@file@percent }
+\newlabel{sec:further-improvements}{{6.4}{49}{Further Improvements}{section.6.4}{}}
 \bibdata{references}
-\@writefile{toc}{\contentsline {chapter}{\numberline {7}Conclusions}{44}{chapter.7}\protected@file@percent }
+\@writefile{toc}{\contentsline {chapter}{\numberline {7}Conclusions}{50}{chapter.7}\protected@file@percent }
 \@writefile{lof}{\addvspace {10\p@ }}
 \@writefile{lot}{\addvspace {10\p@ }}
-\newlabel{chap:conclusions}{{7}{44}{Conclusions}{chapter.7}{}}
+\newlabel{chap:conclusions}{{7}{50}{Conclusions}{chapter.7}{}}
 \bibcite{Chau2003}{CP03}
 \bibcite{DeCandia2007}{DHJ{$^{+}$}07}
 \bibcite{eFestivals2016}{{eFe}16}
@@ -224,7 +210,7 @@
 \bibcite{Fowler2005}{Fow05}
 \bibcite{Garcia2008}{GdKGM{$^{+}$}08}
 \bibcite{Gilbert2002}{GL02}
-\@writefile{toc}{\contentsline {chapter}{Bibliography}{45}{chapter*.2}\protected@file@percent }
+\@writefile{toc}{\contentsline {chapter}{Bibliography}{51}{chapter*.2}\protected@file@percent }
 \bibcite{Kleppmann2017json}{KB17}
 \bibcite{Kleppmann2019}{KWvHM19}
 \bibcite{Murdoch2010}{MDAB10}
@@ -241,4 +227,4 @@
 \bibcite{Tappit2024}{{Tap}24}
 \bibcite{Vogels2009}{Vog09}
 \bibcite{Young2010}{You10}
-\gdef \@abspage@last{53}
+\gdef \@abspage@last{59}
