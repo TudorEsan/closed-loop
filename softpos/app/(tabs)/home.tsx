@@ -8,6 +8,7 @@ import { theme } from '@/lib/theme';
 
 export default function HomeScreen() {
   const { scope, isLoading } = useScope();
+  console.log('scope', scope)
 
   if (isLoading || !scope) {
     return (
