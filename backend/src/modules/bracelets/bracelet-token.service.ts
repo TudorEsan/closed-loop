@@ -26,18 +26,6 @@ export type BraceletTokenPayload = {
   v: number;
 };
 
-// Short-lived token an attendee shows as a QR. An admin scans it from the
-// SoftPOS to prove "this user wants to bind a bracelet to this event right now".
-// Same key, different `kind` so a sync-bundle token cannot be replayed as a
-// link token and vice versa.
-export type BraceletLinkTokenPayload = {
-  kind: 'link';
-  eventId: string;
-  userId: string;
-  issuedAt: number;
-  expiresAt: number;
-};
-
 const base64urlEncode = (input: Buffer | string) =>
   Buffer.from(input)
     .toString('base64')
@@ -93,44 +81,6 @@ export class BraceletTokenService {
       throw new UnauthorizedException(
         'Bracelet token does not match this event',
       );
-    }
-    return payload;
-  }
-
-  // Attendee-facing QR token. Short-lived (5 min) so a screenshot leaked on
-  // social media cannot be replayed at the gate hours later.
-  issueLinkToken(args: { eventId: string; userId: string }): {
-    token: string;
-    expiresAt: number;
-  } {
-    const now = Date.now();
-    const expiresAt = now + 5 * 60 * 1000;
-    const payload: BraceletLinkTokenPayload = {
-      kind: 'link',
-      eventId: args.eventId,
-      userId: args.userId,
-      issuedAt: now,
-      expiresAt,
-    };
-    const body = base64urlEncode(JSON.stringify(payload));
-    const sig = createHmac('sha256', this.key).update(body).digest();
-    return { token: `${body}.${base64urlEncode(sig)}`, expiresAt };
-  }
-
-  verifyLinkToken(
-    token: string,
-    expected: { eventId: string },
-  ): BraceletLinkTokenPayload {
-    const payload = this.decodeAndVerify(token) as BraceletLinkTokenPayload & {
-      kind?: string;
-    };
-    if (payload.kind !== 'link') {
-      throw new UnauthorizedException(
-        'Wrong token kind: expected an attendee link token',
-      );
-    }
-    if (payload.eventId !== expected.eventId) {
-      throw new UnauthorizedException('Link token does not match this event');
     }
     return payload;
   }

@@ -1,8 +1,9 @@
 import axios, { AxiosError } from 'axios';
-import { router } from 'expo-router';
 
 import { config } from './config';
-import { authClient, getStoredToken, setStoredToken } from './auth';
+import { getStoredToken, setStoredToken } from './auth';
+import { queryClient } from './query';
+import { AUTH_SESSION_QUERY_KEY } from '@/hooks/use-auth';
 
 export const api = axios.create({
   baseURL: config.apiBaseUrl,
@@ -21,14 +22,15 @@ api.interceptors.request.use((cfg) => {
   return cfg;
 });
 
-// Guard so we only kick the user out once per stale session even if a
+// Guard so we only clear the session once per stale token even if a
 // bunch of queries 401 at the same time.
-let isSigningOut = false;
+let isClearingSession = false;
 
-// Any 401 from a non-auth route means the session the phone thinks it
-// has is dead on the backend side. Clear it and bounce back to login.
-// Without this the app just sits on the home screen with a stale UI
-// because nothing surfaces the failure.
+// A 401 from a non-auth route means the bearer token the phone has is
+// not accepted. Clear local state and let the auth context drive the
+// redirect to /login through Index/TabsLayout. We deliberately do NOT
+// call authClient.signOut() here, that would destroy the server-side
+// session and turn a transient hiccup into a hard sign-out.
 api.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
@@ -36,20 +38,14 @@ api.interceptors.response.use(
     const url = error.config?.url ?? '';
     const isAuthRoute = url.includes('/api/auth');
 
-    if (status === 401 && !isAuthRoute && !isSigningOut) {
-      isSigningOut = true;
+    if (status === 401 && !isAuthRoute && !isClearingSession) {
+      isClearingSession = true;
       try {
-        await authClient.signOut();
-      } catch {
-        // ignore, we just want to clear local state
-      }
-      await setStoredToken(null);
-      try {
-        router.replace('/login');
+        await setStoredToken(null);
+        queryClient.setQueryData(AUTH_SESSION_QUERY_KEY, null);
       } finally {
-        // release the guard on next tick so follow-up navigations work
         setTimeout(() => {
-          isSigningOut = false;
+          isClearingSession = false;
         }, 500);
       }
     }

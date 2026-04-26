@@ -1,12 +1,14 @@
 import { useEffect, useRef, useState } from 'react';
-import {
-  Alert,
-  Platform,
-  Pressable,
-  Text,
-  TextInput,
-  View,
-} from 'react-native';
+import { Alert, Platform, Pressable, Text, View } from 'react-native';
+import Animated, {
+  Easing,
+  cancelAnimation,
+  useAnimatedStyle,
+  useSharedValue,
+  withDelay,
+  withRepeat,
+  withTiming,
+} from 'react-native-reanimated';
 import { Stack, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { CameraView, useCameraPermissions } from 'expo-camera';
@@ -15,18 +17,10 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { Screen } from '@/components/ui';
 import { extractErrorMessage } from '@/lib/api';
-import { braceletsApi } from '@/lib/api/bracelets';
+import { braceletsApi, type RedeemTicketResponse } from '@/lib/api/bracelets';
 
 type Step = 'scan-qr' | 'read-nfc' | 'submitting' | 'done';
 
-type ParsedQr = {
-  eventId: string;
-  token: string;
-  expiresAt: number;
-};
-
-// Lazy require so the bundler does not pull native NFC bindings on web or
-// when the dev build does not include them.
 let NfcManager: typeof import('react-native-nfc-manager').default | null = null;
 let NfcTech: typeof import('react-native-nfc-manager').NfcTech | null = null;
 try {
@@ -40,20 +34,21 @@ try {
 export default function LinkBraceletScreen() {
   const [step, setStep] = useState<Step>('scan-qr');
   const [permission, requestPermission] = useCameraPermissions();
-  const [parsed, setParsed] = useState<ParsedQr | null>(null);
-  const [manualUid, setManualUid] = useState('');
+  const [token, setToken] = useState<string | null>(null);
+  const [isScanning, setIsScanning] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [result, setResult] = useState<RedeemTicketResponse | null>(null);
   const lastScanRef = useRef<number>(0);
   const queryClient = useQueryClient();
 
-  const linkMutation = useMutation({
-    mutationFn: (input: { eventId: string; token: string; uid: string }) =>
-      braceletsApi.linkByToken({
-        eventId: input.eventId,
-        linkToken: input.token,
+  const redeemMutation = useMutation({
+    mutationFn: (input: { token: string; uid: string }) =>
+      braceletsApi.redeemTicket({
+        token: input.token,
         wristbandUid: input.uid,
       }),
-    onSuccess: () => {
+    onSuccess: (data) => {
+      setResult(data);
       setStep('done');
       queryClient.invalidateQueries({ queryKey: ['my-events'] });
     },
@@ -67,37 +62,28 @@ export default function LinkBraceletScreen() {
     const now = Date.now();
     if (now - lastScanRef.current < 1500) return;
     lastScanRef.current = now;
-    try {
-      const json = JSON.parse(value);
-      if (
-        !json ||
-        typeof json !== 'object' ||
-        typeof json.eventId !== 'string' ||
-        typeof json.token !== 'string'
-      ) {
-        throw new Error('Not a festival QR');
-      }
-      setParsed({
-        eventId: json.eventId,
-        token: json.token,
-        expiresAt: typeof json.expiresAt === 'number' ? json.expiresAt : 0,
-      });
-      setError(null);
-      setStep('read-nfc');
-    } catch (e) {
-      setError(`Invalid QR code. ${(e as Error).message}`);
+
+    const candidate = value.trim();
+    if (candidate.length < 10) {
+      setError('That does not look like a ticket QR.');
+      return;
     }
+    setToken(candidate);
+    setError(null);
+    setStep('read-nfc');
   }
 
   async function readNfc() {
-    if (!parsed) return;
+    if (!token || isScanning) return;
     if (!NfcManager || !NfcTech) {
       Alert.alert(
         'NFC not available',
-        'Use the manual UID input below to continue.',
+        'This device does not support NFC reading.',
       );
       return;
     }
+    setError(null);
+    setIsScanning(true);
     try {
       await NfcManager.start();
       await NfcManager.requestTechnology(NfcTech.NfcA);
@@ -108,25 +94,40 @@ export default function LinkBraceletScreen() {
       }
       submit(uid);
     } catch (e) {
-      setError(extractErrorMessage(e));
+      const msg = extractErrorMessage(e);
+      if (msg && !/cancel/i.test(msg)) setError(msg);
     } finally {
       try {
         await NfcManager.cancelTechnologyRequest();
       } catch {
         // ignore
       }
+      setIsScanning(false);
     }
   }
 
+  async function cancelScan() {
+    if (!NfcManager) return;
+    try {
+      await NfcManager.cancelTechnologyRequest();
+    } catch {
+      // ignore
+    }
+    setIsScanning(false);
+  }
+
   function submit(uid: string) {
-    if (!parsed) return;
+    if (!token) return;
     setStep('submitting');
     setError(null);
-    linkMutation.mutate({
-      eventId: parsed.eventId,
-      token: parsed.token,
-      uid,
-    });
+    redeemMutation.mutate({ token, uid });
+  }
+
+  function startOver() {
+    setToken(null);
+    setResult(null);
+    setError(null);
+    setStep('scan-qr');
   }
 
   return (
@@ -152,17 +153,17 @@ export default function LinkBraceletScreen() {
 
       {step === 'read-nfc' || step === 'submitting' ? (
         <ReadNfcStep
-          eventId={parsed?.eventId ?? ''}
           onTap={readNfc}
-          manualUid={manualUid}
-          setManualUid={setManualUid}
-          onManualSubmit={() => submit(manualUid.trim())}
+          onCancel={cancelScan}
+          isScanning={isScanning}
           isSubmitting={step === 'submitting'}
           error={error}
         />
       ) : null}
 
-      {step === 'done' ? <DoneStep /> : null}
+      {step === 'done' && result ? (
+        <DoneStep result={result} onAgain={startOver} />
+      ) : null}
     </Screen>
   );
 }
@@ -190,7 +191,7 @@ function ScanQrStep({
           Camera access needed
         </Text>
         <Text className="mt-2 text-center text-sm text-muted">
-          We use the camera to scan the attendee QR code.
+          We use the camera to scan the attendee ticket QR.
         </Text>
         <Pressable
           onPress={onRequest}
@@ -208,7 +209,7 @@ function ScanQrStep({
     <View className="flex-1 bg-background">
       <View className="px-5 pb-3">
         <Text className="text-sm text-muted">
-          Step 1 of 2 — Scan the attendee QR
+          Step 1 of 2 — Scan the ticket QR from the email
         </Text>
       </View>
       <View className="flex-1 mx-5 overflow-hidden rounded-3xl">
@@ -228,77 +229,79 @@ function ScanQrStep({
 }
 
 function ReadNfcStep({
-  eventId,
   onTap,
-  manualUid,
-  setManualUid,
-  onManualSubmit,
+  onCancel,
+  isScanning,
   isSubmitting,
   error,
 }: {
-  eventId: string;
   onTap: () => void;
-  manualUid: string;
-  setManualUid: (v: string) => void;
-  onManualSubmit: () => void;
+  onCancel: () => void;
+  isScanning: boolean;
   isSubmitting: boolean;
   error: string | null;
 }) {
+  const busy = isScanning || isSubmitting;
+
   return (
     <View className="flex-1 px-5 bg-background">
-      <Text className="text-sm text-muted">Step 2 of 2 — Tap the bracelet</Text>
-      <View className="mt-4 rounded-3xl bg-surface px-6 py-8 items-center">
-        <View className="h-16 w-16 items-center justify-center rounded-full bg-surface-secondary mb-4">
-          <Ionicons name="radio-outline" size={28} color="#0a0a0a" />
-        </View>
-        <Text className="text-base font-semibold text-foreground">
-          Hold the bracelet near the phone
-        </Text>
-        <Text className="mt-1 text-center text-xs text-muted">
-          Event {eventId.slice(0, 8)}…
-        </Text>
-        <Pressable
-          onPress={onTap}
-          disabled={isSubmitting}
-          className="mt-5 rounded-2xl bg-foreground px-5 py-3"
-        >
-          {isSubmitting ? (
-            <Spinner color="#ffffff" />
-          ) : (
-            <Text className="text-sm font-semibold text-background">
-              {Platform.OS === 'ios' ? 'Start NFC' : 'Read tag'}
-            </Text>
-          )}
-        </Pressable>
+      <View className="self-start rounded-full bg-surface px-3 py-1.5">
+        <Text className="text-xs font-medium text-muted">Step 2 of 2</Text>
       </View>
 
-      <View className="mt-5 rounded-3xl bg-surface px-5 py-5">
-        <Text className="text-sm font-semibold text-foreground">
-          Or enter the UID manually
+      <View className="mt-5 overflow-hidden rounded-3xl bg-foreground px-6 py-10 items-center">
+        <View className="h-72 w-72 items-center justify-center">
+          <NfcPulse active={isScanning} />
+          <View className="h-32 w-32 items-center justify-center rounded-full bg-white/10 border border-white/20">
+            <Ionicons
+              name="wifi"
+              size={56}
+              color="#ffffff"
+              style={{ transform: [{ rotate: '-90deg' }] }}
+            />
+          </View>
+        </View>
+
+        <Text className="mt-2 text-xl font-semibold text-white text-center">
+          {isScanning
+            ? 'Scanning...'
+            : isSubmitting
+              ? 'Linking bracelet'
+              : 'Hold the bracelet near the phone'}
         </Text>
-        <Text className="mt-1 text-xs text-muted">
-          Useful when running on a simulator without NFC.
+        <Text className="mt-2 text-sm text-white/70 text-center">
+          {isScanning
+            ? 'Keep the wristband still on the back of the device'
+            : 'Ticket scanned, now tap the wristband'}
         </Text>
-        <TextInput
-          value={manualUid}
-          onChangeText={setManualUid}
-          placeholder="04:A1:B2:C3:D4:E5:F6"
-          autoCapitalize="characters"
-          autoCorrect={false}
-          className="mt-3 rounded-xl border border-border bg-background px-4 py-3 text-base text-foreground"
-        />
-        <Pressable
-          onPress={onManualSubmit}
-          disabled={isSubmitting || manualUid.trim().length < 4}
-          className="mt-3 rounded-2xl bg-foreground px-5 py-3 items-center"
-          style={{
-            opacity: isSubmitting || manualUid.trim().length < 4 ? 0.4 : 1,
-          }}
-        >
-          <Text className="text-sm font-semibold text-background">
-            Link bracelet
-          </Text>
-        </Pressable>
+      </View>
+
+      <View className="mt-6">
+        {isSubmitting ? (
+          <View className="items-center py-3">
+            <Spinner color="#0a0a0a" />
+          </View>
+        ) : isScanning ? (
+          <Pressable
+            onPress={onCancel}
+            className="rounded-full bg-surface px-5 py-4 items-center"
+          >
+            <Text className="text-base font-semibold text-foreground">
+              Cancel
+            </Text>
+          </Pressable>
+        ) : (
+          <Pressable
+            onPress={onTap}
+            disabled={busy}
+            className="rounded-full bg-foreground px-5 py-4 items-center"
+            style={{ opacity: busy ? 0.5 : 1 }}
+          >
+            <Text className="text-base font-semibold text-white">
+              {Platform.OS === 'ios' ? 'Start NFC scan' : 'Read tag'}
+            </Text>
+          </Pressable>
+        )}
       </View>
 
       {error ? (
@@ -308,7 +311,13 @@ function ReadNfcStep({
   );
 }
 
-function DoneStep() {
+function DoneStep({
+  result,
+  onAgain,
+}: {
+  result: RedeemTicketResponse;
+  onAgain: () => void;
+}) {
   return (
     <View className="flex-1 items-center justify-center px-8 bg-background">
       <View
@@ -321,14 +330,84 @@ function DoneStep() {
         Bracelet linked
       </Text>
       <Text className="mt-2 text-center text-sm text-muted">
-        The attendee can now pay at vendors.
+        {result.email} can now pay at vendors of {result.eventName}.
       </Text>
-      <Pressable
-        onPress={() => router.replace('/home')}
-        className="mt-6 rounded-2xl bg-foreground px-5 py-3"
-      >
-        <Text className="text-sm font-semibold text-background">Done</Text>
-      </Pressable>
+      <View className="mt-6 w-full gap-3">
+        <Pressable
+          onPress={onAgain}
+          className="rounded-2xl bg-foreground px-5 py-3 items-center"
+        >
+          <Text className="text-sm font-semibold text-background">
+            Link another
+          </Text>
+        </Pressable>
+        <Pressable
+          onPress={() => router.replace('/home')}
+          className="rounded-2xl bg-surface px-5 py-3 items-center"
+        >
+          <Text className="text-sm font-semibold text-foreground">Done</Text>
+        </Pressable>
+      </View>
     </View>
+  );
+}
+
+function NfcPulse({ active }: { active: boolean }) {
+  return (
+    <>
+      <PulseRing active={active} delay={0} />
+      <PulseRing active={active} delay={500} />
+      <PulseRing active={active} delay={1000} />
+    </>
+  );
+}
+
+function PulseRing({ active, delay }: { active: boolean; delay: number }) {
+  const progress = useSharedValue(0);
+
+  useEffect(() => {
+    if (active) {
+      progress.value = 0;
+      progress.value = withDelay(
+        delay,
+        withRepeat(
+          withTiming(1, { duration: 1500, easing: Easing.out(Easing.ease) }),
+          -1,
+          false,
+        ),
+      );
+    } else {
+      cancelAnimation(progress);
+      progress.value = withTiming(0, { duration: 200 });
+    }
+    return () => {
+      cancelAnimation(progress);
+    };
+  }, [active, delay, progress]);
+
+  const style = useAnimatedStyle(() => {
+    const scale = 1 + progress.value * 1.4;
+    const opacity = active ? (1 - progress.value) * 0.55 : 0;
+    return {
+      transform: [{ scale }],
+      opacity,
+    };
+  });
+
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={[
+        {
+          position: 'absolute',
+          width: 128,
+          height: 128,
+          borderRadius: 64,
+          borderWidth: 2,
+          borderColor: '#ffffff',
+        },
+        style,
+      ]}
+    />
   );
 }

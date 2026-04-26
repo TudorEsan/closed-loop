@@ -10,11 +10,22 @@ const TOKEN_KEY = 'softpos.bearer-token';
 // session cookies. The backend's bearer() plugin returns the token in
 // the `set-auth-token` response header on sign-in, and accepts it on
 // subsequent requests via the standard Authorization header.
+//
+// We keep an in-memory mirror so the very next request after sign-in
+// (e.g. /wallets/me firing as the home screen mounts) is guaranteed to
+// see the new token, without depending on the SecureStore write being
+// observable to the sync getter on the same tick.
+let cachedToken: string | null | undefined = undefined;
+
 export function getStoredToken(): string | null {
-  return SecureStore.getItem(TOKEN_KEY);
+  if (cachedToken !== undefined) return cachedToken;
+  const value = SecureStore.getItem(TOKEN_KEY);
+  cachedToken = value;
+  return value;
 }
 
 export async function setStoredToken(token: string | null): Promise<void> {
+  cachedToken = token;
   if (token) {
     await SecureStore.setItemAsync(TOKEN_KEY, token);
   } else {

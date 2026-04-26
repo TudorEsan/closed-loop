@@ -14,11 +14,14 @@ import { DevicesModule } from './modules/devices/devices.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { WalletsModule } from './modules/wallets/wallets.module';
 import { BraceletsModule } from './modules/bracelets/bracelets.module';
+import { TicketsModule } from './modules/tickets/tickets.module';
+import { EmailModule } from '@common/email/email.module';
 
 @Module({
   imports: [
     ConfigModule,
     DrizzleModule,
+    EmailModule,
     ThrottlerModule.forRootAsync({
       imports: [ConfigModule],
       useClass: ThrottlerConfigService,
@@ -31,6 +34,7 @@ import { BraceletsModule } from './modules/bracelets/bracelets.module';
     WalletsModule,
     PaymentsModule,
     BraceletsModule,
+    TicketsModule,
   ],
   controllers: [],
   providers: [

@@ -21,7 +21,12 @@ import {
 } from 'lucide-react';
 
 import { useIsMobile } from '@/hooks/use-mobile';
-import { eventsService, vendorsService, usersService } from '@/services';
+import {
+  eventsService,
+  vendorsService,
+  usersService,
+  ticketsService,
+} from '@/services';
 import type {
   Event,
   EventStatus,
@@ -90,6 +95,7 @@ import {
 } from '@/components/ui/table';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { BraceletsTab } from '@/components/event-detail/bracelets-tab';
+import { AttendeesTab } from '@/components/event-detail/attendees-tab';
 import {
   ToggleGroup,
   ToggleGroupItem,
@@ -1630,6 +1636,12 @@ export function EventDetailPage() {
     enabled: !!eventId,
   });
 
+  const { data: tickets } = useQuery({
+    queryKey: ['events', eventId, 'tickets'],
+    queryFn: () => ticketsService.list(eventId!).then((r) => r.data.tickets),
+    enabled: !!eventId,
+  });
+
   const statusMutation = useMutation({
     mutationFn: (newStatus: EventStatus) =>
       eventsService.updateStatus(eventId!, newStatus),
@@ -1666,6 +1678,8 @@ export function EventDetailPage() {
   const badgeConfig = STATUS_BADGE_CONFIG[event.status];
   const vendorCount = vendorData?.vendors?.length ?? 0;
   const memberCount = members?.length ?? 0;
+  const pendingInviteCount =
+    tickets?.filter((t) => t.status === 'pending').length ?? 0;
 
   return (
     <>
@@ -1745,6 +1759,14 @@ export function EventDetailPage() {
                 </Badge>
               )}
             </TabsTrigger>
+            <TabsTrigger value="attendees">
+              Attendees
+              {pendingInviteCount > 0 && (
+                <Badge variant="secondary" className="ml-1.5 px-1.5 py-0 text-[10px]">
+                  {pendingInviteCount}
+                </Badge>
+              )}
+            </TabsTrigger>
             <TabsTrigger value="bracelets">Bracelets</TabsTrigger>
           </TabsList>
 
@@ -1758,6 +1780,10 @@ export function EventDetailPage() {
 
           <TabsContent value="vendors" className="mt-4">
             <VendorsTab eventId={event.id} event={event} />
+          </TabsContent>
+
+          <TabsContent value="attendees" className="mt-4">
+            <AttendeesTab eventId={event.id} />
           </TabsContent>
 
           <TabsContent value="bracelets" className="mt-4">

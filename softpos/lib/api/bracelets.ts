@@ -6,17 +6,19 @@ export type MyEventRow = EventSummary & {
   linkedWristbandUid: string | null;
 };
 
-export type LinkTokenResponse = {
-  token: string;
-  expiresAt: number;
-};
-
-export type LinkByTokenResponse = {
-  id: string;
+export type RedeemTicketResponse = {
+  ticketId: string;
   eventId: string;
+  eventName: string;
+  email: string;
   userId: string;
-  wristbandUid: string;
-  status: 'active' | 'revoked' | 'replaced';
+  bracelet: {
+    id: string;
+    eventId: string;
+    userId: string;
+    wristbandUid: string;
+    status: 'active' | 'revoked' | 'replaced';
+  };
 };
 
 export const braceletsApi = {
@@ -25,22 +27,14 @@ export const braceletsApi = {
     return res.data.events ?? [];
   },
 
-  async issueLinkToken(eventId: string): Promise<LinkTokenResponse> {
-    const res = await api.post<LinkTokenResponse>(
-      `/me/events/${eventId}/link-token`,
-    );
-    return res.data;
-  },
-
-  async linkByToken(args: {
-    eventId: string;
-    linkToken: string;
+  async redeemTicket(args: {
+    token: string;
     wristbandUid: string;
-  }): Promise<LinkByTokenResponse> {
-    const res = await api.post<LinkByTokenResponse>(
-      `/events/${args.eventId}/bracelets/link-by-token`,
-      { linkToken: args.linkToken, wristbandUid: args.wristbandUid },
-    );
+  }): Promise<RedeemTicketResponse> {
+    const res = await api.post<RedeemTicketResponse>('/tickets/redeem', {
+      token: args.token,
+      wristbandUid: args.wristbandUid,
+    });
     return res.data;
   },
 };

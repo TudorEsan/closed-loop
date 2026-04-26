@@ -60,7 +60,7 @@ export function OperatorHome() {
                   Link bracelet
                 </Text>
                 <Text className="mt-0.5 text-xs text-muted">
-                  Scan attendee QR, tap their wristband
+                  Scan ticket QR, tap their wristband
                 </Text>
               </View>
             </View>

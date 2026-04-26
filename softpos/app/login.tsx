@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
   Image,
+  Keyboard,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -27,6 +28,23 @@ import { extractErrorMessage } from '@/lib/api';
 import { Screen } from '@/components/ui';
 
 type Step = 'email' | 'otp';
+
+function useKeyboardVisible() {
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    const showEvent = Platform.OS === 'ios' ? 'keyboardWillShow' : 'keyboardDidShow';
+    const hideEvent = Platform.OS === 'ios' ? 'keyboardWillHide' : 'keyboardDidHide';
+    const showSub = Keyboard.addListener(showEvent, () => setVisible(true));
+    const hideSub = Keyboard.addListener(hideEvent, () => setVisible(false));
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
+
+  return visible;
+}
 
 export default function LoginScreen() {
   const { setSession } = useAuthContext();
@@ -158,6 +176,8 @@ function EmailStep({
   error: string | null;
   onSubmit: () => void;
 }) {
+  const keyboardVisible = useKeyboardVisible();
+
   return (
     <View className="flex-1">
       <Text className="text-[34px] font-bold leading-[38px] text-foreground">
@@ -167,13 +187,17 @@ function EmailStep({
         Sign up or log in with your email to get going.
       </Text>
 
-      <View className="my-8 items-center justify-center">
-        <Image
-          source={require('../assets/images/currencies.png')}
-          style={{ width: 260, height: 260 }}
-          resizeMode="contain"
-        />
-      </View>
+      {keyboardVisible ? (
+        <View className="h-6" />
+      ) : (
+        <View className="my-8 items-center justify-center">
+          <Image
+            source={require('../assets/images/currencies.png')}
+            style={{ width: 260, height: 260 }}
+            resizeMode="contain"
+          />
+        </View>
+      )}
 
       <TextField isInvalid={!!error}>
         <Input
@@ -234,6 +258,7 @@ function OtpStep({
   onResend: () => void;
 }) {
   const mutedColor = useThemeColor('muted');
+  const keyboardVisible = useKeyboardVisible();
 
   return (
     <View className="flex-1">
@@ -250,13 +275,17 @@ function OtpStep({
         your spam folder.
       </Text>
 
-      <View className="my-8 items-center justify-center">
-        <Image
-          source={require('../assets/images/email-sent.png')}
-          style={{ width: 220, height: 220 }}
-          resizeMode="contain"
-        />
-      </View>
+      {keyboardVisible ? (
+        <View className="h-6" />
+      ) : (
+        <View className="my-8 items-center justify-center">
+          <Image
+            source={require('../assets/images/email-sent.png')}
+            style={{ width: 220, height: 220 }}
+            resizeMode="contain"
+          />
+        </View>
+      )}
 
       <InputOTP
         value={otp}

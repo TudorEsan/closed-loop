@@ -19,7 +19,6 @@ import {
   vendorMembers,
 } from '@common/database/schemas';
 import { LinkBraceletDto } from './dto/link-bracelet.dto';
-import { LinkBraceletByTokenDto } from './dto/link-bracelet-by-token.dto';
 import { ReplaceBraceletDto } from './dto/replace-bracelet.dto';
 import { RevokeBraceletDto } from './dto/revoke-bracelet.dto';
 import { ListBraceletsDto } from './dto/list-bracelets.dto';
@@ -328,10 +327,12 @@ export class BraceletsService {
     }
   }
 
-  // Attendee-facing: events the user can show a QR for. We treat any event in
-  // a runnable state (setup or active) as joinable; no ticket schema yet.
+  // Attendee-facing list of festivals the user is part of. With the
+  // ticket-based linking flow, "being part of a festival" means having
+  // an active wristband for it. The QR is no longer issued from the
+  // user's app, it is delivered by email and redeemed at the gate.
   async myEvents(userId: string) {
-    const eventRows = await this.db
+    const rows = await this.db
       .select({
         id: events.id,
         name: events.name,
@@ -339,134 +340,19 @@ export class BraceletsService {
         endDate: events.endDate,
         status: events.status,
         location: events.location,
-      })
-      .from(events)
-      .where(or(eq(events.status, 'setup'), eq(events.status, 'active'))!)
-      .orderBy(desc(events.startDate));
-
-    if (eventRows.length === 0) {
-      return { events: [] as const };
-    }
-
-    const linkedRows = await this.db
-      .select({
-        eventId: eventBracelets.eventId,
-        wristbandUid: eventBracelets.wristbandUid,
+        linkedWristbandUid: eventBracelets.wristbandUid,
       })
       .from(eventBracelets)
+      .innerJoin(events, eq(events.id, eventBracelets.eventId))
       .where(
         and(
           eq(eventBracelets.userId, userId),
           eq(eventBracelets.status, 'active'),
         ),
-      );
+      )
+      .orderBy(desc(events.startDate));
 
-    const linkedByEvent = new Map(
-      linkedRows.map((r) => [r.eventId, r.wristbandUid]),
-    );
-
-    return {
-      events: eventRows.map((e) => ({
-        ...e,
-        linkedWristbandUid: linkedByEvent.get(e.id) ?? null,
-      })),
-    };
-  }
-
-  async issueLinkToken(eventId: string, userId: string) {
-    await this.requireEvent(eventId);
-    return this.tokens.issueLinkToken({ eventId, userId });
-  }
-
-  async linkByToken(
-    eventId: string,
-    operatorId: string,
-    operatorRole: string,
-    dto: LinkBraceletByTokenDto,
-    ipAddress: string | null,
-  ) {
-    const event = await this.requireEvent(eventId);
-
-    // Either an event admin (super_admin/admin/organizer) or an operator
-    // member of this event can complete the link. The same gate as the
-    // by-uid lookup, since both are gate-side actions.
-    const isAdmin = await this.isEventAdmin(
-      eventId,
-      operatorId,
-      operatorRole,
-      event.organizerId,
-    );
-    const isOperator =
-      operatorRole === 'operator' &&
-      (await this.isEventMember(eventId, operatorId));
-
-    if (!isAdmin && !isOperator) {
-      throw new ForbiddenException(
-        'Only event admins or assigned operators can link bracelets at the gate',
-      );
-    }
-
-    if (event.status === 'closed') {
-      throw new BadRequestException(
-        'Event is closed, bracelet links cannot change',
-      );
-    }
-
-    const payload = this.tokens.verifyLinkToken(dto.linkToken, { eventId });
-
-    const targetUser = await this.db
-      .select({ id: users.id, isActive: users.isActive })
-      .from(users)
-      .where(eq(users.id, payload.userId))
-      .limit(1);
-
-    if (targetUser.length === 0) {
-      throw new NotFoundException('User from link token not found');
-    }
-    if (targetUser[0].isActive === false) {
-      throw new BadRequestException(
-        'Cannot link a bracelet to a deactivated user',
-      );
-    }
-
-    const expiresAt = this.tokens.expiryFromEventEnd(new Date(event.endDate));
-
-    let inserted: typeof eventBracelets.$inferSelect;
-    try {
-      const rows = await this.db
-        .insert(eventBracelets)
-        .values({
-          eventId,
-          userId: payload.userId,
-          wristbandUid: dto.wristbandUid,
-          linkedBy: operatorId,
-          tokenExpiresAt: expiresAt,
-        })
-        .returning();
-      inserted = rows[0];
-    } catch (err) {
-      if (isUniqueViolation(err)) {
-        throw new ConflictException(
-          'This wristband is already linked at this event, or this user already has an active bracelet at this event',
-        );
-      }
-      throw err;
-    }
-
-    await this.writeAudit({
-      eventId,
-      actorId: operatorId,
-      action: 'bracelet.link_by_token',
-      assignmentId: inserted.id,
-      changes: {
-        userId: payload.userId,
-        wristbandUid: dto.wristbandUid,
-        viaQrToken: true,
-      },
-      ipAddress,
-    });
-
-    return this.toAssignmentWithToken(inserted);
+    return { events: rows };
   }
 
   async syncBundle(eventId: string, callerId: string, callerRole: string) {

@@ -1,6 +1,4 @@
-import { useMemo } from 'react';
-import { Pressable, RefreshControl, ScrollView, Text, View } from 'react-native';
-import { router } from 'expo-router';
+import { RefreshControl, ScrollView, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { Spinner } from 'heroui-native';
 
@@ -15,16 +13,6 @@ export default function FestivalsScreen() {
     ? extractErrorMessage(eventsQuery.error)
     : null;
   const items = eventsQuery.data ?? [];
-
-  const { active, available } = useMemo(() => {
-    const a: MyEventRow[] = [];
-    const b: MyEventRow[] = [];
-    for (const e of items) {
-      if (e.linkedWristbandUid) a.push(e);
-      else b.push(e);
-    }
-    return { active: a, available: b };
-  }, [items]);
 
   return (
     <Screen edgeBottom={false}>
@@ -55,28 +43,18 @@ export default function FestivalsScreen() {
         ) : items.length === 0 ? (
           <EmptyState />
         ) : (
-          <View className="gap-6">
-            {active.length > 0 ? (
-              <Section
-                title="You're in"
-                subtitle="Your bracelet is connected. Ready to pay."
-              >
-                {active.map((event) => (
-                  <ActiveCard key={event.id} event={event} />
-                ))}
-              </Section>
-            ) : null}
-
-            {available.length > 0 ? (
-              <Section
-                title="Link your bracelet"
-                subtitle="Tap a festival to see how it works."
-              >
-                {available.map((event) => (
-                  <AvailableCard key={event.id} event={event} />
-                ))}
-              </Section>
-            ) : null}
+          <View>
+            <Text className="text-sm font-semibold text-foreground">
+              You're in
+            </Text>
+            <Text className="mt-0.5 text-xs text-muted">
+              Your bracelet is connected. Ready to pay.
+            </Text>
+            <View className="mt-3 gap-3">
+              {items.map((event) => (
+                <FestivalCard key={event.id} event={event} />
+              ))}
+            </View>
           </View>
         )}
       </ScrollView>
@@ -84,30 +62,9 @@ export default function FestivalsScreen() {
   );
 }
 
-function Section({
-  title,
-  subtitle,
-  children,
-}: {
-  title: string;
-  subtitle: string;
-  children: React.ReactNode;
-}) {
+function FestivalCard({ event }: { event: MyEventRow }) {
   return (
-    <View>
-      <Text className="text-sm font-semibold text-foreground">{title}</Text>
-      <Text className="mt-0.5 text-xs text-muted">{subtitle}</Text>
-      <View className="mt-3 gap-3">{children}</View>
-    </View>
-  );
-}
-
-function ActiveCard({ event }: { event: MyEventRow }) {
-  return (
-    <Pressable
-      onPress={() => router.push(`/event-qr?eventId=${event.id}`)}
-      className="rounded-2xl bg-surface px-5 py-4"
-    >
+    <View className="rounded-2xl bg-surface px-5 py-4">
       <View className="flex-row items-center gap-3">
         <View
           className="h-10 w-10 items-center justify-center rounded-full"
@@ -133,38 +90,12 @@ function ActiveCard({ event }: { event: MyEventRow }) {
           <Text className="text-xs font-semibold text-success">Connected</Text>
         </View>
       </View>
-    </Pressable>
-  );
-}
-
-function AvailableCard({ event }: { event: MyEventRow }) {
-  return (
-    <Pressable
-      onPress={() => router.push(`/event-qr?eventId=${event.id}`)}
-      className="rounded-2xl border border-border bg-surface px-5 py-4"
-    >
-      <View className="flex-row items-center gap-3">
-        <View className="h-10 w-10 items-center justify-center rounded-full bg-surface-secondary">
-          <Ionicons name="calendar-outline" size={20} color="#0a0a0a" />
-        </View>
-        <View className="flex-1">
-          <Text
-            className="text-base font-semibold text-foreground"
-            numberOfLines={1}
-          >
-            {event.name}
-          </Text>
-          <Text className="mt-0.5 text-xs text-muted" numberOfLines={1}>
-            {formatDateRange(event.startDate, event.endDate)}
-          </Text>
-        </View>
-        <View className="rounded-full bg-foreground px-3 py-1.5">
-          <Text className="text-xs font-semibold text-background">
-            Get bracelet
-          </Text>
-        </View>
-      </View>
-    </Pressable>
+      {event.linkedWristbandUid ? (
+        <Text className="mt-3 text-xs text-muted font-mono">
+          Bracelet {event.linkedWristbandUid}
+        </Text>
+      ) : null}
+    </View>
   );
 }
 
@@ -175,11 +106,11 @@ function EmptyState() {
         <Ionicons name="calendar-outline" size={26} color="#0a0a0a" />
       </View>
       <Text className="text-base font-semibold text-foreground">
-        Nothing here yet
+        No festivals yet
       </Text>
       <Text className="mt-2 text-center text-sm text-muted">
-        Festivals show up here when they're open. Come back when you arrive at
-        the gate.
+        Your festivals show up here once your bracelet has been linked at the
+        gate. The organizer sends you a ticket by email.
       </Text>
     </View>
   );

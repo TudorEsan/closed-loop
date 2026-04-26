@@ -12,8 +12,10 @@ const db = drizzle({ client, schema });
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-const REVIEWER_EMAIL = 'attendee@tudor.esan';
-const REVIEWER_OTP = '111111';
+const REVIEWER_OTPS: Record<string, string> = {
+  'attendee@tudor.esan': '111111',
+  'admin@tudor.esan': '111112',
+};
 
 export const auth = betterAuth({
   database: drizzleAdapter(db, {
@@ -67,12 +69,11 @@ export const auth = betterAuth({
     bearer(),
     emailOTP({
       generateOTP: ({ email }) => {
-        if (email === REVIEWER_EMAIL) return REVIEWER_OTP;
-        return undefined;
+        return REVIEWER_OTPS[email];
       },
       async sendVerificationOTP({ email, otp, type }) {
-        if (email === REVIEWER_EMAIL) {
-          // Reviewer account uses a fixed OTP, do not send an email.
+        if (REVIEWER_OTPS[email]) {
+          // Reviewer accounts use fixed OTPs, do not send an email.
           return;
         }
         await resend.emails.send({

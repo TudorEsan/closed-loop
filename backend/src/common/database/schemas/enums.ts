@@ -95,3 +95,9 @@ export const braceletAssignmentStatusEnum = pgEnum(
   'bracelet_assignment_status',
   ['active', 'revoked', 'replaced'],
 );
+export const eventTicketStatusEnum = pgEnum('event_ticket_status', [
+  'pending',
+  'redeemed',
+  'revoked',
+  'expired',
+]);

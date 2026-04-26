@@ -1,14 +1,14 @@
 import { ApiProperty } from '@nestjs/swagger';
 import { IsString, Length, Matches } from 'class-validator';
 
-export class LinkBraceletByTokenDto {
+export class RedeemTicketDto {
   @ApiProperty({
     description:
-      'Short-lived signed link token shown by the attendee as a QR code',
+      'Token contents read from the ticket QR code (the email-issued ticket)',
   })
   @IsString()
   @Length(10, 4096)
-  linkToken!: string;
+  token!: string;
 
   @ApiProperty({
     description: 'Wristband UID read from the NFC chip',
