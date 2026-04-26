@@ -12,30 +12,32 @@ import {
 import { sql } from 'drizzle-orm';
 import { transactionTypeEnum, transactionStatusEnum } from './enums';
 import { users } from './auth';
-import { events } from './events';
-import { wallets } from './wallets';
+import { eventBracelets } from './event-bracelets';
 import { vendors } from './vendors';
 
+// One row per money movement on a specific bracelet. The kind of movement
+// is captured by `type` (debit | credit) and the matching counter column
+// is filled in: debit_counter for debits (the value the chip held when
+// the debit happened, server-allocated for online charges), credit_counter
+// for credits (always server-allocated, monotonic per bracelet). Event
+// scoping is implicit through the bracelet, no separate event_id column.
 export const transactions = pgTable(
   'transactions',
   {
     id: text('id')
       .primaryKey()
       .$defaultFn(() => crypto.randomUUID()),
-    // eventId is nullable because topups happen at the user level now (no
-    // event). Spending at a POS still carries the eventId of the festival
-    // where it happened.
-    eventId: text('event_id').references(() => events.id),
-    walletId: text('wallet_id')
+    eventBraceletId: text('event_bracelet_id')
       .notNull()
-      .references(() => wallets.id),
+      .references(() => eventBracelets.id),
     vendorId: text('vendor_id').references(() => vendors.id),
     operatorId: text('operator_id').references(() => users.id),
     type: transactionTypeEnum('type').notNull(),
     amount: integer('amount').notNull(),
-    status: transactionStatusEnum('status').notNull().default('pending'),
+    status: transactionStatusEnum('status').notNull().default('completed'),
     offline: boolean('offline').notNull().default(false),
-    transactionCounter: integer('transaction_counter'),
+    debitCounter: integer('debit_counter'),
+    creditCounter: integer('credit_counter'),
     clientTimestamp: timestamp('client_timestamp', { withTimezone: true }),
     serverTimestamp: timestamp('server_timestamp', { withTimezone: true })
       .notNull()
@@ -47,10 +49,10 @@ export const transactions = pgTable(
       .defaultNow(),
   },
   (table) => [
-    index('transactions_event_wallet_idx').on(table.eventId, table.walletId),
-    index('transactions_event_vendor_idx').on(table.eventId, table.vendorId),
-    index('transactions_event_created_idx').on(table.eventId, table.createdAt),
-    index('transactions_event_type_idx').on(table.eventId, table.type),
+    index('transactions_bracelet_idx').on(table.eventBraceletId),
+    index('transactions_vendor_idx').on(table.vendorId),
+    index('transactions_created_idx').on(table.createdAt),
+    index('transactions_type_idx').on(table.type),
     check('transactions_amount_check', sql`${table.amount} > 0`),
   ],
 );

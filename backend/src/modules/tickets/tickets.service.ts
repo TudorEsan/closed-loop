@@ -18,7 +18,6 @@ import {
   eventBracelets,
   eventTickets,
   users,
-  wallets,
 } from '@common/database/schemas';
 import { EmailService } from '@common/email/email.service';
 import { BraceletTokenService } from '../bracelets/bracelet-token.service';
@@ -345,8 +344,6 @@ export class TicketsService {
   // Find or create the user behind a ticket's email. Created users become
   // regular users with a verified email (the email-verification happens
   // implicitly when the operator scans a ticket sent to that address).
-  // Wallet is provisioned alongside since the better-auth user.create
-  // hook does not fire on direct inserts.
   private async upsertUserByEmail(email: string): Promise<string> {
     const existing = await this.db
       .select({ id: users.id, isActive: users.isActive })
@@ -364,18 +361,12 @@ export class TicketsService {
 
     const id = crypto.randomUUID();
     const fallbackName = email.split('@')[0] || 'Attendee';
-    await this.db.transaction(async (tx) => {
-      await tx.insert(users).values({
-        id,
-        email,
-        name: fallbackName,
-        emailVerified: true,
-        role: 'user',
-      });
-      await tx
-        .insert(wallets)
-        .values({ userId: id })
-        .onConflictDoNothing({ target: wallets.userId });
+    await this.db.insert(users).values({
+      id,
+      email,
+      name: fallbackName,
+      emailVerified: true,
+      role: 'user',
     });
     return id;
   }

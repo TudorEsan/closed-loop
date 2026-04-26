@@ -4,12 +4,10 @@ CREATE TYPE "public"."event_status" AS ENUM('draft', 'setup', 'active', 'settlem
 CREATE TYPE "public"."event_ticket_status" AS ENUM('pending', 'redeemed', 'revoked', 'expired');--> statement-breakpoint
 CREATE TYPE "public"."payment_intent_status" AS ENUM('pending', 'processing', 'succeeded', 'failed', 'canceled');--> statement-breakpoint
 CREATE TYPE "public"."transaction_status" AS ENUM('completed', 'pending', 'failed', 'flagged');--> statement-breakpoint
-CREATE TYPE "public"."transaction_type" AS ENUM('payment', 'topup_online', 'topup_cash', 'refund', 'cashout');--> statement-breakpoint
+CREATE TYPE "public"."transaction_type" AS ENUM('debit', 'credit');--> statement-breakpoint
 CREATE TYPE "public"."user_role" AS ENUM('super_admin', 'user');--> statement-breakpoint
-CREATE TYPE "public"."vendor_invitation_status" AS ENUM('pending', 'accepted', 'expired', 'revoked');--> statement-breakpoint
 CREATE TYPE "public"."vendor_member_role" AS ENUM('owner', 'manager', 'cashier');--> statement-breakpoint
 CREATE TYPE "public"."vendor_status" AS ENUM('pending', 'approved', 'rejected', 'suspended');--> statement-breakpoint
-CREATE TYPE "public"."wallet_status" AS ENUM('active', 'frozen', 'closed');--> statement-breakpoint
 CREATE TABLE "audit_logs" (
 	"id" text PRIMARY KEY NOT NULL,
 	"event_id" text,
@@ -79,6 +77,9 @@ CREATE TABLE "event_bracelets" (
 	"user_id" text NOT NULL,
 	"wristband_uid" varchar(255) NOT NULL,
 	"status" "bracelet_assignment_status" DEFAULT 'active' NOT NULL,
+	"balance" integer DEFAULT 0 NOT NULL,
+	"debit_counter_seen" integer DEFAULT 0 NOT NULL,
+	"credit_counter" integer DEFAULT 0 NOT NULL,
 	"linked_at" timestamp with time zone DEFAULT now() NOT NULL,
 	"linked_by" text NOT NULL,
 	"revoked_at" timestamp with time zone,
@@ -89,7 +90,8 @@ CREATE TABLE "event_bracelets" (
 	"token_expires_at" timestamp with time zone NOT NULL,
 	"token_version" integer DEFAULT 1 NOT NULL,
 	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
-	"updated_at" timestamp with time zone DEFAULT now() NOT NULL
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "event_bracelets_balance_check" CHECK ("event_bracelets"."balance" >= 0)
 );
 --> statement-breakpoint
 CREATE TABLE "event_members" (
@@ -169,43 +171,17 @@ CREATE TABLE "vendor_members" (
 	CONSTRAINT "vendor_members_unique" UNIQUE("vendor_id","user_id")
 );
 --> statement-breakpoint
-CREATE TABLE "vendor_invitations" (
-	"id" text PRIMARY KEY NOT NULL,
-	"vendor_id" text NOT NULL,
-	"email" varchar(255) NOT NULL,
-	"role" "vendor_member_role" NOT NULL,
-	"token" varchar(255) NOT NULL,
-	"status" "vendor_invitation_status" DEFAULT 'pending' NOT NULL,
-	"invited_by" text NOT NULL,
-	"accepted_by" text,
-	"expires_at" timestamp with time zone NOT NULL,
-	"accepted_at" timestamp with time zone,
-	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
-	CONSTRAINT "vendor_invitations_token_unique" UNIQUE("token")
-);
---> statement-breakpoint
-CREATE TABLE "wallets" (
-	"id" text PRIMARY KEY NOT NULL,
-	"user_id" text NOT NULL,
-	"balance" integer DEFAULT 0 NOT NULL,
-	"status" "wallet_status" DEFAULT 'active' NOT NULL,
-	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
-	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
-	CONSTRAINT "wallets_user_unique" UNIQUE("user_id"),
-	CONSTRAINT "wallets_balance_check" CHECK ("wallets"."balance" >= 0)
-);
---> statement-breakpoint
 CREATE TABLE "transactions" (
 	"id" text PRIMARY KEY NOT NULL,
-	"event_id" text,
-	"wallet_id" text NOT NULL,
+	"event_bracelet_id" text NOT NULL,
 	"vendor_id" text,
 	"operator_id" text,
 	"type" "transaction_type" NOT NULL,
 	"amount" integer NOT NULL,
-	"status" "transaction_status" DEFAULT 'pending' NOT NULL,
+	"status" "transaction_status" DEFAULT 'completed' NOT NULL,
 	"offline" boolean DEFAULT false NOT NULL,
-	"transaction_counter" integer,
+	"debit_counter" integer,
+	"credit_counter" integer,
 	"client_timestamp" timestamp with time zone,
 	"server_timestamp" timestamp with time zone DEFAULT now() NOT NULL,
 	"idempotency_key" varchar(255),
@@ -218,7 +194,7 @@ CREATE TABLE "transactions" (
 CREATE TABLE "payment_intents" (
 	"id" text PRIMARY KEY NOT NULL,
 	"user_id" text NOT NULL,
-	"wallet_id" text NOT NULL,
+	"event_bracelet_id" text NOT NULL,
 	"provider" varchar(32) NOT NULL,
 	"provider_intent_id" varchar(255) NOT NULL,
 	"amount" integer NOT NULL,
@@ -256,16 +232,11 @@ ALTER TABLE "vendors" ADD CONSTRAINT "vendors_approved_by_user_id_fk" FOREIGN KE
 ALTER TABLE "vendor_members" ADD CONSTRAINT "vendor_members_vendor_id_vendors_id_fk" FOREIGN KEY ("vendor_id") REFERENCES "public"."vendors"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "vendor_members" ADD CONSTRAINT "vendor_members_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "vendor_members" ADD CONSTRAINT "vendor_members_invited_by_user_id_fk" FOREIGN KEY ("invited_by") REFERENCES "public"."user"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "vendor_invitations" ADD CONSTRAINT "vendor_invitations_vendor_id_vendors_id_fk" FOREIGN KEY ("vendor_id") REFERENCES "public"."vendors"("id") ON DELETE cascade ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "vendor_invitations" ADD CONSTRAINT "vendor_invitations_invited_by_user_id_fk" FOREIGN KEY ("invited_by") REFERENCES "public"."user"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "vendor_invitations" ADD CONSTRAINT "vendor_invitations_accepted_by_user_id_fk" FOREIGN KEY ("accepted_by") REFERENCES "public"."user"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "wallets" ADD CONSTRAINT "wallets_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "transactions" ADD CONSTRAINT "transactions_event_id_events_id_fk" FOREIGN KEY ("event_id") REFERENCES "public"."events"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "transactions" ADD CONSTRAINT "transactions_wallet_id_wallets_id_fk" FOREIGN KEY ("wallet_id") REFERENCES "public"."wallets"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "transactions" ADD CONSTRAINT "transactions_event_bracelet_id_event_bracelets_id_fk" FOREIGN KEY ("event_bracelet_id") REFERENCES "public"."event_bracelets"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "transactions" ADD CONSTRAINT "transactions_vendor_id_vendors_id_fk" FOREIGN KEY ("vendor_id") REFERENCES "public"."vendors"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "transactions" ADD CONSTRAINT "transactions_operator_id_user_id_fk" FOREIGN KEY ("operator_id") REFERENCES "public"."user"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "payment_intents" ADD CONSTRAINT "payment_intents_user_id_user_id_fk" FOREIGN KEY ("user_id") REFERENCES "public"."user"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
-ALTER TABLE "payment_intents" ADD CONSTRAINT "payment_intents_wallet_id_wallets_id_fk" FOREIGN KEY ("wallet_id") REFERENCES "public"."wallets"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
+ALTER TABLE "payment_intents" ADD CONSTRAINT "payment_intents_event_bracelet_id_event_bracelets_id_fk" FOREIGN KEY ("event_bracelet_id") REFERENCES "public"."event_bracelets"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 ALTER TABLE "payment_intents" ADD CONSTRAINT "payment_intents_transaction_id_transactions_id_fk" FOREIGN KEY ("transaction_id") REFERENCES "public"."transactions"("id") ON DELETE no action ON UPDATE no action;--> statement-breakpoint
 CREATE INDEX "audit_logs_event_created_idx" ON "audit_logs" USING btree ("event_id","created_at");--> statement-breakpoint
 CREATE INDEX "audit_logs_user_id_idx" ON "audit_logs" USING btree ("user_id");--> statement-breakpoint
@@ -290,13 +261,10 @@ CREATE INDEX "vendors_event_status_idx" ON "vendors" USING btree ("event_id","st
 CREATE INDEX "vendors_user_id_idx" ON "vendors" USING btree ("user_id");--> statement-breakpoint
 CREATE INDEX "vendor_members_vendor_id_idx" ON "vendor_members" USING btree ("vendor_id");--> statement-breakpoint
 CREATE INDEX "vendor_members_user_id_idx" ON "vendor_members" USING btree ("user_id");--> statement-breakpoint
-CREATE INDEX "vendor_invitations_vendor_id_idx" ON "vendor_invitations" USING btree ("vendor_id");--> statement-breakpoint
-CREATE INDEX "vendor_invitations_token_idx" ON "vendor_invitations" USING btree ("token");--> statement-breakpoint
-CREATE INDEX "vendor_invitations_email_idx" ON "vendor_invitations" USING btree ("email");--> statement-breakpoint
-CREATE INDEX "transactions_event_wallet_idx" ON "transactions" USING btree ("event_id","wallet_id");--> statement-breakpoint
-CREATE INDEX "transactions_event_vendor_idx" ON "transactions" USING btree ("event_id","vendor_id");--> statement-breakpoint
-CREATE INDEX "transactions_event_created_idx" ON "transactions" USING btree ("event_id","created_at");--> statement-breakpoint
-CREATE INDEX "transactions_event_type_idx" ON "transactions" USING btree ("event_id","type");--> statement-breakpoint
+CREATE INDEX "transactions_bracelet_idx" ON "transactions" USING btree ("event_bracelet_id");--> statement-breakpoint
+CREATE INDEX "transactions_vendor_idx" ON "transactions" USING btree ("vendor_id");--> statement-breakpoint
+CREATE INDEX "transactions_created_idx" ON "transactions" USING btree ("created_at");--> statement-breakpoint
+CREATE INDEX "transactions_type_idx" ON "transactions" USING btree ("type");--> statement-breakpoint
 CREATE INDEX "payment_intents_user_id_idx" ON "payment_intents" USING btree ("user_id");--> statement-breakpoint
-CREATE INDEX "payment_intents_wallet_id_idx" ON "payment_intents" USING btree ("wallet_id");--> statement-breakpoint
+CREATE INDEX "payment_intents_bracelet_id_idx" ON "payment_intents" USING btree ("event_bracelet_id");--> statement-breakpoint
 CREATE INDEX "payment_intents_status_idx" ON "payment_intents" USING btree ("status");

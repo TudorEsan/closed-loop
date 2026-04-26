@@ -55,7 +55,10 @@ export const stopTestDatabase = async (db: TestDb | null): Promise<void> => {
 export const truncateAll = async (db: TestDb): Promise<void> => {
   await db.drizzle.execute(sql`
     TRUNCATE TABLE
+      payment_intents,
+      transactions,
       audit_logs,
+      event_tickets,
       event_bracelets,
       vendor_members,
       vendors,
