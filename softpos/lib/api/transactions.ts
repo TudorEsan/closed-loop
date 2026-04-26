@@ -8,7 +8,18 @@ export type ChargeBody = {
   deviceId: string;
   idempotencyKey: string;
   clientTimestamp: string;
+  // Server uses this to write back the new credit_counter when it
+  // returns the next chip state.
+  debitCounter?: number;
   metadata?: Record<string, unknown>;
+};
+
+export type ChargeResponse = {
+  transaction: Transaction;
+  chipShouldWrite?: {
+    balance: number;
+    credit_counter: number;
+  };
 };
 
 export const transactionsApi = {
@@ -16,12 +27,16 @@ export const transactionsApi = {
     eventId: string,
     vendorId: string,
     body: ChargeBody,
-  ): Promise<Transaction> {
-    const res = await api.post<Transaction>(
+  ): Promise<ChargeResponse> {
+    const res = await api.post<Transaction | ChargeResponse>(
       `/events/${eventId}/vendors/${vendorId}/transactions/charge`,
       body,
     );
-    return res.data;
+    // Backwards compatible: older backend returned the transaction
+    // directly; newer one wraps it with chipShouldWrite.
+    const data = res.data as Transaction | ChargeResponse;
+    if ('transaction' in data) return data;
+    return { transaction: data };
   },
 
   async listForVendor(

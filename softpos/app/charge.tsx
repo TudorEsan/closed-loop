@@ -9,17 +9,27 @@ import Animated, {
 import { Stack, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Button, Spinner } from 'heroui-native';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from '@tanstack/react-query';
+import * as Network from 'expo-network';
+import * as Crypto from 'expo-crypto';
+import axios from 'axios';
 
 import { extractErrorMessage } from '@/lib/api';
 import { transactionsApi } from '@/lib/api/transactions';
 import { getOrCreateLocalDeviceId } from '@/lib/device-id';
 import { Screen, NfcPulse } from '@/components/ui';
 import { useScope } from '@/hooks/use-scope';
-import { useNfcRead } from '@/hooks/use-nfc-read';
-import type { Transaction } from '@/types/api';
+import { useNfcRead, type ChipRecordView } from '@/hooks/use-nfc-read';
+import { useNfcWrite } from '@/hooks/use-nfc-write';
+import { enqueue } from '@/lib/queue/offline-queue';
+import { useOfflineSync } from '@/hooks/use-offline-sync';
 
 type Step = 'amount' | 'tap' | 'submitting' | 'done';
+
+type ChargeOutcome = {
+  amount: number;
+  offline: boolean;
+};
 
 const MIN_AMOUNT = 1;
 
@@ -29,39 +39,14 @@ export default function ChargeScreen() {
   const [step, setStep] = useState<Step>('amount');
   const [amount, setAmount] = useState('');
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<Transaction | null>(null);
+  const [outcome, setOutcome] = useState<ChargeOutcome | null>(null);
   const nfc = useNfcRead();
+  const nfcWrite = useNfcWrite();
+  useOfflineSync();
 
   const vendor = scope?.kind === 'vendor' ? scope.vendor : null;
   const parsed = parseFloat(amount || '0');
   const meetsMin = parsed >= MIN_AMOUNT;
-
-  const chargeMutation = useMutation({
-    mutationFn: async (uid: string) => {
-      if (!vendor) throw new Error('No vendor scope');
-      return transactionsApi.charge(vendor.eventId, vendor.vendorId, {
-        wristbandUid: uid,
-        amount: Math.round(parsed * 100),
-        deviceId: getOrCreateLocalDeviceId(),
-        idempotencyKey: idempotencyKey(),
-        clientTimestamp: new Date().toISOString(),
-        metadata: { vendorName: vendor.businessName },
-      });
-    },
-    onSuccess: (tx) => {
-      setResult(tx);
-      setStep('done');
-      if (vendor) {
-        queryClient.invalidateQueries({
-          queryKey: ['vendor-tx', vendor.eventId, vendor.vendorId],
-        });
-      }
-    },
-    onError: (err) => {
-      setError(extractErrorMessage(err));
-      setStep('tap');
-    },
-  });
 
   if (!vendor) {
     return <NotAVendorScope />;
@@ -104,17 +89,106 @@ export default function ChargeScreen() {
     }
     setError(null);
     const res = await nfc.read();
+    if (res.canceled) return;
     if (!res.uid) {
       if (res.error) setError(res.error);
       return;
     }
     setStep('submitting');
-    chargeMutation.mutate(res.uid);
+    const amountCents = Math.round(parsed * 100);
+    await performCharge({
+      uid: res.uid,
+      record: res.chipRecord,
+      amountCents,
+    });
+  }
+
+  async function performCharge(args: {
+    uid: string;
+    record: ChipRecordView | null;
+    amountCents: number;
+  }) {
+    const idempotencyKey = newIdempotencyKey();
+    const clientTimestamp = new Date().toISOString();
+    const deviceId = getOrCreateLocalDeviceId();
+    const online = await isOnline();
+
+    if (online) {
+      try {
+        const response = await transactionsApi.charge(vendor!.eventId, vendor!.vendorId, {
+          wristbandUid: args.uid,
+          amount: args.amountCents,
+          deviceId,
+          idempotencyKey,
+          clientTimestamp,
+          debitCounter: args.record?.debitCounter,
+          metadata: { vendorName: vendor!.businessName },
+        });
+        const next = response.chipShouldWrite;
+        if (next && args.record) {
+          await nfcWrite.write({
+            uid: args.uid,
+            balance: next.balance,
+            debitCounter: args.record.debitCounter,
+            creditCounterSeen: next.credit_counter,
+          });
+        }
+        queryClient.invalidateQueries({
+          queryKey: ['vendor-tx', vendor!.eventId, vendor!.vendorId],
+        });
+        setOutcome({ amount: parsed, offline: false });
+        setStep('done');
+        return;
+      } catch (err) {
+        if (!isNetworkError(err)) {
+          setError(extractErrorMessage(err));
+          setStep('tap');
+          return;
+        }
+        // Network error: fall through to offline path.
+      }
+    }
+
+    if (!args.record) {
+      setError('Bracelet has no offline balance yet, retry when online');
+      setStep('tap');
+      return;
+    }
+    if (args.record.balance < args.amountCents) {
+      setError('Insufficient balance on bracelet');
+      setStep('tap');
+      return;
+    }
+    const newBalance = args.record.balance - args.amountCents;
+    const newDebitCounter = args.record.debitCounter + 1;
+    const writeResult = await nfcWrite.write({
+      uid: args.uid,
+      balance: newBalance,
+      debitCounter: newDebitCounter,
+      creditCounterSeen: args.record.creditCounterSeen,
+    });
+    if (!writeResult.ok) {
+      setError(writeResult.error ?? 'Could not write the bracelet, charge canceled');
+      setStep('tap');
+      return;
+    }
+    await enqueue({
+      idempotencyKey,
+      amount: args.amountCents,
+      vendorId: vendor!.vendorId,
+      eventId: vendor!.eventId,
+      wristbandUid: args.uid,
+      counterValue: newDebitCounter,
+      deviceId,
+      clientTimestamp,
+    });
+    setOutcome({ amount: parsed, offline: true });
+    setStep('done');
   }
 
   function startOver() {
     setAmount('');
-    setResult(null);
+    setOutcome(null);
     setError(null);
     setStep('amount');
   }
@@ -123,10 +197,7 @@ export default function ChargeScreen() {
     <Screen>
       <Stack.Screen options={{ headerShown: false }} />
       <View className="flex-row items-center px-5 pt-2 pb-3">
-        <Pressable
-          onPress={() => (step === 'done' ? router.back() : router.back())}
-          hitSlop={10}
-        >
+        <Pressable onPress={() => router.back()} hitSlop={10}>
           <Ionicons name="chevron-back" size={26} color="#0a0a0a" />
         </Pressable>
         <View className="ml-2 flex-1">
@@ -162,8 +233,8 @@ export default function ChargeScreen() {
         />
       ) : null}
 
-      {step === 'done' && result ? (
-        <DoneStep amount={parsed} onAgain={startOver} />
+      {step === 'done' && outcome ? (
+        <DoneStep outcome={outcome} onAgain={startOver} />
       ) : null}
     </Screen>
   );
@@ -337,10 +408,10 @@ function TapStep({
 }
 
 function DoneStep({
-  amount,
+  outcome,
   onAgain,
 }: {
-  amount: number;
+  outcome: ChargeOutcome;
   onAgain: () => void;
 }) {
   return (
@@ -361,9 +432,17 @@ function DoneStep({
         Charged
       </Animated.Text>
       <View className="mt-2 flex-row items-end gap-1">
-        <Text className="text-base text-muted">{formatAmount(amount)}</Text>
+        <Text className="text-base text-muted">{formatAmount(outcome.amount)}</Text>
         <Text className="text-xs text-muted">RON</Text>
       </View>
+
+      {outcome.offline ? (
+        <View className="mt-4 rounded-full bg-warning px-3 py-1.5">
+          <Text className="text-xs font-semibold text-warning-foreground">
+            Queued offline
+          </Text>
+        </View>
+      ) : null}
 
       <View className="mt-8 w-full gap-3">
         <Pressable
@@ -464,9 +543,27 @@ function formatAmount(value: number): string {
   });
 }
 
-function idempotencyKey(): string {
-  if (typeof crypto !== 'undefined' && 'randomUUID' in crypto) {
-    return crypto.randomUUID();
+function newIdempotencyKey(): string {
+  try {
+    return Crypto.randomUUID();
+  } catch {
+    return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
   }
-  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
+}
+
+async function isOnline(): Promise<boolean> {
+  try {
+    const state = await Network.getNetworkStateAsync();
+    return Boolean(state.isConnected && state.isInternetReachable !== false);
+  } catch {
+    return true;
+  }
+}
+
+function isNetworkError(err: unknown): boolean {
+  if (axios.isAxiosError(err)) {
+    if (!err.response) return true;
+    if (err.code === 'ECONNABORTED' || err.code === 'ERR_NETWORK') return true;
+  }
+  return false;
 }
