@@ -48,33 +48,31 @@
 \contentsline {subsection}{\numberline {3.8.1}Why PostgreSQL}{38}{subsection.3.8.1}%
 \contentsline {subsection}{\numberline {3.8.2}Why a single database is enough}{38}{subsection.3.8.2}%
 \contentsline {chapter}{\numberline {4}Implementation}{40}{chapter.4}%
-\contentsline {section}{\numberline {4.1}NFC wristband integration}{41}{section.4.1}%
-\contentsline {subsection}{\numberline {4.1.1}DESFire authentication flow}{41}{subsection.4.1.1}%
-\contentsline {subsection}{\numberline {4.1.2}Balance read/write protocol}{41}{subsection.4.1.2}%
-\contentsline {section}{\numberline {4.2}Mobile application}{41}{section.4.2}%
-\contentsline {subsection}{\numberline {4.2.1}Attendee screens}{41}{subsection.4.2.1}%
-\contentsline {subsection}{\numberline {4.2.2}Vendor POS mode}{41}{subsection.4.2.2}%
-\contentsline {subsection}{\numberline {4.2.3}Device security checks}{41}{subsection.4.2.3}%
-\contentsline {section}{\numberline {4.3}Admin dashboard}{41}{section.4.3}%
-\contentsline {section}{\numberline {4.4}Backend server}{41}{section.4.4}%
-\contentsline {subsection}{\numberline {4.4.1}Authentication and authorization}{41}{subsection.4.4.1}%
-\contentsline {subsection}{\numberline {4.4.2}Event management module}{41}{subsection.4.4.2}%
-\contentsline {subsection}{\numberline {4.4.3}Sync and reconciliation}{41}{subsection.4.4.3}%
-\contentsline {subsection}{\numberline {4.4.4}Stripe integration}{41}{subsection.4.4.4}%
-\contentsline {section}{\numberline {4.5}Database implementation}{41}{section.4.5}%
-\contentsline {section}{\numberline {4.6}Offline transaction queue and sync protocol}{41}{section.4.6}%
-\contentsline {chapter}{\numberline {5}Security Considerations}{42}{chapter.5}%
-\contentsline {section}{\numberline {5.1}Authentication and Authorization}{42}{section.5.1}%
-\contentsline {section}{\numberline {5.2}Wallet Integrity and Double-Spend Prevention}{42}{section.5.2}%
-\contentsline {subsection}{\numberline {5.2.1}Online Mode}{42}{subsection.5.2.1}%
-\contentsline {subsection}{\numberline {5.2.2}Offline Mode}{42}{subsection.5.2.2}%
-\contentsline {section}{\numberline {5.3}Offline Trust Model}{42}{section.5.3}%
-\contentsline {section}{\numberline {5.4}Stripe and Payment Security}{42}{section.5.4}%
-\contentsline {section}{\numberline {5.5}Data Protection}{42}{section.5.5}%
-\contentsline {chapter}{\numberline {6}Discussion}{43}{chapter.6}%
-\contentsline {section}{\numberline {6.1}Design Trade-offs}{43}{section.6.1}%
-\contentsline {section}{\numberline {6.2}Comparison with Existing Solutions}{43}{section.6.2}%
-\contentsline {section}{\numberline {6.3}Limitations}{43}{section.6.3}%
-\contentsline {section}{\numberline {6.4}Further Improvements}{43}{section.6.4}%
-\contentsline {chapter}{\numberline {7}Conclusions}{44}{chapter.7}%
-\contentsline {chapter}{Bibliography}{45}{chapter*.2}%
+\contentsline {section}{\numberline {4.1}Implementation overview}{40}{section.4.1}%
+\contentsline {section}{\numberline {4.2}Database schema for the hybrid model}{41}{section.4.2}%
+\contentsline {section}{\numberline {4.3}The reconciliation service and sync endpoint}{42}{section.4.3}%
+\contentsline {section}{\numberline {4.4}Chip data layout and HMAC}{44}{section.4.4}%
+\contentsline {section}{\numberline {4.5}Online debit path}{45}{section.4.5}%
+\contentsline {section}{\numberline {4.6}Offline debit path and the queue}{46}{section.4.6}%
+\contentsline {section}{\numberline {4.7}Topup path}{47}{section.4.7}%
+\contentsline {chapter}{\numberline {5}Security Considerations}{48}{chapter.5}%
+\contentsline {section}{\numberline {5.1}Authentication and Authorization}{48}{section.5.1}%
+\contentsline {subsection}{\numberline {5.1.1}Roles}{49}{subsection.5.1.1}%
+\contentsline {subsection}{\numberline {5.1.2}The ScopeService}{49}{subsection.5.1.2}%
+\contentsline {section}{\numberline {5.2}Wallet Integrity and Double-Spend Prevention}{50}{section.5.2}%
+\contentsline {subsection}{\numberline {5.2.1}Online Mode}{50}{subsection.5.2.1}%
+\contentsline {subsection}{\numberline {5.2.2}Offline Mode}{51}{subsection.5.2.2}%
+\contentsline {subsection}{\numberline {5.2.3}NFC chip authoritativeness for offline debits}{51}{subsection.5.2.3}%
+\contentsline {subsubsection}{Why a non-secure-element chip is operationally trusted}{52}{section*.2}%
+\contentsline {subsubsection}{Threats with normal NFC and mitigations}{52}{section*.3}%
+\contentsline {subsubsection}{Future hardening}{53}{section*.4}%
+\contentsline {section}{\numberline {5.3}Offline Trust Model}{54}{section.5.3}%
+\contentsline {section}{\numberline {5.4}Stripe and Payment Security}{55}{section.5.4}%
+\contentsline {section}{\numberline {5.5}Data Protection}{55}{section.5.5}%
+\contentsline {chapter}{\numberline {6}Discussion}{57}{chapter.6}%
+\contentsline {section}{\numberline {6.1}Design Trade-offs}{57}{section.6.1}%
+\contentsline {section}{\numberline {6.2}Comparison with Existing Solutions}{57}{section.6.2}%
+\contentsline {section}{\numberline {6.3}Limitations}{57}{section.6.3}%
+\contentsline {section}{\numberline {6.4}Further Improvements}{57}{section.6.4}%
+\contentsline {chapter}{\numberline {7}Conclusions}{58}{chapter.7}%
+\contentsline {chapter}{Bibliography}{59}{chapter*.5}%
