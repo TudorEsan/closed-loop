@@ -13,6 +13,7 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Spinner, useThemeColor } from 'heroui-native';
 import { useQuery } from '@tanstack/react-query';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { extractErrorMessage } from '@/lib/api';
 import { transactionsApi } from '@/lib/api/transactions';
@@ -22,13 +23,20 @@ import {
   BlurHeader,
   Screen,
 } from '@/components/ui';
-import { ScopeBadge, ScopeChip } from '@/components/scope/scope-chip';
+import {
+  ProfileButton,
+  ScopeBadge,
+  ScopeChip,
+} from '@/components/scope/scope-chip';
+import { theme } from '@/lib/theme';
 import type { Transaction, VendorMembership } from '@/types/api';
 
 const HERO_IMAGE = require('@/assets/background.png');
 
 export function VendorHome({ vendor }: { vendor: VendorMembership }) {
   const mutedColor = useThemeColor('muted');
+  const accentColor = useThemeColor('accent');
+  const insets = useSafeAreaInsets();
 
   const txQuery = useQuery({
     queryKey: ['vendor-tx', vendor.eventId, vendor.vendorId],
@@ -75,30 +83,47 @@ export function VendorHome({ vendor }: { vendor: VendorMembership }) {
           />
         }
       >
-        <View style={{ height: BLUR_HEADER_HEIGHT }} />
+        <View style={{ height: insets.top + BLUR_HEADER_HEIGHT + 8 }} />
 
         <View className="px-5">
           <ImageBackground
             source={HERO_IMAGE}
             resizeMode="cover"
             imageStyle={{ borderRadius: 24 }}
-            className="overflow-hidden rounded-3xl border border-white"
+            className="overflow-hidden rounded-3xl"
+            style={theme.shadow.card}
           >
-            <View className="px-6 py-7 gap-3">
-              <ScopeBadge label={roleLabel} tone="accent" />
-              <Text
-                className="text-2xl font-bold text-foreground"
-                numberOfLines={1}
-              >
-                {vendor.businessName}
-              </Text>
-              <Text className="text-xs text-muted">{vendor.eventName}</Text>
-              <View className="mt-2">
-                <Text className="text-xs text-muted">Today&apos;s sales</Text>
-                <Text className="mt-1 text-4xl font-bold tracking-tight text-foreground">
+            <View
+              className="px-6 py-7 gap-5"
+              style={{ backgroundColor: 'rgba(0, 0, 0, 0.55)' }}
+            >
+              <View className="gap-2">
+                <View className="self-start rounded-full bg-white/20 px-3 py-1">
+                  <Text className="text-xs font-semibold text-white">
+                    {roleLabel}
+                  </Text>
+                </View>
+                <Text
+                  className="text-2xl font-bold text-white"
+                  numberOfLines={1}
+                >
+                  {vendor.businessName}
+                </Text>
+                <Text className="text-xs text-white/80">
+                  {vendor.eventName}
+                </Text>
+              </View>
+
+              <View className="h-px bg-white/20" />
+
+              <View>
+                <Text className="text-xs font-semibold text-white/80">
+                  Today&apos;s sales
+                </Text>
+                <Text className="mt-1 text-4xl font-bold tracking-tight text-white">
                   {formatBalance(totalToday)}
                 </Text>
-                <Text className="mt-1 text-xs text-muted">
+                <Text className="mt-1 text-xs text-white/80">
                   {countToday} {countToday === 1 ? 'charge' : 'charges'} so far
                 </Text>
               </View>
@@ -106,7 +131,7 @@ export function VendorHome({ vendor }: { vendor: VendorMembership }) {
           </ImageBackground>
 
           {!isReady ? (
-            <View className="mt-4 rounded-2xl bg-surface px-4 py-3">
+            <View className="mt-4 rounded-2xl bg-surface-secondary px-4 py-3">
               <Text className="text-xs text-muted">
                 Vendor status: {vendor.status}. Charging is available once the
                 organizer approves your stand.
@@ -118,23 +143,26 @@ export function VendorHome({ vendor }: { vendor: VendorMembership }) {
             <Pressable
               onPress={() => router.push('/charge')}
               disabled={!isReady}
-              className="rounded-2xl bg-foreground px-6 py-6 flex-row items-center justify-between"
-              style={{ opacity: isReady ? 1 : 0.5 }}
+              className="rounded-2xl px-6 py-5 flex-row items-center justify-between"
+              style={{
+                backgroundColor: accentColor,
+                opacity: isReady ? 1 : 0.5,
+              }}
             >
               <View className="flex-row items-center gap-3 flex-1">
-                <View className="h-12 w-12 items-center justify-center rounded-full bg-background">
+                <View className="h-12 w-12 items-center justify-center rounded-full bg-surface">
                   <Ionicons name="card-outline" size={22} color="#0a0a0a" />
                 </View>
                 <View className="flex-1">
-                  <Text className="text-lg font-semibold text-background">
+                  <Text className="text-lg font-semibold text-accent-foreground">
                     New charge
                   </Text>
-                  <Text className="mt-0.5 text-xs text-muted">
+                  <Text className="mt-0.5 text-xs text-accent-foreground opacity-80">
                     Enter amount, tap a wristband
                   </Text>
                 </View>
               </View>
-              <Ionicons name="chevron-forward" size={22} color="#9ca3af" />
+              <Ionicons name="chevron-forward" size={22} color="#0a0a0a" />
             </Pressable>
           </View>
 
@@ -149,13 +177,15 @@ export function VendorHome({ vendor }: { vendor: VendorMembership }) {
               <Spinner color={mutedColor} />
             </View>
           ) : txError ? (
-            <Text className="text-sm text-danger">
-              Could not load transactions. {txError}
-            </Text>
+            <View className="rounded-2xl bg-surface px-5 py-4">
+              <Text className="text-sm text-danger">
+                Could not load transactions. {txError}
+              </Text>
+            </View>
           ) : transactions.length === 0 ? (
             <EmptyState />
           ) : (
-            <View>
+            <View className="rounded-2xl bg-surface overflow-hidden">
               {transactions.slice(0, 6).map((tx, idx) => (
                 <View key={tx.id}>
                   <ChargeRow tx={tx} />
@@ -172,6 +202,7 @@ export function VendorHome({ vendor }: { vendor: VendorMembership }) {
       <BlurHeader
         scrollY={scrollY}
         title={vendor.businessName}
+        left={<ProfileButton />}
         right={<ScopeChip />}
       />
     </Screen>

@@ -80,7 +80,7 @@ async function bootstrap() {
     }),
   );
 
-  await app.listen(port);
+  await app.listen(port, '0.0.0.0');
   console.log(`[Nest] App running on http://localhost:${port}`);
 }
 void bootstrap();

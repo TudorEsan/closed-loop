@@ -6,7 +6,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { and, eq, sql } from 'drizzle-orm';
+import { SQL, and, desc, eq, lt, sql } from 'drizzle-orm';
 
 import { DRIZZLE } from '@common/database/drizzle.module';
 import { DrizzleClient } from '@common/database/drizzle.client';
@@ -132,5 +132,50 @@ export class TransactionsService {
       }
       throw err;
     }
+  }
+
+  async listForVendor(
+    eventId: string,
+    vendorId: string,
+    callerId: string,
+    callerRole: string,
+    params: { limit?: number; cursor?: string } = {},
+  ) {
+    await this.scope.requireVendorRole(callerId, callerRole, vendorId);
+
+    const vendorRows = await this.db
+      .select({ id: vendors.id })
+      .from(vendors)
+      .where(and(eq(vendors.id, vendorId), eq(vendors.eventId, eventId)))
+      .limit(1);
+    if (vendorRows.length === 0) {
+      throw new NotFoundException('Vendor not found at this event');
+    }
+
+    const limit = Math.min(params.limit ?? 20, 100);
+    const conditions: SQL<unknown>[] = [eq(transactions.vendorId, vendorId)];
+
+    if (params.cursor) {
+      const cursorRow = await this.db
+        .select({ createdAt: transactions.createdAt })
+        .from(transactions)
+        .where(eq(transactions.id, params.cursor))
+        .limit(1);
+      if (cursorRow.length > 0) {
+        conditions.push(lt(transactions.createdAt, cursorRow[0].createdAt));
+      }
+    }
+
+    const rows = await this.db
+      .select()
+      .from(transactions)
+      .where(and(...conditions))
+      .orderBy(desc(transactions.createdAt))
+      .limit(limit + 1);
+
+    const hasMore = rows.length > limit;
+    const items = hasMore ? rows.slice(0, limit) : rows;
+    const nextCursor = hasMore ? items[items.length - 1].id : null;
+    return { transactions: items, nextCursor };
   }
 }

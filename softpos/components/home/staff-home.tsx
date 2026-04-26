@@ -5,13 +5,18 @@ import Animated, {
 } from 'react-native-reanimated';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import {
   BLUR_HEADER_HEIGHT,
   BlurHeader,
   Screen,
 } from '@/components/ui';
-import { ScopeChip, ScopeBadge } from '@/components/scope/scope-chip';
+import {
+  ProfileButton,
+  ScopeBadge,
+  ScopeChip,
+} from '@/components/scope/scope-chip';
 import type { EventMembership } from '@/types/api';
 
 const HERO_IMAGE = require('@/assets/background.png');
@@ -24,6 +29,7 @@ export function StaffHome({ event }: { event: EventMembership }) {
       ? 'Admin'
       : 'Operator';
 
+  const insets = useSafeAreaInsets();
   const scrollY = useSharedValue(0);
   const onScroll = useAnimatedScrollHandler((e) => {
     scrollY.value = e.contentOffset.y;
@@ -38,7 +44,7 @@ export function StaffHome({ event }: { event: EventMembership }) {
         onScroll={onScroll}
         scrollIndicatorInsets={{ top: BLUR_HEADER_HEIGHT }}
       >
-        <View style={{ height: BLUR_HEADER_HEIGHT }} />
+        <View style={{ height: insets.top + BLUR_HEADER_HEIGHT + 8 }} />
 
         <View className="px-5">
           <ImageBackground
@@ -137,6 +143,7 @@ export function StaffHome({ event }: { event: EventMembership }) {
       <BlurHeader
         scrollY={scrollY}
         title={event.name}
+        left={<ProfileButton />}
         right={<ScopeChip />}
       />
     </Screen>

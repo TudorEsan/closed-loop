@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Pressable, Text, View } from 'react-native';
+import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { useScope } from '@/hooks/use-scope';
@@ -28,6 +29,18 @@ export function ScopeChip() {
       </Pressable>
       <ScopePicker visible={open} onClose={() => setOpen(false)} />
     </>
+  );
+}
+
+export function ProfileButton() {
+  return (
+    <Pressable
+      onPress={() => router.push('/profile')}
+      hitSlop={8}
+      className="h-9 w-9 items-center justify-center rounded-full bg-surface"
+    >
+      <Ionicons name="person-outline" size={18} color="#0a0a0a" />
+    </Pressable>
   );
 }
 

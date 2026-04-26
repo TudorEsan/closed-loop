@@ -5,6 +5,9 @@ import { Platform } from 'react-native';
 // is reachable as 10.0.2.2. On iOS simulator localhost works as is.
 // For physical devices we use the LAN IP from expo (debuggerHost).
 function resolveDevHost(): string {
+  const override = process.env.EXPO_PUBLIC_API_HOST;
+  if (override) return override;
+
   const hostUri =
     Constants.expoConfig?.hostUri ??
     (Constants as { manifest?: { debuggerHost?: string } }).manifest

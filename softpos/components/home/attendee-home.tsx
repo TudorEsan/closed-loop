@@ -12,6 +12,7 @@ import Animated, {
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { Spinner, useThemeColor } from 'heroui-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { extractErrorMessage } from '@/lib/api';
 import {
@@ -21,7 +22,7 @@ import {
   Screen,
   TopupButton,
 } from '@/components/ui';
-import { ScopeChip } from '@/components/scope/scope-chip';
+import { ProfileButton, ScopeChip } from '@/components/scope/scope-chip';
 import { useMyBracelets, useRecentTransactions } from '@/hooks';
 import type { Transaction } from '@/types/api';
 import type { MyBraceletRow } from '@/lib/api/bracelets';
@@ -30,6 +31,7 @@ const CURRENCIES_IMAGE = require('@/assets/background.png');
 
 export function AttendeeHome() {
   const mutedColor = useThemeColor('muted');
+  const insets = useSafeAreaInsets();
 
   const braceletsQuery = useMyBracelets();
   const txQuery = useRecentTransactions(10);
@@ -58,7 +60,12 @@ export function AttendeeHome() {
         <View className="flex-1 bg-background items-center justify-center">
           <Spinner color={mutedColor} />
         </View>
-        <BlurHeader scrollY={scrollY} title="Wallet" right={<ScopeChip />} />
+        <BlurHeader
+          scrollY={scrollY}
+          title="Wallet"
+          left={<ProfileButton />}
+          right={<ScopeChip />}
+        />
       </Screen>
     );
   }
@@ -71,7 +78,12 @@ export function AttendeeHome() {
             Could not load your bracelets. {braceletsError}
           </Text>
         </View>
-        <BlurHeader scrollY={scrollY} title="Wallet" right={<ScopeChip />} />
+        <BlurHeader
+          scrollY={scrollY}
+          title="Wallet"
+          left={<ProfileButton />}
+          right={<ScopeChip />}
+        />
       </Screen>
     );
   }
@@ -91,7 +103,12 @@ export function AttendeeHome() {
             up here.
           </Text>
         </View>
-        <BlurHeader scrollY={scrollY} title="Wallet" right={<ScopeChip />} />
+        <BlurHeader
+          scrollY={scrollY}
+          title="Wallet"
+          left={<ProfileButton />}
+          right={<ScopeChip />}
+        />
       </Screen>
     );
   }
@@ -112,7 +129,7 @@ export function AttendeeHome() {
           />
         }
       >
-        <View style={{ height: BLUR_HEADER_HEIGHT }} />
+        <View style={{ height: insets.top + BLUR_HEADER_HEIGHT + 8 }} />
 
         <View className="px-5">
           <View className="gap-4">
@@ -158,7 +175,12 @@ export function AttendeeHome() {
         </View>
       </Animated.ScrollView>
 
-      <BlurHeader scrollY={scrollY} title="Wallet" right={<ScopeChip />} />
+      <BlurHeader
+        scrollY={scrollY}
+        title="Wallet"
+        left={<ProfileButton />}
+        right={<ScopeChip />}
+      />
     </Screen>
   );
 }
