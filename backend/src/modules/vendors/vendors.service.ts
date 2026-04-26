@@ -62,9 +62,9 @@ export class VendorsService {
 
     const isAdmin = await this.isEventAdmin(eventId, userId, userRole);
 
-    const ownerUserId = isAdmin && dto.targetUserId ? dto.targetUserId : userId;
+    let ownerUserId = userId;
 
-    if (dto.targetUserId && isAdmin) {
+    if (isAdmin && dto.targetUserId) {
       const targetUser = await this.db
         .select({ id: users.id })
         .from(users)
@@ -75,6 +75,34 @@ export class VendorsService {
         throw new NotFoundException(
           `User with ID ${dto.targetUserId} not found`,
         );
+      }
+
+      ownerUserId = dto.targetUserId;
+    } else if (isAdmin && dto.contactEmail) {
+      const normalizedEmail = dto.contactEmail.toLowerCase().trim();
+      const existingByEmail = await this.db
+        .select({ id: users.id })
+        .from(users)
+        .where(eq(users.email, normalizedEmail))
+        .limit(1);
+
+      if (existingByEmail.length > 0) {
+        ownerUserId = existingByEmail[0].id;
+      } else {
+        const namePart = normalizedEmail.split('@')[0] || 'New vendor';
+        const createdUser = await this.db
+          .insert(users)
+          .values({
+            id: crypto.randomUUID(),
+            email: normalizedEmail,
+            emailVerified: false,
+            name: namePart,
+            role: 'user',
+            isActive: true,
+          })
+          .returning();
+
+        ownerUserId = createdUser[0].id;
       }
     }
 
@@ -390,6 +418,101 @@ export class VendorsService {
       .from(vendorMembers)
       .innerJoin(users, eq(users.id, vendorMembers.userId))
       .where(eq(vendorMembers.vendorId, vendorId));
+  }
+
+  async addMember(
+    eventId: string,
+    vendorId: string,
+    userId: string,
+    userRole: string,
+    dto: { userId?: string; email?: string; role: 'manager' | 'cashier' },
+  ) {
+    const canManage = await this.canManageVendor(
+      eventId,
+      vendorId,
+      userId,
+      userRole,
+    );
+    if (!canManage) {
+      throw new ForbiddenException(
+        'Only vendor owners or admins can add members',
+      );
+    }
+
+    if (!dto.userId && !dto.email) {
+      throw new BadRequestException('Either userId or email must be provided');
+    }
+
+    let targetUserId: string;
+
+    if (dto.userId) {
+      const existingUser = await this.db
+        .select({ id: users.id })
+        .from(users)
+        .where(eq(users.id, dto.userId))
+        .limit(1);
+
+      if (existingUser.length === 0) {
+        throw new NotFoundException(`User with ID ${dto.userId} not found`);
+      }
+
+      targetUserId = existingUser[0].id;
+    } else {
+      const normalizedEmail = dto.email!.toLowerCase().trim();
+      const existingByEmail = await this.db
+        .select({ id: users.id })
+        .from(users)
+        .where(eq(users.email, normalizedEmail))
+        .limit(1);
+
+      if (existingByEmail.length > 0) {
+        targetUserId = existingByEmail[0].id;
+      } else {
+        const namePart = normalizedEmail.split('@')[0] || 'New member';
+        const createdUser = await this.db
+          .insert(users)
+          .values({
+            id: crypto.randomUUID(),
+            email: normalizedEmail,
+            emailVerified: false,
+            name: namePart,
+            role: 'user',
+            isActive: true,
+          })
+          .returning();
+
+        targetUserId = createdUser[0].id;
+      }
+    }
+
+    const existing = await this.db
+      .select({ id: vendorMembers.id })
+      .from(vendorMembers)
+      .where(
+        and(
+          eq(vendorMembers.vendorId, vendorId),
+          eq(vendorMembers.userId, targetUserId),
+        ),
+      )
+      .limit(1);
+
+    if (existing.length > 0) {
+      throw new ConflictException(
+        'User is already a member of this vendor',
+      );
+    }
+
+    const inserted = await this.db
+      .insert(vendorMembers)
+      .values({
+        vendorId,
+        userId: targetUserId,
+        role: dto.role,
+        invitedBy: userId,
+      })
+      .returning();
+
+    return inserted[0];
   }
 
   async updateMemberRole(

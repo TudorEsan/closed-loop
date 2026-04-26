@@ -4,6 +4,8 @@ import type {
   CreateVendorDto,
   VendorQuery,
   PaginatedVendors,
+  VendorMember,
+  AddVendorMemberDto,
 } from '@/types';
 
 export const vendorsService = {
@@ -33,5 +35,36 @@ export const vendorsService = {
 
   remove(eventId: string, vendorId: string) {
     return api.delete(`/events/${eventId}/vendors/${vendorId}`);
+  },
+
+  listMembers(eventId: string, vendorId: string) {
+    return api.get<VendorMember[]>(
+      `/events/${eventId}/vendors/${vendorId}/members`,
+    );
+  },
+
+  addMember(eventId: string, vendorId: string, data: AddVendorMemberDto) {
+    return api.post<VendorMember>(
+      `/events/${eventId}/vendors/${vendorId}/members`,
+      data,
+    );
+  },
+
+  updateMemberRole(
+    eventId: string,
+    vendorId: string,
+    memberId: string,
+    role: 'manager' | 'cashier',
+  ) {
+    return api.patch<VendorMember>(
+      `/events/${eventId}/vendors/${vendorId}/members/${memberId}`,
+      { role },
+    );
+  },
+
+  removeMember(eventId: string, vendorId: string, memberId: string) {
+    return api.delete(
+      `/events/${eventId}/vendors/${vendorId}/members/${memberId}`,
+    );
   },
 };

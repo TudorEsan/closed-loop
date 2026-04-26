@@ -45,6 +45,25 @@ export type CreateVendorDto = {
   contactEmail?: string;
   productType?: VendorProductType;
   description?: string;
+  targetUserId?: string;
+};
+
+export type VendorMemberRole = 'owner' | 'manager' | 'cashier';
+
+export type VendorMember = {
+  id: string;
+  userId: string;
+  role: VendorMemberRole;
+  invitedBy: string | null;
+  createdAt: string;
+  userName: string;
+  userEmail: string;
+};
+
+export type AddVendorMemberDto = {
+  userId?: string;
+  email?: string;
+  role: 'manager' | 'cashier';
 };
 
 export type VendorQuery = {

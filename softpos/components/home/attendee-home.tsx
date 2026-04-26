@@ -41,6 +41,7 @@ export function AttendeeHome() {
 
   const bracelets: MyBraceletRow[] = braceletsQuery.data ?? [];
   const transactions: Transaction[] = txQuery.data?.transactions ?? [];
+  const hasBracelets = bracelets.length > 0;
 
   const scrollY = useSharedValue(0);
   const onScroll = useAnimatedScrollHandler((event) => {
@@ -49,6 +50,50 @@ export function AttendeeHome() {
 
   async function handleRefresh() {
     await Promise.all([braceletsQuery.refetch(), txQuery.refetch()]);
+  }
+
+  if (braceletsQuery.isLoading) {
+    return (
+      <Screen edgeTop={false} edgeBottom={false}>
+        <View className="flex-1 bg-background items-center justify-center">
+          <Spinner color={mutedColor} />
+        </View>
+        <BlurHeader scrollY={scrollY} title="Wallet" right={<ScopeChip />} />
+      </Screen>
+    );
+  }
+
+  if (braceletsError) {
+    return (
+      <Screen edgeTop={false} edgeBottom={false}>
+        <View className="flex-1 bg-background items-center justify-center px-8">
+          <Text className="text-center text-sm text-danger">
+            Could not load your bracelets. {braceletsError}
+          </Text>
+        </View>
+        <BlurHeader scrollY={scrollY} title="Wallet" right={<ScopeChip />} />
+      </Screen>
+    );
+  }
+
+  if (!hasBracelets) {
+    return (
+      <Screen edgeTop={false} edgeBottom={false}>
+        <View className="flex-1 bg-background items-center justify-center px-8">
+          <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-surface">
+            <Ionicons name="ticket-outline" size={28} color="#0a0a0a" />
+          </View>
+          <Text className="text-xl font-semibold text-foreground">
+            No festival tickets
+          </Text>
+          <Text className="mt-2 text-center text-sm text-muted">
+            Once a festival links your bracelet at the gate, your wallet shows
+            up here.
+          </Text>
+        </View>
+        <BlurHeader scrollY={scrollY} title="Wallet" right={<ScopeChip />} />
+      </Screen>
+    );
   }
 
   return (
@@ -70,23 +115,11 @@ export function AttendeeHome() {
         <View style={{ height: BLUR_HEADER_HEIGHT }} />
 
         <View className="px-5">
-          {braceletsQuery.isLoading ? (
-            <View className="items-center py-10">
-              <Spinner color={mutedColor} />
-            </View>
-          ) : braceletsError ? (
-            <Text className="text-xs text-danger">
-              Could not load your bracelets. {braceletsError}
-            </Text>
-          ) : bracelets.length === 0 ? (
-            <NoBraceletsCard />
-          ) : (
-            <View className="gap-4">
-              {bracelets.map((bracelet) => (
-                <BraceletCard key={bracelet.id} bracelet={bracelet} />
-              ))}
-            </View>
-          )}
+          <View className="gap-4">
+            {bracelets.map((bracelet) => (
+              <BraceletCard key={bracelet.id} bracelet={bracelet} />
+            ))}
+          </View>
 
           <View className="mt-8 mb-3 flex-row items-center justify-between">
             <Text className="text-xl font-semibold text-foreground">
@@ -161,23 +194,6 @@ function BraceletCard({ bracelet }: { bracelet: MyBraceletRow }) {
         </View>
       </View>
     </ImageBackground>
-  );
-}
-
-function NoBraceletsCard() {
-  return (
-    <View className="items-center rounded-3xl bg-surface px-6 py-10">
-      <View className="mb-3 h-12 w-12 items-center justify-center rounded-full bg-surface-secondary">
-        <Ionicons name="hardware-chip-outline" size={22} color="#0a0a0a" />
-      </View>
-      <Text className="text-base font-semibold text-foreground">
-        No bracelets yet
-      </Text>
-      <Text className="mt-1 text-center text-sm text-muted">
-        Once a festival links your bracelet at the gate, it shows up here so
-        you can top up and spend.
-      </Text>
-    </View>
   );
 }
 

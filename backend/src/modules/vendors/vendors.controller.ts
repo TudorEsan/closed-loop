@@ -17,6 +17,7 @@ import { UpdateVendorStatusDto } from './dto/update-vendor-status.dto';
 import { UpdateCommissionDto } from './dto/update-commission.dto';
 import { VendorQueryDto } from './dto/vendor-query.dto';
 import { UpdateMemberRoleDto } from './dto/update-member-role.dto';
+import { AddVendorMemberDto } from './dto/add-member.dto';
 
 @ApiTags('Vendors')
 @ApiBearerAuth()
@@ -120,6 +121,22 @@ export class VendorsController {
       vendorId,
       user.id,
       user.role,
+    );
+  }
+
+  @Post(':vendorId/members')
+  async addMember(
+    @Param('eventId') eventId: string,
+    @Param('vendorId') vendorId: string,
+    @Body() dto: AddVendorMemberDto,
+    @CurrentUser() user: { id: string; role: string },
+  ) {
+    return this.vendorsService.addMember(
+      eventId,
+      vendorId,
+      user.id,
+      user.role,
+      dto,
     );
   }
 

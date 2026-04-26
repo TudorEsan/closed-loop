@@ -16,7 +16,7 @@ const REVIEWER_OTPS: Record<string, string> = {
   'user@tudor.esan': '111111',
   'admin@tudor.esan': '111112',
   'untold@tudor.esan': '111113',
-  'iqos@tudor.esan': '111114',
+  'burger@tudor.esan': '111114',
 };
 
 export const auth = betterAuth({

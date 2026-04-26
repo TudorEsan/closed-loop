@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { useForm, Controller } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import {
@@ -47,6 +47,7 @@ import {
 import {
   Field,
   FieldDescription,
+  FieldError,
   FieldGroup,
   FieldLabel,
 } from '@/components/ui/field';
@@ -127,7 +128,6 @@ function formatDate(dateString: string) {
 type CreateEventFormValues = {
   name: string;
   description: string;
-  currency: string;
   tokenCurrencyRate: string;
   startDate: string;
   endDate: string;
@@ -148,12 +148,11 @@ function CreateEventDialog({
     register,
     handleSubmit,
     reset,
-    control,
+    formState: { errors },
   } = useForm<CreateEventFormValues>({
     defaultValues: {
       name: '',
       description: '',
-      currency: 'EUR',
       tokenCurrencyRate: '',
       startDate: '',
       endDate: '',
@@ -176,11 +175,6 @@ function CreateEventDialog({
   });
 
   function onSubmit(values: CreateEventFormValues) {
-    if (!values.name || !values.startDate || !values.endDate || !values.tokenCurrencyRate) {
-      toast.error('Please fill in all required fields');
-      return;
-    }
-
     const dto: CreateEventDto = {
       name: values.name,
       tokenCurrencyRate: Number(values.tokenCurrencyRate),
@@ -189,7 +183,6 @@ function CreateEventDialog({
     };
 
     if (values.description) dto.description = values.description;
-    if (values.currency) dto.currency = values.currency;
     if (values.location) dto.location = values.location;
     if (values.timezone) dto.timezone = values.timezone;
     createMutation.mutate(dto);
@@ -205,11 +198,17 @@ function CreateEventDialog({
           </DialogDescription>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
+        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4" noValidate>
           <FieldGroup>
             <Field>
-              <FieldLabel htmlFor="name">Event Name</FieldLabel>
-              <Input id="name" placeholder="Summer Festival 2026" {...register('name')} />
+              <FieldLabel htmlFor="name">Event Name *</FieldLabel>
+              <Input
+                id="name"
+                placeholder="Summer Festival 2026"
+                aria-invalid={!!errors.name}
+                {...register('name', { required: 'Event name is required' })}
+              />
+              {errors.name && <FieldError>{errors.name.message}</FieldError>}
             </Field>
 
             <Field>
@@ -217,43 +216,45 @@ function CreateEventDialog({
               <Input id="description" placeholder="Short description of the event" {...register('description')} />
             </Field>
 
-            <div className="grid grid-cols-2 gap-4">
-              <Field>
-                <FieldLabel>Currency</FieldLabel>
-                <Controller
-                  name="currency"
-                  control={control}
-                  render={({ field }) => (
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select currency" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {CURRENCIES.map((c) => (
-                          <SelectItem key={c.code} value={c.code}>
-                            {c.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-              </Field>
-              <Field>
-                <FieldLabel htmlFor="tokenCurrencyRate">Token Rate</FieldLabel>
-                <Input id="tokenCurrencyRate" type="number" step="any" placeholder="1.00" {...register('tokenCurrencyRate')} />
-                <FieldDescription>Tokens per 1 unit of currency</FieldDescription>
-              </Field>
-            </div>
+            <Field>
+              <FieldLabel htmlFor="tokenCurrencyRate">Token Rate *</FieldLabel>
+              <Input
+                id="tokenCurrencyRate"
+                type="number"
+                step="any"
+                placeholder="1.00"
+                aria-invalid={!!errors.tokenCurrencyRate}
+                {...register('tokenCurrencyRate', {
+                  required: 'Token rate is required',
+                  validate: (v) => (Number(v) > 0 ? true : 'Token rate must be greater than 0'),
+                })}
+              />
+              <FieldDescription>How many tokens 1 unit buys</FieldDescription>
+              {errors.tokenCurrencyRate && (
+                <FieldError>{errors.tokenCurrencyRate.message}</FieldError>
+              )}
+            </Field>
 
             <div className="grid grid-cols-2 gap-4">
               <Field>
-                <FieldLabel htmlFor="startDate">Start Date</FieldLabel>
-                <Input id="startDate" type="datetime-local" {...register('startDate')} />
+                <FieldLabel htmlFor="startDate">Start Date *</FieldLabel>
+                <Input
+                  id="startDate"
+                  type="datetime-local"
+                  aria-invalid={!!errors.startDate}
+                  {...register('startDate', { required: 'Start date is required' })}
+                />
+                {errors.startDate && <FieldError>{errors.startDate.message}</FieldError>}
               </Field>
               <Field>
-                <FieldLabel htmlFor="endDate">End Date</FieldLabel>
-                <Input id="endDate" type="datetime-local" {...register('endDate')} />
+                <FieldLabel htmlFor="endDate">End Date *</FieldLabel>
+                <Input
+                  id="endDate"
+                  type="datetime-local"
+                  aria-invalid={!!errors.endDate}
+                  {...register('endDate', { required: 'End date is required' })}
+                />
+                {errors.endDate && <FieldError>{errors.endDate.message}</FieldError>}
               </Field>
             </div>
 

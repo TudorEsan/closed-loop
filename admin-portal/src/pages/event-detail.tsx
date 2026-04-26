@@ -36,6 +36,7 @@ import type {
   Vendor,
   VendorStatus,
   VendorProductType,
+  VendorMember,
   User,
 } from '@/types';
 import {
@@ -1197,6 +1198,7 @@ function VendorsTab({ eventId, event }: { eventId: string; event: Event }) {
   const [addOpen, setAddOpen] = useState(false);
   const [commissionTarget, setCommissionTarget] = useState<Vendor | null>(null);
   const [removeTarget, setRemoveTarget] = useState<Vendor | null>(null);
+  const [membersTarget, setMembersTarget] = useState<Vendor | null>(null);
 
   const { data: vendorData, isLoading } = useQuery({
     queryKey: ['events', eventId, 'vendors'],
@@ -1327,6 +1329,9 @@ function VendorsTab({ eventId, event }: { eventId: string; event: Event }) {
                         <DropdownMenuItem onClick={() => setCommissionTarget(vendor)}>
                           Update Commission
                         </DropdownMenuItem>
+                        <DropdownMenuItem onClick={() => setMembersTarget(vendor)}>
+                          Manage Members
+                        </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         <DropdownMenuItem variant="destructive" onClick={() => setRemoveTarget(vendor)}>
                           Remove
@@ -1370,6 +1375,13 @@ function VendorsTab({ eventId, event }: { eventId: string; event: Event }) {
         vendor={commissionTarget}
         open={commissionTarget !== null}
         onOpenChange={(open) => !open && setCommissionTarget(null)}
+      />
+
+      <VendorMembersDialog
+        eventId={eventId}
+        vendor={membersTarget}
+        open={membersTarget !== null}
+        onOpenChange={(open) => !open && setMembersTarget(null)}
       />
 
       <Dialog
@@ -1635,6 +1647,374 @@ function UpdateCommissionDialog({
             Save
           </Button>
         </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// Vendor Members Dialog
+
+function VendorMembersDialog({
+  eventId,
+  vendor,
+  open,
+  onOpenChange,
+}: {
+  eventId: string;
+  vendor: Vendor | null;
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}) {
+  const queryClient = useQueryClient();
+  const [searchEmail, setSearchEmail] = useState('');
+  const [selectedUser, setSelectedUser] = useState<User | null>(null);
+  const [inviteEmail, setInviteEmail] = useState<string | null>(null);
+  const [selectedRole, setSelectedRole] = useState<'manager' | 'cashier'>(
+    'cashier',
+  );
+  const [removeMember, setRemoveMember] = useState<VendorMember | null>(null);
+
+  const debouncedEmail = useDebounce(searchEmail, 300);
+  const isValidEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+
+  const membersQuery = useQuery({
+    queryKey: ['events', eventId, 'vendors', vendor?.id, 'members'],
+    queryFn: () =>
+      vendorsService.listMembers(eventId, vendor!.id).then((r) => r.data),
+    enabled: open && !!vendor,
+  });
+
+  const { data: searchResults, isLoading: isSearching } = useQuery({
+    queryKey: ['users', 'search', debouncedEmail],
+    queryFn: () =>
+      usersService.list({ search: debouncedEmail }).then((r) => r.data.users),
+    enabled: open && debouncedEmail.length >= 3,
+  });
+
+  const resetForm = useCallback(() => {
+    setSearchEmail('');
+    setSelectedUser(null);
+    setInviteEmail(null);
+    setSelectedRole('cashier');
+  }, []);
+
+  useEffect(() => {
+    if (!open) {
+      resetForm();
+      setRemoveMember(null);
+    }
+  }, [open, resetForm]);
+
+  const invalidateMembers = () => {
+    queryClient.invalidateQueries({
+      queryKey: ['events', eventId, 'vendors', vendor?.id, 'members'],
+    });
+  };
+
+  const addMutation = useMutation({
+    mutationFn: () => {
+      if (!vendor) throw new Error('No vendor');
+      if (selectedUser) {
+        return vendorsService.addMember(eventId, vendor.id, {
+          userId: selectedUser.id,
+          role: selectedRole,
+        });
+      }
+      return vendorsService.addMember(eventId, vendor.id, {
+        email: inviteEmail!,
+        role: selectedRole,
+      });
+    },
+    onSuccess: () => {
+      invalidateMembers();
+      toast.success(inviteEmail ? 'Invitation sent' : 'Member added');
+      resetForm();
+    },
+    onError: (err) => {
+      toast.error(extractErrorMessage(err, 'Failed to add member'));
+    },
+  });
+
+  const roleMutation = useMutation({
+    mutationFn: ({
+      memberId,
+      role,
+    }: {
+      memberId: string;
+      role: 'manager' | 'cashier';
+    }) => vendorsService.updateMemberRole(eventId, vendor!.id, memberId, role),
+    onSuccess: () => {
+      invalidateMembers();
+      toast.success('Role updated');
+    },
+    onError: (err) => {
+      toast.error(extractErrorMessage(err, 'Failed to update role'));
+    },
+  });
+
+  const removeMutation = useMutation({
+    mutationFn: (memberId: string) =>
+      vendorsService.removeMember(eventId, vendor!.id, memberId),
+    onSuccess: () => {
+      invalidateMembers();
+      toast.success('Member removed');
+      setRemoveMember(null);
+    },
+    onError: (err) => {
+      toast.error(extractErrorMessage(err, 'Failed to remove member'));
+    },
+  });
+
+  const members = membersQuery.data ?? [];
+
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="max-w-lg">
+        <DialogHeader>
+          <DialogTitle>Manage Members</DialogTitle>
+          <DialogDescription>
+            Users with vendor access for <strong>{vendor?.businessName}</strong>.
+          </DialogDescription>
+        </DialogHeader>
+
+        <div className="space-y-5">
+          <div>
+            <h4 className="mb-2 text-sm font-medium text-muted-foreground">
+              {members.length} member{members.length !== 1 ? 's' : ''}
+            </h4>
+            {membersQuery.isLoading ? (
+              <Skeleton className="h-16 w-full" />
+            ) : members.length === 0 ? (
+              <div className="rounded-lg border border-dashed p-3 text-sm text-muted-foreground">
+                No members yet.
+              </div>
+            ) : (
+              <div className="divide-y rounded-lg border">
+                {members.map((member) => (
+                  <div
+                    key={member.id}
+                    className="flex items-center gap-3 p-3"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-sm font-medium">
+                        {member.userName}
+                      </p>
+                      <p className="truncate text-xs text-muted-foreground">
+                        {member.userEmail}
+                      </p>
+                    </div>
+                    {member.role === 'owner' ? (
+                      <Badge variant="secondary" className="shrink-0">
+                        owner
+                      </Badge>
+                    ) : (
+                      <>
+                        <Select
+                          value={member.role}
+                          onValueChange={(val) =>
+                            roleMutation.mutate({
+                              memberId: member.id,
+                              role: val as 'manager' | 'cashier',
+                            })
+                          }
+                          disabled={roleMutation.isPending}
+                        >
+                          <SelectTrigger className="h-8 w-28 text-xs">
+                            <SelectValue />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="manager">Manager</SelectItem>
+                            <SelectItem value="cashier">Cashier</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="size-8"
+                          onClick={() => setRemoveMember(member)}
+                        >
+                          <Trash2 className="size-4 text-muted-foreground" />
+                        </Button>
+                      </>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <Separator />
+
+          <div className="space-y-3">
+            <h4 className="text-sm font-medium">Add a member</h4>
+            {!selectedUser && !inviteEmail ? (
+              <div className="space-y-2">
+                <Field>
+                  <FieldLabel htmlFor="vendor-member-search">
+                    Search by email
+                  </FieldLabel>
+                  <Input
+                    id="vendor-member-search"
+                    type="email"
+                    placeholder="user@example.com"
+                    value={searchEmail}
+                    onChange={(e) => setSearchEmail(e.target.value)}
+                  />
+                </Field>
+
+                {isSearching && (
+                  <div className="flex items-center gap-2 py-2 text-sm text-muted-foreground">
+                    <Loader2 className="size-3.5 animate-spin" />
+                    Searching...
+                  </div>
+                )}
+
+                {searchResults && searchResults.length > 0 && (
+                  <div className="max-h-[160px] overflow-y-auto rounded-lg border">
+                    {searchResults.map((user) => (
+                      <button
+                        key={user.id}
+                        type="button"
+                        className="flex w-full items-center gap-3 px-3 py-2 text-left text-sm transition-colors hover:bg-muted"
+                        onClick={() => setSelectedUser(user)}
+                      >
+                        <div className="min-w-0 flex-1">
+                          <p className="truncate font-medium">{user.name}</p>
+                          <p className="truncate text-muted-foreground">
+                            {user.email}
+                          </p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {searchResults &&
+                  searchResults.length === 0 &&
+                  debouncedEmail.length >= 3 && (
+                    <div className="space-y-2 rounded-lg border border-dashed p-3">
+                      <p className="text-sm text-muted-foreground">
+                        No users found for that email.
+                      </p>
+                      {isValidEmail(debouncedEmail) ? (
+                        <Button
+                          type="button"
+                          variant="outline"
+                          size="sm"
+                          className="w-full"
+                          onClick={() => setInviteEmail(debouncedEmail)}
+                        >
+                          Invite {debouncedEmail}
+                        </Button>
+                      ) : (
+                        <p className="text-xs text-muted-foreground">
+                          Enter a full email address to send an invite.
+                        </p>
+                      )}
+                    </div>
+                  )}
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <div className="flex items-center gap-3 rounded-lg border p-3">
+                  <div className="min-w-0 flex-1">
+                    {selectedUser ? (
+                      <>
+                        <p className="truncate font-medium">{selectedUser.name}</p>
+                        <p className="truncate text-sm text-muted-foreground">
+                          {selectedUser.email}
+                        </p>
+                      </>
+                    ) : (
+                      <>
+                        <p className="truncate font-medium">New invite</p>
+                        <p className="truncate text-sm text-muted-foreground">
+                          {inviteEmail}
+                        </p>
+                      </>
+                    )}
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      setSelectedUser(null);
+                      setInviteEmail(null);
+                    }}
+                  >
+                    Change
+                  </Button>
+                </div>
+
+                <Field>
+                  <FieldLabel>Role</FieldLabel>
+                  <Select
+                    value={selectedRole}
+                    onValueChange={(val) =>
+                      setSelectedRole(val as 'manager' | 'cashier')
+                    }
+                  >
+                    <SelectTrigger className="w-full">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="manager">Manager</SelectItem>
+                      <SelectItem value="cashier">Cashier</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </Field>
+
+                <Button
+                  className="w-full"
+                  onClick={() => addMutation.mutate()}
+                  disabled={addMutation.isPending}
+                >
+                  {addMutation.isPending && (
+                    <Loader2 className="size-4 animate-spin" />
+                  )}
+                  {inviteEmail ? 'Send Invite' : 'Add Member'}
+                </Button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <DialogFooter>
+          <Button variant="outline" onClick={() => onOpenChange(false)}>
+            Close
+          </Button>
+        </DialogFooter>
+
+        <Dialog
+          open={removeMember !== null}
+          onOpenChange={(o) => !o && setRemoveMember(null)}
+        >
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Remove Member</DialogTitle>
+              <DialogDescription>
+                Remove <strong>{removeMember?.userName}</strong> from this vendor?
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setRemoveMember(null)}>
+                Cancel
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() =>
+                  removeMember && removeMutation.mutate(removeMember.id)
+                }
+                disabled={removeMutation.isPending}
+              >
+                {removeMutation.isPending && (
+                  <Loader2 className="size-4 animate-spin" />
+                )}
+                Remove
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </DialogContent>
     </Dialog>
   );
