@@ -4,42 +4,43 @@ import {
   RefreshControl,
   Text,
   View,
-} from 'react-native';
+} from "react-native";
 import Animated, {
   useAnimatedScrollHandler,
   useSharedValue,
-} from 'react-native-reanimated';
-import { router } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
-import { Spinner, useThemeColor } from 'heroui-native';
-import { useQuery } from '@tanstack/react-query';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
+} from "react-native-reanimated";
+import { router } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { Spinner, useThemeColor } from "heroui-native";
+import { useQuery } from "@tanstack/react-query";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-import { extractErrorMessage } from '@/lib/api';
-import { transactionsApi } from '@/lib/api/transactions';
+import { extractErrorMessage } from "@/lib/api";
+import { transactionsApi } from "@/lib/api/transactions";
 import {
   ActivityRow,
   BLUR_HEADER_HEIGHT,
   BlurHeader,
   Screen,
-} from '@/components/ui';
+} from "@/components/ui";
 import {
   ProfileButton,
   ScopeBadge,
   ScopeChip,
-} from '@/components/scope/scope-chip';
-import { theme } from '@/lib/theme';
-import type { Transaction, VendorMembership } from '@/types/api';
+} from "@/components/scope/scope-chip";
+import { theme } from "@/lib/theme";
+import type { Transaction, VendorMembership } from "@/types/api";
+import { useAuth } from "@/hooks";
 
-const HERO_IMAGE = require('@/assets/background.png');
+const HERO_IMAGE = require("@/assets/background.png");
 
 export function VendorHome({ vendor }: { vendor: VendorMembership }) {
-  const mutedColor = useThemeColor('muted');
-  const accentColor = useThemeColor('accent');
+  const mutedColor = useThemeColor("muted");
+  const accentColor = useThemeColor("accent");
   const insets = useSafeAreaInsets();
-
+  const auth = useAuth();
   const txQuery = useQuery({
-    queryKey: ['vendor-tx', vendor.eventId, vendor.vendorId],
+    queryKey: ["vendor-tx", vendor.eventId, vendor.vendorId],
     queryFn: () =>
       transactionsApi.listForVendor(vendor.eventId, vendor.vendorId, {
         limit: 20,
@@ -59,13 +60,13 @@ export function VendorHome({ vendor }: { vendor: VendorMembership }) {
   });
 
   const roleLabel =
-    vendor.role === 'owner'
-      ? 'Owner'
-      : vendor.role === 'manager'
-        ? 'Manager'
-        : 'Cashier';
+    vendor.role === "owner"
+      ? "Owner"
+      : vendor.role === "manager"
+        ? "Manager"
+        : "Cashier";
 
-  const isReady = vendor.status === 'approved';
+  const isReady = vendor.status === "approved";
 
   return (
     <Screen edgeTop={false} edgeBottom={false}>
@@ -77,8 +78,10 @@ export function VendorHome({ vendor }: { vendor: VendorMembership }) {
         scrollIndicatorInsets={{ top: BLUR_HEADER_HEIGHT }}
         refreshControl={
           <RefreshControl
-            refreshing={txQuery.isFetching}
-            onRefresh={() => txQuery.refetch()}
+            refreshing={txQuery.isFetching || auth.isLoading}
+            onRefresh={() => {
+              Promise.all([txQuery.refetch(), auth.refresh()]);
+            }}
             progressViewOffset={BLUR_HEADER_HEIGHT}
           />
         }
@@ -95,7 +98,7 @@ export function VendorHome({ vendor }: { vendor: VendorMembership }) {
           >
             <View
               className="px-6 py-7 gap-5"
-              style={{ backgroundColor: 'rgba(0, 0, 0, 0.55)' }}
+              style={{ backgroundColor: "rgba(0, 0, 0, 0.55)" }}
             >
               <View className="gap-2">
                 <View className="self-start rounded-full bg-white/20 px-3 py-1">
@@ -124,7 +127,7 @@ export function VendorHome({ vendor }: { vendor: VendorMembership }) {
                   {formatBalance(totalToday)}
                 </Text>
                 <Text className="mt-1 text-xs text-white/80">
-                  {countToday} {countToday === 1 ? 'charge' : 'charges'} so far
+                  {countToday} {countToday === 1 ? "charge" : "charges"} so far
                 </Text>
               </View>
             </View>
@@ -141,7 +144,7 @@ export function VendorHome({ vendor }: { vendor: VendorMembership }) {
 
           <View className="mt-6">
             <Pressable
-              onPress={() => router.push('/charge')}
+              onPress={() => router.push("/charge")}
               disabled={!isReady}
               className="rounded-2xl px-6 py-5 flex-row items-center justify-between"
               style={{
@@ -211,16 +214,16 @@ export function VendorHome({ vendor }: { vendor: VendorMembership }) {
 
 function ChargeRow({ tx }: { tx: Transaction }) {
   const meta = tx.metadata as { customerName?: string } | null;
-  const isRefund = tx.type === 'credit';
+  const isRefund = tx.type === "credit";
   return (
     <ActivityRow
-      icon={isRefund ? 'return-up-back' : 'card-outline'}
-      iconBg={isRefund ? '#dcfce7' : '#ede9fe'}
-      iconFg={isRefund ? '#15803d' : '#7c3aed'}
-      title={isRefund ? 'Refund' : 'Sale'}
+      icon={isRefund ? "return-up-back" : "card-outline"}
+      iconBg={isRefund ? "#dcfce7" : "#ede9fe"}
+      iconFg={isRefund ? "#15803d" : "#7c3aed"}
+      title={isRefund ? "Refund" : "Sale"}
       subtitle={meta?.customerName ?? formatStatus(tx.status)}
-      amount={`${isRefund ? '+' : ''}${formatBalance(tx.amount)}`}
-      amountTone={isRefund ? 'success' : 'default'}
+      amount={`${isRefund ? "+" : ""}${formatBalance(tx.amount)}`}
+      amountTone={isRefund ? "success" : "default"}
       time={formatTime(tx.serverTimestamp)}
     />
   );
@@ -246,7 +249,7 @@ function filterToday(items: Transaction[]): Transaction[] {
   const today = new Date().toDateString();
   return items.filter(
     (tx) =>
-      tx.type === 'debit' &&
+      tx.type === "debit" &&
       new Date(tx.serverTimestamp).toDateString() === today,
   );
 }
@@ -254,7 +257,7 @@ function filterToday(items: Transaction[]): Transaction[] {
 function formatBalance(minor: number): string {
   const major = minor / 100;
   const hasDecimals = Math.round(major * 100) % 100 !== 0;
-  const formatted = new Intl.NumberFormat('en-GB', {
+  const formatted = new Intl.NumberFormat("en-GB", {
     minimumFractionDigits: hasDecimals ? 2 : 0,
     maximumFractionDigits: 2,
   }).format(major);
@@ -262,15 +265,15 @@ function formatBalance(minor: number): string {
 }
 
 function formatStatus(status: string): string {
-  if (status === 'pending') return 'Pending';
-  if (status === 'failed') return 'Failed';
-  if (status === 'flagged') return 'Flagged';
-  return 'Completed';
+  if (status === "pending") return "Pending";
+  if (status === "failed") return "Failed";
+  if (status === "flagged") return "Flagged";
+  return "Completed";
 }
 
 function formatTime(iso: string): string {
-  return new Date(iso).toLocaleTimeString('en-GB', {
-    hour: '2-digit',
-    minute: '2-digit',
+  return new Date(iso).toLocaleTimeString("en-GB", {
+    hour: "2-digit",
+    minute: "2-digit",
   });
 }

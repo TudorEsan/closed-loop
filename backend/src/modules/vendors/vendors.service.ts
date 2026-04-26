@@ -62,6 +62,12 @@ export class VendorsService {
 
     const isAdmin = await this.isEventAdmin(eventId, userId, userRole);
 
+    if (isAdmin && !dto.targetUserId && !dto.contactEmail) {
+      throw new BadRequestException(
+        'Provide a contactEmail or targetUserId so the vendor is owned by a vendor user, not the admin',
+      );
+    }
+
     let ownerUserId = userId;
 
     if (isAdmin && dto.targetUserId) {

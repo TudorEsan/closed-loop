@@ -3,6 +3,7 @@ import axios, { AxiosError } from 'axios';
 import { config } from './config';
 import { getStoredToken, setStoredToken } from './auth';
 import { queryClient } from './query';
+import { setStoredScopeId } from './scope';
 import { AUTH_SESSION_QUERY_KEY } from '@/hooks/use-auth';
 
 export const api = axios.create({
@@ -42,7 +43,14 @@ api.interceptors.response.use(
       isClearingSession = true;
       try {
         await setStoredToken(null);
+        await setStoredScopeId(null);
         queryClient.setQueryData(AUTH_SESSION_QUERY_KEY, null);
+        queryClient.removeQueries({
+          predicate: (q) => {
+            const key = q.queryKey[0];
+            return key !== AUTH_SESSION_QUERY_KEY[0];
+          },
+        });
       } finally {
         setTimeout(() => {
           isClearingSession = false;

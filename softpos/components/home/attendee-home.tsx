@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import {
   ImageBackground,
   Pressable,
@@ -23,7 +24,12 @@ import {
   TopupButton,
 } from '@/components/ui';
 import { ProfileButton, ScopeChip } from '@/components/scope/scope-chip';
-import { useMyBracelets, useRecentTransactions } from '@/hooks';
+import {
+  useMyBracelets,
+  useMyMemberships,
+  useRecentTransactions,
+} from '@/hooks';
+import { useAuthContext } from '@/lib/auth-context';
 import type { Transaction } from '@/types/api';
 import type { MyBraceletRow } from '@/lib/api/bracelets';
 
@@ -33,6 +39,8 @@ export function AttendeeHome() {
   const mutedColor = useThemeColor('muted');
   const insets = useSafeAreaInsets();
 
+  const auth = useAuthContext();
+  const membershipsQuery = useMyMemberships();
   const braceletsQuery = useMyBracelets();
   const txQuery = useRecentTransactions(10);
 
@@ -51,58 +59,69 @@ export function AttendeeHome() {
   });
 
   async function handleRefresh() {
-    await Promise.all([braceletsQuery.refetch(), txQuery.refetch()]);
+    await Promise.all([
+      auth.refresh(),
+      membershipsQuery.refetch(),
+      braceletsQuery.refetch(),
+      txQuery.refetch(),
+    ]);
   }
 
+  const isRefreshing =
+    membershipsQuery.isFetching ||
+    braceletsQuery.isFetching ||
+    txQuery.isFetching;
+
+  const refreshControl = (
+    <RefreshControl
+      refreshing={isRefreshing}
+      onRefresh={handleRefresh}
+      progressViewOffset={BLUR_HEADER_HEIGHT}
+    />
+  );
+
+  let statusContent: ReactNode = null;
   if (braceletsQuery.isLoading) {
-    return (
-      <Screen edgeTop={false} edgeBottom={false}>
-        <View className="flex-1 bg-background items-center justify-center">
-          <Spinner color={mutedColor} />
+    statusContent = <Spinner color={mutedColor} />;
+  } else if (braceletsError) {
+    statusContent = (
+      <Text className="text-center text-sm text-danger">
+        Could not load your bracelets. {braceletsError}
+      </Text>
+    );
+  } else if (!hasBracelets) {
+    statusContent = (
+      <>
+        <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-surface">
+          <Ionicons name="ticket-outline" size={28} color="#0a0a0a" />
         </View>
-        <BlurHeader
-          scrollY={scrollY}
-          title="Wallet"
-          left={<ProfileButton />}
-          right={<ScopeChip />}
-        />
-      </Screen>
+        <Text className="text-xl font-semibold text-foreground">
+          No festival tickets
+        </Text>
+        <Text className="mt-2 text-center text-sm text-muted">
+          Once a festival links your bracelet at the gate, your wallet shows
+          up here.
+        </Text>
+      </>
     );
   }
 
-  if (braceletsError) {
+  if (statusContent !== null) {
     return (
       <Screen edgeTop={false} edgeBottom={false}>
-        <View className="flex-1 bg-background items-center justify-center px-8">
-          <Text className="text-center text-sm text-danger">
-            Could not load your bracelets. {braceletsError}
-          </Text>
-        </View>
-        <BlurHeader
-          scrollY={scrollY}
-          title="Wallet"
-          left={<ProfileButton />}
-          right={<ScopeChip />}
-        />
-      </Screen>
-    );
-  }
-
-  if (!hasBracelets) {
-    return (
-      <Screen edgeTop={false} edgeBottom={false}>
-        <View className="flex-1 bg-background items-center justify-center px-8">
-          <View className="mb-4 h-16 w-16 items-center justify-center rounded-full bg-surface">
-            <Ionicons name="ticket-outline" size={28} color="#0a0a0a" />
+        <Animated.ScrollView
+          className="flex-1 bg-background"
+          contentContainerStyle={{ flexGrow: 1 }}
+          scrollEventThrottle={16}
+          onScroll={onScroll}
+          scrollIndicatorInsets={{ top: BLUR_HEADER_HEIGHT }}
+          refreshControl={refreshControl}
+        >
+          <View style={{ height: insets.top + BLUR_HEADER_HEIGHT + 8 }} />
+          <View className="flex-1 items-center justify-center px-8 pb-16">
+            {statusContent}
           </View>
-          <Text className="text-xl font-semibold text-foreground">
-            No festival tickets
-          </Text>
-          <Text className="mt-2 text-center text-sm text-muted">
-            Once a festival links your bracelet at the gate, your wallet shows
-            up here.
-          </Text>
-        </View>
+        </Animated.ScrollView>
         <BlurHeader
           scrollY={scrollY}
           title="Wallet"
@@ -121,13 +140,7 @@ export function AttendeeHome() {
         scrollEventThrottle={16}
         onScroll={onScroll}
         scrollIndicatorInsets={{ top: BLUR_HEADER_HEIGHT }}
-        refreshControl={
-          <RefreshControl
-            refreshing={braceletsQuery.isFetching || txQuery.isFetching}
-            onRefresh={handleRefresh}
-            progressViewOffset={BLUR_HEADER_HEIGHT}
-          />
-        }
+        refreshControl={refreshControl}
       >
         <View style={{ height: insets.top + BLUR_HEADER_HEIGHT + 8 }} />
 

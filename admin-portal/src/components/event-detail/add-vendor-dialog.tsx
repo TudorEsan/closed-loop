@@ -139,6 +139,7 @@ export function AddVendorDialog({
                 id="vendor-email"
                 type="email"
                 {...register('contactEmail', {
+                  required: 'Contact email is required',
                   pattern: {
                     value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
                     message: 'Enter a valid email address',

@@ -6,6 +6,7 @@ import {
   IsEmail,
   IsIn,
   MaxLength,
+  ValidateIf,
 } from 'class-validator';
 
 export const VENDOR_PRODUCT_TYPES = [
@@ -33,8 +34,14 @@ export class CreateVendorDto {
   @MaxLength(255)
   contactPerson: string;
 
-  @ApiPropertyOptional({ description: 'Contact email address' })
-  @IsOptional()
+  @ApiPropertyOptional({
+    description:
+      'Contact email address. Required unless targetUserId is provided.',
+  })
+  @ValidateIf((o) => !o.targetUserId)
+  @IsNotEmpty({
+    message: 'Contact email is required when no target user is specified',
+  })
   @IsEmail({}, { message: 'Contact email must be a valid email' })
   contactEmail?: string;
 

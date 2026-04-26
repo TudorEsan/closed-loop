@@ -12,8 +12,22 @@ const ATTENDEE_ID = 'attendee';
 
 let cachedScopeId: string | null | undefined = undefined;
 
+type ScopeListener = () => void;
+const scopeListeners = new Set<ScopeListener>();
+
+export function subscribeToStoredScopeId(listener: ScopeListener): () => void {
+  scopeListeners.add(listener);
+  return () => {
+    scopeListeners.delete(listener);
+  };
+}
+
+function emitScopeChange() {
+  for (const l of scopeListeners) l();
+}
+
 export function getStoredScopeId(): string | null {
-  if (cachedScopeId !== undefined) return cachedScopeId;
+  if (cachedScopeId !== undefined) return cachedScopeId ?? null;
   const value = SecureStore.getItem(SCOPE_KEY);
   cachedScopeId = value;
   return value;
@@ -26,6 +40,7 @@ export async function setStoredScopeId(id: string | null): Promise<void> {
   } else {
     await SecureStore.deleteItemAsync(SCOPE_KEY);
   }
+  emitScopeChange();
 }
 
 export function scopeId(scope: Scope): string {
@@ -50,17 +65,15 @@ export function scopeFromId(id: string, m: Memberships): Scope | null {
 }
 
 // Returns the unambiguous default scope, or null when the user has 2+
-// memberships and we need to ask them to pick one.
+// memberships of the same kind and we need to ask them to pick one.
+// Events take priority over vendors, so an event admin who was also added
+// as a vendor member still lands on the staff view by default.
 export function pickDefaultScope(m: Memberships): Scope | null {
-  const total = m.events.length + m.vendors.length;
-  if (total === 0) return { kind: 'attendee' };
-  if (total === 1) {
-    if (m.events.length === 1) {
-      return { kind: 'event', event: m.events[0] };
-    }
-    return { kind: 'vendor', vendor: m.vendors[0] };
-  }
-  return null;
+  if (m.events.length === 1) return { kind: 'event', event: m.events[0] };
+  if (m.events.length > 1) return null;
+  if (m.vendors.length === 1) return { kind: 'vendor', vendor: m.vendors[0] };
+  if (m.vendors.length > 1) return null;
+  return { kind: 'attendee' };
 }
 
 export function eventScope(event: EventMembership): Scope {

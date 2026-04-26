@@ -7,34 +7,21 @@ import {
   scopeFromId,
   scopeId as scopeIdOf,
   setStoredScopeId,
+  subscribeToStoredScopeId,
 } from '@/lib/scope';
 import type { Memberships, Scope } from '@/types/api';
 import { useMyMemberships } from './use-memberships';
 
-type Listener = () => void;
-
-let activeScopeId: string | null = getStoredScopeId();
-const listeners = new Set<Listener>();
-
-function emit() {
-  for (const l of listeners) l();
-}
-
-function subscribe(l: Listener) {
-  listeners.add(l);
-  return () => {
-    listeners.delete(l);
-  };
+function subscribe(l: () => void) {
+  return subscribeToStoredScopeId(l);
 }
 
 function getSnapshot(): string | null {
-  return activeScopeId;
+  return getStoredScopeId();
 }
 
 async function writeScopeId(next: string | null) {
-  activeScopeId = next;
   await setStoredScopeId(next);
-  emit();
 }
 
 export type UseScopeValue = {

@@ -39,7 +39,12 @@ export function useAuth(): UseAuthValue {
   const signOut = useCallback(async () => {
     await authApi.signOut();
     setSession(null);
-  }, [setSession]);
+    // Wipe every cached query so the next user does not see the previous
+    // user's memberships, bracelets, transactions, etc. The auth-session
+    // entry was just reset above; clearing afterwards is fine because
+    // queries refetch on next mount.
+    queryClient.removeQueries();
+  }, [queryClient, setSession]);
 
   return {
     session,

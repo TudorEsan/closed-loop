@@ -12,11 +12,7 @@ import {
   BlurHeader,
   Screen,
 } from '@/components/ui';
-import {
-  ProfileButton,
-  ScopeBadge,
-  ScopeChip,
-} from '@/components/scope/scope-chip';
+import { ProfileButton, ScopeChip } from '@/components/scope/scope-chip';
 import type { EventMembership } from '@/types/api';
 
 const HERO_IMAGE = require('@/assets/background.png');
@@ -53,16 +49,21 @@ export function StaffHome({ event }: { event: EventMembership }) {
             imageStyle={{ borderRadius: 24 }}
             className="overflow-hidden rounded-3xl border border-white"
           >
+            <View className="absolute inset-0 bg-black/40" />
             <View className="px-6 py-7 gap-4">
-              <ScopeBadge label={roleLabel} tone="accent" />
+              <View className="self-start rounded-full bg-white/20 px-3 py-1">
+                <Text className="text-xs font-semibold text-white">
+                  {roleLabel}
+                </Text>
+              </View>
               <View>
                 <Text
-                  className="text-3xl font-bold tracking-tight text-foreground"
+                  className="text-3xl font-bold tracking-tight text-white"
                   numberOfLines={1}
                 >
                   {event.name}
                 </Text>
-                <Text className="mt-1 text-sm text-muted">
+                <Text className="mt-1 text-sm text-white/80">
                   {formatDateRange(event.startDate, event.endDate)}
                   {event.location ? ` · ${event.location}` : ''}
                 </Text>
@@ -164,22 +165,25 @@ function PrimaryAction({
   return (
     <Pressable
       onPress={onPress}
-      className="rounded-2xl bg-foreground px-6 py-5 flex-row items-center justify-between"
+      className="rounded-2xl bg-accent px-6 py-5 flex-row items-center justify-between"
     >
       <View className="flex-row items-center gap-3 flex-1">
-        <View className="h-10 w-10 items-center justify-center rounded-full bg-background">
+        <View className="h-10 w-10 items-center justify-center rounded-full bg-white">
           <Ionicons name={icon} size={20} color="#0a0a0a" />
         </View>
         <View className="flex-1">
-          <Text className="text-base font-semibold text-background">
+          <Text className="text-base font-semibold text-accent-foreground">
             {title}
           </Text>
-          <Text className="mt-0.5 text-xs text-muted" numberOfLines={1}>
+          <Text
+            className="mt-0.5 text-xs text-accent-foreground/70"
+            numberOfLines={1}
+          >
             {subtitle}
           </Text>
         </View>
       </View>
-      <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
+      <Ionicons name="chevron-forward" size={20} color="#0a0a0a" />
     </Pressable>
   );
 }
@@ -221,13 +225,18 @@ function SecondaryAction({
 function StatusBadge({ status }: { status: string }) {
   const isActive = status === 'active';
   const isClosed = status === 'closed';
-  const tone: 'success' | 'accent' = isActive ? 'success' : 'accent';
   const label = isActive
     ? 'Live now'
     : isClosed
       ? 'Closed'
       : capitalize(status);
-  return <ScopeBadge label={label} tone={tone} />;
+  const dotCls = isActive ? 'bg-success' : 'bg-white/70';
+  return (
+    <View className="self-start flex-row items-center gap-2 rounded-full bg-white/20 px-3 py-1">
+      <View className={`h-2 w-2 rounded-full ${dotCls}`} />
+      <Text className="text-xs font-semibold text-white">{label}</Text>
+    </View>
+  );
 }
 
 function EmptyTodayCard() {
