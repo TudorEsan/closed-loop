@@ -15,7 +15,6 @@ import { users } from './auth';
 import { events } from './events';
 import { wallets } from './wallets';
 import { vendors } from './vendors';
-import { devices } from './devices';
 
 export const transactions = pgTable(
   'transactions',
@@ -31,7 +30,6 @@ export const transactions = pgTable(
       .notNull()
       .references(() => wallets.id),
     vendorId: text('vendor_id').references(() => vendors.id),
-    deviceId: text('device_id').references(() => devices.id),
     operatorId: text('operator_id').references(() => users.id),
     type: transactionTypeEnum('type').notNull(),
     amount: integer('amount').notNull(),

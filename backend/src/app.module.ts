@@ -10,7 +10,6 @@ import { AuthGuard } from '@common/guards/auth.guard';
 import { RolesGuard } from '@common/guards/roles.guard';
 import { VendorsModule } from './modules/vendors/vendors.module';
 import { EventsModule } from './modules/events/events.module';
-import { DevicesModule } from './modules/devices/devices.module';
 import { PaymentsModule } from './modules/payments/payments.module';
 import { WalletsModule } from './modules/wallets/wallets.module';
 import { BraceletsModule } from './modules/bracelets/bracelets.module';
@@ -32,7 +31,6 @@ import { ScopeModule } from '@common/auth/scope.module';
     UsersModule,
     EventsModule,
     VendorsModule,
-    DevicesModule,
     WalletsModule,
     PaymentsModule,
     BraceletsModule,

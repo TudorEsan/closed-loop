@@ -17,12 +17,6 @@ export const vendorStatusEnum = pgEnum('vendor_status', [
   'rejected',
   'suspended',
 ]);
-export const deviceStatusEnum = pgEnum('device_status', [
-  'pending_approval',
-  'active',
-  'blocked',
-  'decommissioned',
-]);
 export const walletStatusEnum = pgEnum('wallet_status', [
   'active',
   'frozen',
@@ -41,26 +35,6 @@ export const transactionStatusEnum = pgEnum('transaction_status', [
   'failed',
   'flagged',
 ]);
-export const syncStatusEnum = pgEnum('sync_status', [
-  'success',
-  'partial',
-  'failed',
-]);
-export const alertTypeEnum = pgEnum('alert_type', [
-  'chain_break',
-  'root_detected',
-  'long_offline',
-  'balance_mismatch',
-  'suspicious_activity',
-  'unauthorized_device',
-  'unauthorized_operator',
-]);
-export const alertSeverityEnum = pgEnum('alert_severity', [
-  'low',
-  'medium',
-  'high',
-  'critical',
-]);
 // Per-event role. The event creator is captured via `events.organizerId` and
 // is treated as an implicit admin, so we no longer need an `organizer` value
 // here.
@@ -77,10 +51,6 @@ export const vendorInvitationStatusEnum = pgEnum('vendor_invitation_status', [
   'pending',
   'accepted',
   'expired',
-  'revoked',
-]);
-export const deviceOperatorStatusEnum = pgEnum('device_operator_status', [
-  'active',
   'revoked',
 ]);
 export const paymentIntentStatusEnum = pgEnum('payment_intent_status', [
