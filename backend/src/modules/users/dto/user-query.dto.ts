@@ -2,13 +2,7 @@ import { ApiPropertyOptional } from '@nestjs/swagger';
 import { IsIn, IsOptional, IsString, Max, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 
-const VALID_ROLES = [
-  'super_admin',
-  'admin',
-  'operator',
-  'vendor',
-  'attendee',
-] as const;
+const VALID_ROLES = ['super_admin', 'user'] as const;
 
 export class UserQueryDto {
   @ApiPropertyOptional({

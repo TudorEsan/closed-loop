@@ -69,38 +69,22 @@ export class EventsService {
 
     const conditions: SQL<unknown>[] = [];
 
-    // Access control based on role
-    if (userRole === 'admin') {
+    // Non-super_admin users see events they organize or are members of.
+    if (userRole !== 'super_admin') {
       const memberEventIds = await this.db
         .select({ eventId: eventMembers.eventId })
         .from(eventMembers)
         .where(eq(eventMembers.userId, userId));
 
       const memberIds = memberEventIds.map((m) => m.eventId);
-
-      if (memberIds.length > 0) {
-        const accessCondition = or(
-          eq(events.organizerId, userId),
-          ...memberIds.map((id) => eq(events.id, id)),
-        );
-        if (accessCondition) conditions.push(accessCondition);
-      } else {
-        conditions.push(eq(events.organizerId, userId));
-      }
-    } else if (userRole === 'operator') {
-      const memberEventIds = await this.db
-        .select({ eventId: eventMembers.eventId })
-        .from(eventMembers)
-        .where(eq(eventMembers.userId, userId));
-
-      const memberIds = memberEventIds.map((m) => m.eventId);
-
-      if (memberIds.length > 0) {
-        const accessCondition = or(...memberIds.map((id) => eq(events.id, id)));
-        if (accessCondition) conditions.push(accessCondition);
-      } else {
-        return { events: [], nextCursor: null };
-      }
+      const accessCondition =
+        memberIds.length > 0
+          ? or(
+              eq(events.organizerId, userId),
+              ...memberIds.map((id) => eq(events.id, id)),
+            )
+          : eq(events.organizerId, userId);
+      if (accessCondition) conditions.push(accessCondition);
     }
 
     if (status) {
@@ -349,7 +333,7 @@ export class EventsService {
             email: normalizedEmail,
             emailVerified: false,
             name: namePart,
-            role: 'attendee',
+            role: 'user',
             isActive: true,
           })
           .returning();
@@ -514,10 +498,7 @@ export class EventsService {
       )
       .limit(1);
 
-    if (
-      membership.length > 0 &&
-      (membership[0].role === 'organizer' || membership[0].role === 'admin')
-    ) {
+    if (membership.length > 0 && membership[0].role === 'admin') {
       return true;
     }
 

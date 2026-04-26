@@ -731,10 +731,7 @@ export class DevicesService {
         and(
           eq(eventMembers.eventId, eventId),
           eq(eventMembers.userId, userId),
-          or(
-            eq(eventMembers.role, 'organizer'),
-            eq(eventMembers.role, 'admin'),
-          ),
+          eq(eventMembers.role, 'admin'),
         ),
       )
       .limit(1);

@@ -682,7 +682,6 @@ export class VendorsService {
 
     if (event.length > 0 && event[0].organizerId === userId) return true;
 
-    // Check if user is an event member with organizer or admin role
     const membership = await this.db
       .select()
       .from(eventMembers)
@@ -690,10 +689,7 @@ export class VendorsService {
         and(
           eq(eventMembers.eventId, eventId),
           eq(eventMembers.userId, userId),
-          or(
-            eq(eventMembers.role, 'organizer'),
-            eq(eventMembers.role, 'admin'),
-          ),
+          eq(eventMembers.role, 'admin'),
         ),
       )
       .limit(1);

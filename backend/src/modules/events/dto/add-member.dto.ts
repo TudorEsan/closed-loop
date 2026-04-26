@@ -7,7 +7,7 @@ import {
   ValidateIf,
 } from 'class-validator';
 
-const VALID_ROLES = ['organizer', 'admin', 'operator'] as const;
+const VALID_ROLES = ['admin', 'operator'] as const;
 
 export class AddMemberDto {
   @ApiProperty({

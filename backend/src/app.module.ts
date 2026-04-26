@@ -16,11 +16,13 @@ import { WalletsModule } from './modules/wallets/wallets.module';
 import { BraceletsModule } from './modules/bracelets/bracelets.module';
 import { TicketsModule } from './modules/tickets/tickets.module';
 import { EmailModule } from '@common/email/email.module';
+import { ScopeModule } from '@common/auth/scope.module';
 
 @Module({
   imports: [
     ConfigModule,
     DrizzleModule,
+    ScopeModule,
     EmailModule,
     ThrottlerModule.forRootAsync({
       imports: [ConfigModule],
