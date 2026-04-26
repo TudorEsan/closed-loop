@@ -32,18 +32,23 @@ export class PaymentsController {
     @Inject(PAYMENT_PROVIDER) private readonly provider: PaymentProvider,
   ) {}
 
-  // Mobile app calls this with the desired amount, gets back a client secret
-  // that the Stripe SDK can use to present the PaymentSheet. Topups are at
-  // the user level, balance is usable across any event.
-  @Post('wallets/me/topup/intent')
+  // Mobile app calls this with the bracelet it is wearing and the desired
+  // amount, gets back a client secret that the Stripe SDK can use to present
+  // the PaymentSheet. The credit lands on that exact bracelet, balance is
+  // event-scoped now.
+  @Post('bracelets/topup/intent')
   @ApiOperation({
-    summary: 'Create a topup payment intent for the current user',
+    summary: 'Create a topup payment intent for a bracelet the caller owns',
   })
   async createTopupIntent(
     @Body() dto: CreateTopupIntentDto,
     @CurrentUser() user: { id: string },
   ) {
-    return this.paymentsService.createTopupIntent(user.id, dto.amount);
+    return this.paymentsService.createTopupIntent(
+      user.id,
+      dto.eventBraceletId,
+      dto.amount,
+    );
   }
 
   // Webhook from the payment provider. Public so the provider can reach it,

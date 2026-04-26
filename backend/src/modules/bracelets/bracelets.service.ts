@@ -13,6 +13,7 @@ import {
   auditLogs,
   eventBracelets,
   events,
+  transactions,
   users,
 } from '@common/database/schemas';
 import { LinkBraceletDto } from './dto/link-bracelet.dto';
@@ -337,6 +338,69 @@ export class BraceletsService {
       }
       throw err;
     }
+  }
+
+  // Attendee-facing list of their active bracelets across events. Each row
+  // carries the live balance and the counters since the bracelet IS the
+  // wallet now.
+  async myBracelets(userId: string) {
+    const rows = await this.db
+      .select()
+      .from(eventBracelets)
+      .where(
+        and(
+          eq(eventBracelets.userId, userId),
+          eq(eventBracelets.status, 'active'),
+        ),
+      )
+      .orderBy(desc(eventBracelets.linkedAt));
+    return { bracelets: rows };
+  }
+
+  async myBraceletTransactions(
+    userId: string,
+    braceletId: string,
+    params: { limit?: number; cursor?: string } = {},
+  ) {
+    const owned = await this.db
+      .select()
+      .from(eventBracelets)
+      .where(
+        and(
+          eq(eventBracelets.id, braceletId),
+          eq(eventBracelets.userId, userId),
+        ),
+      )
+      .limit(1);
+    if (owned.length === 0) {
+      throw new NotFoundException('Bracelet not found');
+    }
+
+    const limit = Math.min(params.limit ?? 20, 100);
+    const conditions: SQL<unknown>[] = [
+      eq(transactions.eventBraceletId, braceletId),
+    ];
+    if (params.cursor) {
+      const cursorRow = await this.db
+        .select({ createdAt: transactions.createdAt })
+        .from(transactions)
+        .where(eq(transactions.id, params.cursor))
+        .limit(1);
+      if (cursorRow.length > 0) {
+        conditions.push(lt(transactions.createdAt, cursorRow[0].createdAt));
+      }
+    }
+    const rows = await this.db
+      .select()
+      .from(transactions)
+      .where(and(...conditions))
+      .orderBy(desc(transactions.createdAt))
+      .limit(limit + 1);
+
+    const hasMore = rows.length > limit;
+    const items = hasMore ? rows.slice(0, limit) : rows;
+    const nextCursor = hasMore ? items[items.length - 1].id : null;
+    return { transactions: items, nextCursor };
   }
 
   async myEvents(userId: string) {

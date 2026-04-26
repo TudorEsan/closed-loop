@@ -4,8 +4,6 @@ export * from './events';
 export * from './event-members';
 export * from './vendors';
 export * from './vendor-members';
-export * from './vendor-invitations';
-export * from './wallets';
 export * from './transactions';
 export * from './payment-intents';
 export * from './audit-logs';

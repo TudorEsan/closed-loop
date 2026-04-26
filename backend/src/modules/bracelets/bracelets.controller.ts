@@ -34,6 +34,24 @@ export class BraceletsController {
     return this.bracelets.myEvents(user.id);
   }
 
+  @Get('me/bracelets')
+  async myBracelets(@CurrentUser() user: { id: string }) {
+    return this.bracelets.myBracelets(user.id);
+  }
+
+  @Get('me/bracelets/:id/transactions')
+  async myBraceletTransactions(
+    @Param('id') id: string,
+    @CurrentUser() user: { id: string },
+    @Query('limit') limit?: string,
+    @Query('cursor') cursor?: string,
+  ) {
+    return this.bracelets.myBraceletTransactions(user.id, id, {
+      limit: limit ? parseInt(limit, 10) : undefined,
+      cursor,
+    });
+  }
+
   @Post('events/:eventId/bracelets')
   async link(
     @Param('eventId') eventId: string,

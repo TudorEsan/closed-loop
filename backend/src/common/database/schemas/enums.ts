@@ -17,17 +17,13 @@ export const vendorStatusEnum = pgEnum('vendor_status', [
   'rejected',
   'suspended',
 ]);
-export const walletStatusEnum = pgEnum('wallet_status', [
-  'active',
-  'frozen',
-  'closed',
-]);
+// Two kinds of money movement on a bracelet. `debit` is a spend, paired with
+// the bracelet's debit_counter. `credit` is a topup or refund, paired with
+// the server-owned credit_counter. The old payment / topup_* / refund /
+// cashout split went away once counters carry the rest of the meaning.
 export const transactionTypeEnum = pgEnum('transaction_type', [
-  'payment',
-  'topup_online',
-  'topup_cash',
-  'refund',
-  'cashout',
+  'debit',
+  'credit',
 ]);
 export const transactionStatusEnum = pgEnum('transaction_status', [
   'completed',
@@ -46,12 +42,6 @@ export const vendorMemberRoleEnum = pgEnum('vendor_member_role', [
   'owner',
   'manager',
   'cashier',
-]);
-export const vendorInvitationStatusEnum = pgEnum('vendor_invitation_status', [
-  'pending',
-  'accepted',
-  'expired',
-  'revoked',
 ]);
 export const paymentIntentStatusEnum = pgEnum('payment_intent_status', [
   'pending',

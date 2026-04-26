@@ -16,7 +16,6 @@ import { UpdateVendorDto } from './dto/update-vendor.dto';
 import { UpdateVendorStatusDto } from './dto/update-vendor-status.dto';
 import { UpdateCommissionDto } from './dto/update-commission.dto';
 import { VendorQueryDto } from './dto/vendor-query.dto';
-import { InviteMemberDto } from './dto/invite-member.dto';
 import { UpdateMemberRoleDto } from './dto/update-member-role.dto';
 
 @ApiTags('Vendors')
@@ -124,22 +123,6 @@ export class VendorsController {
     );
   }
 
-  @Post(':vendorId/members/invite')
-  async inviteMember(
-    @Param('eventId') eventId: string,
-    @Param('vendorId') vendorId: string,
-    @Body() dto: InviteMemberDto,
-    @CurrentUser() user: { id: string; role: string },
-  ) {
-    return this.vendorsService.inviteMember(
-      eventId,
-      vendorId,
-      user.id,
-      user.role,
-      dto,
-    );
-  }
-
   @Patch(':vendorId/members/:memberId')
   async updateMemberRole(
     @Param('eventId') eventId: string,
@@ -172,21 +155,5 @@ export class VendorsController {
       user.id,
       user.role,
     );
-  }
-}
-
-// Separate controller for invitation acceptance (not nested under events)
-@ApiTags('Vendor Invitations')
-@ApiBearerAuth()
-@Controller('vendor-invitations')
-export class VendorInvitationsController {
-  constructor(private readonly vendorsService: VendorsService) {}
-
-  @Post(':token/accept')
-  async acceptInvitation(
-    @Param('token') token: string,
-    @CurrentUser() user: { id: string; role: string },
-  ) {
-    return this.vendorsService.acceptInvitation(token, user.id);
   }
 }

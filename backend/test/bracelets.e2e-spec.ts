@@ -111,8 +111,9 @@ describeIfDocker('/API bracelets', () => {
       process.env.STRIPE_PUBLISHABLE_KEY ?? 'pk_test_dummy';
 
     const { AppModule } = await import('../src/app.module');
-    const { BraceletTokenService } =
-      await import('../src/modules/bracelets/bracelet-token.service');
+    const { BraceletTokenService } = await import(
+      '../src/modules/bracelets/bracelet-token.service'
+    );
     const { AuthGuard } = await import('../src/common/guards/auth.guard');
 
     const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
@@ -149,7 +150,7 @@ describeIfDocker('/API bracelets', () => {
     it('link, given valid super_admin and unused uid, persists active assignment and returns 201 with a verifiable token', async () => {
       const superAdmin = await seedUser(testDb, { role: 'super_admin' });
       const event = await seedEvent(testDb, superAdmin.id);
-      const target = await seedUser(testDb, { role: 'attendee' });
+      const target = await seedUser(testDb, { role: 'user' });
       const uid = fakeWristbandUid();
       actingUser = { id: superAdmin.id, role: superAdmin.role };
 
