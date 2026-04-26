@@ -9,13 +9,17 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { useAuthContext } from '@/lib/auth-context';
-import { Avatar, Screen } from '@/components/ui';
+import { Avatar, MenuDivider, MenuRow, Screen } from '@/components/ui';
 import { useScope } from '@/hooks/use-scope';
+import { useQueue } from '@/lib/offline';
 import type { Scope } from '@/types/api';
 
 export default function ProfileScreen() {
   const { user, signOut } = useAuthContext();
   const { scope } = useScope();
+  const queue = useQueue();
+  const pendingBadge =
+    queue.pendingCount > 0 ? String(queue.pendingCount) : undefined;
 
   async function handleSignOut() {
     Alert.alert('Sign out', 'Are you sure you want to sign out?', [
@@ -98,36 +102,37 @@ export default function ProfileScreen() {
               subtitle={user?.email ?? undefined}
               onPress={() => notImplemented('Personal info')}
             />
-            <Divider />
+            <MenuDivider />
             <MenuRow
               icon="wallet-outline"
               label="Wallet details"
               subtitle={scopeLabel(scope)}
               onPress={() => notImplemented('Wallet details')}
             />
-            <Divider />
+            <MenuDivider />
             <MenuRow
               icon="shield-checkmark-outline"
               label="Security"
               onPress={() => notImplemented('Security')}
             />
-            <Divider />
+            <MenuDivider />
             <MenuRow
               icon="notifications-outline"
               label="Notifications"
               onPress={() => notImplemented('Notifications')}
             />
-            <Divider />
+            <MenuDivider />
             <MenuRow
               icon="help-circle-outline"
               label="Help"
               onPress={() => notImplemented('Help')}
             />
-            <Divider />
+            <MenuDivider />
             <MenuRow
               icon="settings-outline"
               label="Settings"
-              onPress={() => notImplemented('Settings')}
+              badge={pendingBadge}
+              onPress={() => router.push('/settings')}
             />
           </View>
 
@@ -153,54 +158,6 @@ export default function ProfileScreen() {
       </ScrollView>
     </Screen>
   );
-}
-
-function MenuRow({
-  icon,
-  label,
-  subtitle,
-  onPress,
-  showChevron = true,
-}: {
-  icon: keyof typeof Ionicons.glyphMap;
-  label: string;
-  subtitle?: string;
-  onPress: () => void;
-  showChevron?: boolean;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      android_ripple={{ color: '#00000010' }}
-      style={({ pressed }) => ({ opacity: pressed ? 0.6 : 1 })}
-    >
-      <View className="flex-row items-center px-4 py-4">
-        <View className="h-9 w-9 items-center justify-center">
-          <Ionicons name={icon} size={22} color="#0a0a0a" />
-        </View>
-        <View className="ml-2 flex-1">
-          <Text className="text-base font-medium text-foreground">
-            {label}
-          </Text>
-          {subtitle ? (
-            <Text
-              className="mt-0.5 text-xs font-normal text-muted"
-              numberOfLines={1}
-            >
-              {subtitle}
-            </Text>
-          ) : null}
-        </View>
-        {showChevron ? (
-          <Ionicons name="chevron-forward" size={18} color="#b5b5b5" />
-        ) : null}
-      </View>
-    </Pressable>
-  );
-}
-
-function Divider() {
-  return <View className="ml-14 h-px bg-separator" />;
 }
 
 function scopeLabel(scope: Scope | null): string | undefined {

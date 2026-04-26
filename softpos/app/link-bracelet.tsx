@@ -8,7 +8,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import { NfcPulse, Screen } from '@/components/ui';
 import { extractErrorMessage } from '@/lib/api';
-import { useNfcRead } from '@/hooks/use-nfc-read';
+import { useNfc } from '@/hooks/use-nfc';
 import { braceletsApi, type RedeemTicketResponse } from '@/lib/api/bracelets';
 
 type Step = 'scan-qr' | 'read-nfc' | 'submitting' | 'done';
@@ -21,7 +21,7 @@ export default function LinkBraceletScreen() {
   const [result, setResult] = useState<RedeemTicketResponse | null>(null);
   const lastScanRef = useRef<number>(0);
   const queryClient = useQueryClient();
-  const nfc = useNfcRead();
+  const nfc = useNfc();
 
   const redeemMutation = useMutation({
     mutationFn: (input: { token: string; uid: string }) =>
@@ -56,7 +56,7 @@ export default function LinkBraceletScreen() {
   }
 
   async function readNfc() {
-    if (!token || nfc.isScanning) return;
+    if (!token || nfc.isBusy) return;
     if (!nfc.isAvailable) {
       Alert.alert(
         'NFC not available',
@@ -66,7 +66,7 @@ export default function LinkBraceletScreen() {
     }
     nfc.clearError();
     setError(null);
-    const res = await nfc.read();
+    const res = await nfc.readUid();
     if (res.uid) submit(res.uid);
     else if (res.error) setError(res.error);
   }
@@ -114,7 +114,7 @@ export default function LinkBraceletScreen() {
         <ReadNfcStep
           onTap={readNfc}
           onCancel={cancelScan}
-          isScanning={nfc.isScanning}
+          isScanning={nfc.isBusy}
           isSubmitting={step === 'submitting'}
           error={error}
         />

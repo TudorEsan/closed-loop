@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { Platform, Pressable, Text, View } from "react-native";
+import { useCallback, useEffect, useState } from "react";
+import { Pressable, Text, View } from "react-native";
 import Animated, {
   FadeIn,
   FadeOut,
@@ -8,48 +8,80 @@ import Animated, {
 } from "react-native-reanimated";
 import { Stack, router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { Button, Spinner } from "heroui-native";
+import { Button } from "heroui-native";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import { extractErrorMessage } from "@/lib/api";
-import { transactionsApi } from "@/lib/api/transactions";
+import {
+  type ChargeResponse,
+  transactionsApi,
+} from "@/lib/api/transactions";
+import { type ChipState } from "@/lib/chip";
 import { getOrCreateLocalDeviceId } from "@/lib/device-id";
+import { newIdempotencyKey } from "@/lib/idempotency";
+import { useQueue } from "@/lib/offline";
 import { Screen, NfcPulse } from "@/components/ui";
 import { useScope } from "@/hooks/use-scope";
-import { useNfcRead } from "@/hooks/use-nfc-read";
-import type { Transaction } from "@/types/api";
+import { useNfc } from "@/hooks/use-nfc";
 
+type Mode = "online" | "offline";
 type Step = "amount" | "tap" | "submitting" | "done";
+
+type DoneInfo = {
+  amount: number;
+  mode: Mode;
+};
 
 const MIN_AMOUNT = 1;
 
 export default function ChargeScreen() {
   const { scope } = useScope();
   const queryClient = useQueryClient();
+  const queue = useQueue();
   const [step, setStep] = useState<Step>("amount");
   const [amount, setAmount] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [result, setResult] = useState<Transaction | null>(null);
-  const nfc = useNfcRead();
+  const [done, setDone] = useState<DoneInfo | null>(null);
+  const nfc = useNfc();
 
   const vendor = scope?.kind === "vendor" ? scope.vendor : null;
   const parsed = parseFloat(amount || "0");
   const meetsMin = parsed >= MIN_AMOUNT;
+  const amountCents = Math.round(parsed * 100);
 
-  const chargeMutation = useMutation({
-    mutationFn: async (uid: string) => {
+  const onlineCharge = useMutation({
+    mutationFn: async (input: {
+      uid: string;
+      chipState: ChipState | null;
+    }): Promise<{ resp: ChargeResponse; uid: string }> => {
       if (!vendor) throw new Error("No vendor scope");
-      return transactionsApi.charge(vendor.eventId, vendor.vendorId, {
-        wristbandUid: uid,
-        amount: Math.round(parsed * 100),
-        deviceId: getOrCreateLocalDeviceId(),
-        idempotencyKey: idempotencyKey(),
-        clientTimestamp: new Date().toISOString(),
-        metadata: { vendorName: vendor.businessName },
-      });
+      const resp = await transactionsApi.charge(
+        vendor.eventId,
+        vendor.vendorId,
+        {
+          wristbandUid: input.uid,
+          amount: amountCents,
+          deviceId: getOrCreateLocalDeviceId(),
+          idempotencyKey: newIdempotencyKey(),
+          clientTimestamp: new Date().toISOString(),
+          metadata: { vendorName: vendor.businessName },
+        },
+      );
+      return { resp, uid: input.uid };
     },
-    onSuccess: (tx) => {
-      setResult(tx);
+    onSuccess: async ({ resp, uid }) => {
+      const newChipState: ChipState = {
+        balance: resp.chipShouldWrite.balance,
+        debitCounter: resp.bracelet.debit_counter_seen,
+        creditCounterSeen: resp.chipShouldWrite.credit_counter,
+      };
+      const writeResult = await nfc.writeChipState(uid, newChipState);
+      if (writeResult.kind === "error") {
+        setError(
+          `Charge succeeded but chip update failed: ${writeResult.error}`,
+        );
+      }
+      setDone({ amount: parsed, mode: "online" });
       setStep("done");
       if (vendor) {
         queryClient.invalidateQueries({
@@ -63,8 +95,104 @@ export default function ChargeScreen() {
     },
   });
 
-  if (!vendor) {
-    return <NotAVendorScope />;
+  const handleOfflineCharge = useCallback(
+    async (uid: string, chipState: ChipState) => {
+      if (!vendor) return;
+      if (chipState.balance < amountCents) {
+        setError("Insufficient funds on bracelet");
+        setStep("tap");
+        return;
+      }
+      const newDebitCounter = chipState.debitCounter + 1;
+      const newChipState: ChipState = {
+        balance: chipState.balance - amountCents,
+        debitCounter: newDebitCounter,
+        creditCounterSeen: chipState.creditCounterSeen,
+      };
+      const writeResult = await nfc.writeChipState(uid, newChipState);
+      if (writeResult.kind !== "ok") {
+        setError(
+          writeResult.kind === "error"
+            ? writeResult.error
+            : "Chip write canceled",
+        );
+        setStep("tap");
+        return;
+      }
+      try {
+        await queue.appendDebit({
+          wire: {
+            idempotencyKey: newIdempotencyKey(),
+            amount: amountCents,
+            vendorId: vendor.vendorId,
+            counterValue: newDebitCounter,
+            deviceId: getOrCreateLocalDeviceId(),
+            clientTimestamp: new Date().toISOString(),
+          },
+          enqueuedAt: new Date().toISOString(),
+          wristbandUid: uid,
+          status: "pending",
+        });
+      } catch (e) {
+        setError(extractErrorMessage(e));
+        setStep("tap");
+        return;
+      }
+      setDone({ amount: parsed, mode: "offline" });
+      setStep("done");
+    },
+    [vendor, amountCents, parsed, nfc, queue],
+  );
+
+  const tap = useCallback(async () => {
+    if (!nfc.isAvailable) {
+      setError("This device does not support NFC.");
+      return;
+    }
+    setError(null);
+    const res = await nfc.readBracelet();
+
+    if (res.kind === "canceled") return;
+    if (res.kind === "error") {
+      setError(res.error);
+      return;
+    }
+
+    if (res.kind === "blank") {
+      if (!queue.isOnline) {
+        setError(
+          res.reason === "uninitialized"
+            ? "Bracelet not initialized. Connect to network first to set it up."
+            : "Bracelet signature does not match. Cannot charge offline.",
+        );
+        return;
+      }
+      setStep("submitting");
+      onlineCharge.mutate({ uid: res.uid, chipState: null });
+      return;
+    }
+
+    if (queue.isOnline) {
+      setStep("submitting");
+      onlineCharge.mutate({ uid: res.uid, chipState: res.chipState });
+    } else {
+      setStep("submitting");
+      await handleOfflineCharge(res.uid, res.chipState);
+    }
+  }, [nfc, queue.isOnline, onlineCharge, handleOfflineCharge]);
+
+  function next() {
+    if (!meetsMin) return;
+    setError(null);
+    setStep("tap");
+    void tap();
+  }
+
+  function startOver() {
+    setAmount("");
+    setDone(null);
+    setError(null);
+    setStep("amount");
   }
 
   function handleKey(key: string) {
@@ -80,9 +208,9 @@ export default function ChargeScreen() {
         if (decimals.length >= 2) return prev;
       }
       if (prev === "0") return key;
-      const next = prev + key;
-      if (parseFloat(next) > 9999) return prev;
-      return next;
+      const nextVal = prev + key;
+      if (parseFloat(nextVal) > 9999) return prev;
+      return nextVal;
     });
   }
 
@@ -91,42 +219,15 @@ export default function ChargeScreen() {
     setAmount((prev) => prev.slice(0, -1));
   }
 
-  function next() {
-    if (!meetsMin) return;
-    setError(null);
-    setStep("tap");
-  }
-
-  async function tap() {
-    if (!nfc.isAvailable) {
-      setError("This device does not support NFC.");
-      return;
-    }
-    setError(null);
-    const res = await nfc.read();
-    if (!res.uid) {
-      if (res.error) setError(res.error);
-      return;
-    }
-    setStep("submitting");
-    chargeMutation.mutate(res.uid);
-  }
-
-  function startOver() {
-    setAmount("");
-    setResult(null);
-    setError(null);
-    setStep("amount");
+  if (!vendor) {
+    return <NotAVendorScope />;
   }
 
   return (
     <Screen>
       <Stack.Screen options={{ headerShown: false }} />
       <View className="flex-row items-center px-5 pt-2 pb-3">
-        <Pressable
-          onPress={() => (step === "done" ? router.back() : router.back())}
-          hitSlop={10}
-        >
+        <Pressable onPress={() => router.back()} hitSlop={10}>
           <Ionicons name="chevron-back" size={26} color="#0a0a0a" />
         </Pressable>
         <View className="ml-2 flex-1">
@@ -137,6 +238,7 @@ export default function ChargeScreen() {
             {vendor.businessName}
           </Text>
         </View>
+        <ConnectivityPill online={queue.isOnline} />
       </View>
 
       {step === "amount" ? (
@@ -153,19 +255,37 @@ export default function ChargeScreen() {
 
       {step === "tap" || step === "submitting" ? (
         <TapStep
-          amount={parsed}
-          isScanning={nfc.isScanning}
+          isScanning={nfc.isBusy}
           isSubmitting={step === "submitting"}
-          onLoad={tap}
+          isOnline={queue.isOnline}
+          onScan={tap}
           onCancel={nfc.cancel}
           error={error}
         />
       ) : null}
 
-      {step === "done" && result ? (
-        <DoneStep amount={parsed} onAgain={startOver} />
+      {step === "done" && done ? (
+        <DoneStep info={done} onAgain={startOver} />
       ) : null}
     </Screen>
+  );
+}
+
+function ConnectivityPill({ online }: { online: boolean }) {
+  return (
+    <View
+      className={`rounded-full px-3 py-1 ${
+        online ? "bg-surface" : "bg-warning/20"
+      }`}
+    >
+      <Text
+        className={`text-xs font-medium ${
+          online ? "text-muted" : "text-warning"
+        }`}
+      >
+        {online ? "Online" : "Offline"}
+      </Text>
+    </View>
   );
 }
 
@@ -253,23 +373,21 @@ function AmountStep({
 }
 
 function TapStep({
-  amount,
   isScanning,
   isSubmitting,
-  onLoad,
+  isOnline,
+  onScan,
   onCancel,
   error,
 }: {
-  amount: number;
   isScanning: boolean;
   isSubmitting: boolean;
-  onLoad: () => void;
+  isOnline: boolean;
+  onScan: () => void;
   onCancel: () => void;
   error: string | null;
 }) {
-  useEffect(() => {
-    onLoad();
-  }, [onLoad]);
+  const idle = !isScanning && !isSubmitting;
   return (
     <View className="flex-1 px-5 bg-background">
       <View className="mt-5 overflow-hidden rounded-3xl px-6 py-10 items-center">
@@ -289,30 +407,57 @@ function TapStep({
           {isScanning
             ? "Scanning..."
             : isSubmitting
-              ? "Charging bracelet"
+              ? isOnline
+                ? "Charging bracelet"
+                : "Saving offline charge"
               : "Hold the bracelet near the phone"}
         </Text>
         <Text className="mt-2 text-sm text-white/70 text-center">
           {isScanning
             ? "Keep the wristband still on the back of the device"
-            : "The amount will be deducted from their wallet"}
+            : isOnline
+              ? "The amount will be deducted from their wallet"
+              : "Offline mode: debit will sync when network returns"}
         </Text>
       </View>
 
       {error ? (
         <Text className="mt-4 text-center text-sm text-danger">{error}</Text>
       ) : null}
+
+      {idle && error ? (
+        <View className="px-1 pb-6 mt-auto">
+          <Button
+            onPress={onScan}
+            size="lg"
+            className="rounded-full bg-foreground"
+          >
+            <Text className="text-base font-semibold text-background">
+              Tap again
+            </Text>
+          </Button>
+        </View>
+      ) : null}
+
+      {isScanning ? (
+        <View className="px-1 pb-6 mt-auto">
+          <Pressable onPress={onCancel} className="items-center py-3">
+            <Text className="text-sm font-medium text-white/70">Cancel</Text>
+          </Pressable>
+        </View>
+      ) : null}
     </View>
   );
 }
 
 function DoneStep({
-  amount,
+  info,
   onAgain,
 }: {
-  amount: number;
+  info: DoneInfo;
   onAgain: () => void;
 }) {
+  const offline = info.mode === "offline";
   return (
     <Animated.View
       entering={FadeIn.duration(180)}
@@ -320,20 +465,31 @@ function DoneStep({
     >
       <Animated.View
         entering={ZoomIn.springify().damping(12).mass(0.6)}
-        className="h-24 w-24 items-center justify-center rounded-full bg-success"
+        className={`h-24 w-24 items-center justify-center rounded-full ${
+          offline ? "bg-warning" : "bg-success"
+        }`}
       >
-        <Ionicons name="checkmark" size={56} color="#ffffff" />
+        <Ionicons
+          name={offline ? "cloud-offline" : "checkmark"}
+          size={56}
+          color="#ffffff"
+        />
       </Animated.View>
       <Animated.Text
         entering={FadeIn.delay(220).duration(220)}
         className="mt-6 text-2xl font-bold text-foreground"
       >
-        Charged
+        {offline ? "Saved offline" : "Charged"}
       </Animated.Text>
       <View className="mt-2 flex-row items-end gap-1">
-        <Text className="text-base text-muted">{formatAmount(amount)}</Text>
+        <Text className="text-base text-muted">{formatAmount(info.amount)}</Text>
         <Text className="text-xs text-muted">RON</Text>
       </View>
+      {offline ? (
+        <Text className="mt-3 text-center text-sm text-muted">
+          Will sync when network returns or you tap the bracelet again online.
+        </Text>
+      ) : null}
 
       <View className="mt-8 w-full gap-3">
         <Pressable
@@ -432,11 +588,4 @@ function formatAmount(value: number): string {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   });
-}
-
-function idempotencyKey(): string {
-  if (typeof crypto !== "undefined" && "randomUUID" in crypto) {
-    return crypto.randomUUID();
-  }
-  return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
 }

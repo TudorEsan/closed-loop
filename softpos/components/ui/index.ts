@@ -14,3 +14,4 @@ export {
   type ActivityRowProps,
 } from './activity-row';
 export { NfcPulse } from './nfc-pulse';
+export { MenuRow, MenuDivider } from './menu-row';

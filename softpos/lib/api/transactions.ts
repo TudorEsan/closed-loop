@@ -10,13 +10,27 @@ export type ChargeBody = {
   metadata?: Record<string, unknown>;
 };
 
+export type ChargeResponse = {
+  transaction: Transaction;
+  bracelet: {
+    id: string;
+    balance: number;
+    debit_counter_seen: number;
+    credit_counter: number;
+  };
+  chipShouldWrite: {
+    balance: number;
+    credit_counter: number;
+  };
+};
+
 export const transactionsApi = {
   async charge(
     eventId: string,
     vendorId: string,
     body: ChargeBody,
-  ): Promise<Transaction> {
-    const res = await api.post<Transaction>(
+  ): Promise<ChargeResponse> {
+    const res = await api.post<ChargeResponse>(
       `/events/${eventId}/vendors/${vendorId}/transactions/charge`,
       body,
     );
