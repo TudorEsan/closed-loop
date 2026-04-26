@@ -15,6 +15,8 @@ const resend = new Resend(process.env.RESEND_API_KEY);
 const REVIEWER_OTPS: Record<string, string> = {
   'attendee@tudor.esan': '111111',
   'admin@tudor.esan': '111112',
+  'untold@tudor.esan': '111113',
+  'iqos@tudor.esan': '111114',
 };
 
 export const auth = betterAuth({
