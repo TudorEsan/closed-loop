@@ -37,6 +37,34 @@ export default function SyncDebugScreen() {
       setActionError("Cannot sync while offline");
       return;
     }
+    const before = queue.pendingCount;
+    if (before === 0) {
+      setActionError("Nothing pending to sync");
+      return;
+    }
+    const hasSnapshot = queue.debits.some(
+      (d) => d.status === "pending" && d.chipStateAfter,
+    );
+    if (!hasSnapshot) {
+      setActionError(
+        "Pending debits are missing chip snapshots (legacy queue). Clear the queue and re-create them.",
+      );
+      return;
+    }
+    await queue.autoSyncAll();
+  }
+
+  async function handleSyncWithChip() {
+    setActionError(null);
+    setDiagnostic(null);
+    if (!queue.scope) {
+      setActionError("Pick a vendor scope first");
+      return;
+    }
+    if (!queue.isOnline) {
+      setActionError("Cannot sync while offline");
+      return;
+    }
     const read = await nfc.readBracelet();
     if (read.kind === "canceled") return;
     if (read.kind === "error") {
@@ -78,6 +106,34 @@ export default function SyncDebugScreen() {
         `Debit counter ${read.chipState.debitCounter}\n` +
         `Credit counter seen ${read.chipState.creditCounterSeen}`,
     );
+  }
+
+  function handleResetForTesting() {
+    Alert.alert(
+      "Reset bracelet and queue",
+      "Wipes the chip back to balance 0 and counters 0, and drops every queued debit. Use only for testing.",
+      [
+        { text: "Cancel", style: "cancel" },
+        {
+          text: "Reset",
+          style: "destructive",
+          onPress: () => void doResetForTesting(),
+        },
+      ],
+    );
+  }
+
+  async function doResetForTesting() {
+    setActionError(null);
+    setDiagnostic(null);
+    const res = await nfc.resetBracelet();
+    if (res.kind === "canceled") return;
+    if (res.kind === "error") {
+      setActionError(res.error);
+      return;
+    }
+    await queue.clearAll();
+    setDiagnostic(`Bracelet ${res.uid} reset. Queue cleared.`);
   }
 
   function handleClearAll() {
@@ -135,9 +191,17 @@ export default function SyncDebugScreen() {
             label={queue.isSyncing ? "Syncing..." : "Sync now"}
             tone="primary"
             disabled={
-              !queue.scope || !queue.isOnline || queue.isSyncing || nfc.isBusy
+              !queue.scope || !queue.isOnline || queue.isSyncing || pendingCount === 0
             }
             onPress={handleSyncNow}
+          />
+          <ActionButton
+            label="Sync with chip tap"
+            tone="surface"
+            disabled={
+              !queue.scope || !queue.isOnline || queue.isSyncing || nfc.isBusy
+            }
+            onPress={handleSyncWithChip}
           />
           <ActionButton
             label="Read chip"
@@ -156,6 +220,12 @@ export default function SyncDebugScreen() {
             tone="danger"
             disabled={queue.debits.length === 0}
             onPress={handleClearAll}
+          />
+          <ActionButton
+            label="Reset bracelet and queue"
+            tone="danger"
+            disabled={nfc.isBusy}
+            onPress={handleResetForTesting}
           />
         </View>
 

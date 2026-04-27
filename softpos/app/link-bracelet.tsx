@@ -66,9 +66,16 @@ export default function LinkBraceletScreen() {
     }
     nfc.clearError();
     setError(null);
-    const res = await nfc.readUid();
-    if (res.uid) submit(res.uid);
-    else if (res.error) setError(res.error);
+    const res = await nfc.initializeBracelet();
+    if (res.kind === 'ok') {
+      submit(res.uid);
+    } else if (res.kind === 'already-initialized') {
+      setError(
+        'This bracelet is already initialized. Use a fresh wristband or have it reset.',
+      );
+    } else if (res.kind === 'error') {
+      setError(res.error);
+    }
   }
 
   async function cancelScan() {

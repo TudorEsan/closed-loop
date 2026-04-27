@@ -6,8 +6,6 @@ export type ChargeBody = {
   amount: number;
   deviceId: string;
   idempotencyKey: string;
-  clientTimestamp: string;
-  metadata?: Record<string, unknown>;
 };
 
 export type ChargeResponse = {

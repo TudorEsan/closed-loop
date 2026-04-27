@@ -21,12 +21,20 @@ import {
   listDebits,
   removeRejected as storeRemoveRejected,
 } from "./queue-store";
-import { runSyncForBracelet, type SyncDeps } from "./sync-engine";
+import {
+  runAutoSyncForBracelet,
+  runSyncForBracelet,
+  uniquePendingBracelets,
+  type SyncDeps,
+} from "./sync-engine";
 import type { LocalDebit, QueueScope, SyncOutcome } from "./types";
 
 export type QueueContextValue = {
   scope: QueueScope | null;
   isOnline: boolean;
+  netOnline: boolean;
+  forceOffline: boolean;
+  setForceOffline(v: boolean): void;
   debits: LocalDebit[];
   pendingCount: number;
   isSyncing: boolean;
@@ -36,6 +44,7 @@ export type QueueContextValue = {
   appendDebit(debit: LocalDebit): Promise<void>;
   refresh(): Promise<void>;
   syncBracelet(wristbandUid: string, deps: SyncDeps): Promise<SyncOutcome>;
+  autoSyncAll(): Promise<void>;
   clearAll(): Promise<void>;
   removeRejected(): Promise<void>;
 };
@@ -53,7 +62,9 @@ export function QueueProvider({ children }: { children: ReactNode }) {
   }, [appScope]);
 
   const [debits, setDebits] = useState<LocalDebit[]>([]);
-  const [isOnline, setIsOnline] = useState(true);
+  const [netOnline, setNetOnline] = useState(true);
+  const [forceOffline, setForceOffline] = useState(false);
+  const isOnline = netOnline && !forceOffline;
   const [isSyncing, setIsSyncing] = useState(false);
   const [lastSyncAt, setLastSyncAt] = useState<string | null>(null);
   const [lastSyncResponse, setLastSyncResponse] =
@@ -76,9 +87,9 @@ export function QueueProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     let mounted = true;
     void getOnline().then((v) => {
-      if (mounted) setIsOnline(v);
+      if (mounted) setNetOnline(v);
     });
-    const unsubNet = subscribeOnline(setIsOnline);
+    const unsubNet = subscribeOnline(setNetOnline);
     const sub = AppState.addEventListener("change", (next) => {
       if (next === "active") void refresh();
     });
@@ -131,6 +142,44 @@ export function QueueProvider({ children }: { children: ReactNode }) {
     [queueScope, refresh],
   );
 
+  const autoSyncAll = useCallback(async () => {
+    if (!queueScope) return;
+    if (syncInFlight.current) return;
+    const uids = await uniquePendingBracelets(queueScope);
+    if (uids.length === 0) return;
+    syncInFlight.current = true;
+    setIsSyncing(true);
+    setLastSyncError(null);
+    try {
+      let lastError: string | null = null;
+      let lastResponse: SyncResponse | null = null;
+      for (const uid of uids) {
+        const outcome = await runAutoSyncForBracelet(queueScope, uid);
+        if (outcome.ok) {
+          lastResponse = outcome.response;
+        } else if ("error" in outcome) {
+          lastError = outcome.error;
+        }
+      }
+      setLastSyncAt(new Date().toISOString());
+      if (lastResponse) setLastSyncResponse(lastResponse);
+      if (lastError) setLastSyncError(lastError);
+      await refresh();
+    } finally {
+      syncInFlight.current = false;
+      setIsSyncing(false);
+    }
+  }, [queueScope, refresh]);
+
+  const prevOnlineRef = useRef(isOnline);
+  useEffect(() => {
+    const wasOnline = prevOnlineRef.current;
+    prevOnlineRef.current = isOnline;
+    if (!wasOnline && isOnline) {
+      void autoSyncAll();
+    }
+  }, [isOnline, autoSyncAll]);
+
   const clearAll = useCallback(async () => {
     if (!queueScope) return;
     await storeClear(queueScope);
@@ -151,6 +200,9 @@ export function QueueProvider({ children }: { children: ReactNode }) {
   const value: QueueContextValue = {
     scope: queueScope,
     isOnline,
+    netOnline,
+    forceOffline,
+    setForceOffline,
     debits,
     pendingCount,
     isSyncing,
@@ -160,6 +212,7 @@ export function QueueProvider({ children }: { children: ReactNode }) {
     appendDebit,
     refresh,
     syncBracelet,
+    autoSyncAll,
     clearAll,
     removeRejected,
   };
