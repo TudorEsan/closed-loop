@@ -1,42 +1,162 @@
 \chapter{Discussion}
 \label{chap:discussion}
 
-% Brief intro: reflecting on what was built, what works, and what could be better
+This chapter looks back at the system we built and tries to answer the questions that were left open in the objectives. We talk about the trade-offs we made, how the system compares to what already exists on the market, what the current MVP does not cover, and what would need to happen for a real production deployment.
 
 \section{Design Trade-offs}
 \label{sec:trade-offs}
 
-% Online-default vs offline-first: why we chose this approach
-% Simplicity vs resilience: the modular offline extension keeps the core simple
-% Consistency vs availability during offline periods (CAP trade-off in practice)
-% Centralized wallet vs card-stored balance: pros and cons
+\subsection{Online by default, offline as a fallback}
+\label{subsec:online-default}
+
+The first and probably most important decision was to treat offline as a bounded fallback and not as the foundation of the architecture. A lot of the academic work on local-first software~\cite{Kleppmann2019} pushes the idea that the local device should be the primary copy and that the cloud is just a sync target. For a payment system at a festival we think this is the wrong default. Money is a conserved quantity, not a piece of text that two people can edit and merge later. If two terminals approve a payment from the same wristband at the same time, you cannot just merge the two states and call it a day, you need to make sure the customer cannot spend the same balance twice.
+
+The other reason is operational. Building the whole system around the assumption that the network will fail forces every component to deal with eventual consistency, queues, conflicts, and retries. That is a lot of code to write, test, and operate, for a problem that only happens during outages. We preferred to invest in keeping the network up, with Starlink as the primary uplink and a redundant topology, and to keep the offline path as a small, well-defined fallback that only does debits.
+
+The trade-off is clear: when the network is up we have a simple architecture where the server is the source of truth, and when the network is down we accept a reduced feature set (no top-ups, no real-time analytics, no refunds) in exchange for keeping payments flowing. We think this is the right trade for a festival, where outages are short and infrequent if the network is built properly, but the cost of a payment refusal during a peak hour is very high.
+
+\subsection{Server balance versus chip balance}
+\label{subsec:server-vs-chip-balance}
+
+The hybrid model splits the balance across two writers: the server owns credits, the chip owns debits. The natural alternative would be to keep a single authoritative balance on the server and let the chip carry only a cached copy that is overwritten on every tap. We considered this and rejected it, because as soon as the network is gone the cached copy is the only thing the terminal can read, and without a debit counter on the chip there is no way to detect double-spend across two terminals serving the same wristband during an outage.
+
+The opposite extreme would be to keep the balance only on the chip, like a transit card, and let the server be a passive observer that learns about transactions through the sync stream. This is essentially what Suica and Octopus do (Section~\ref{subsec:transit-cards}). It works for transit because credits also happen at a physical machine that writes to the card, but it does not work for our case because top-ups happen through Stripe in the app, with no chip nearby. The credit needs to land on the server first and then propagate to the chip on the next tap.
+
+The two-counter model is a compromise between the two extremes. It gives us the simplicity of a server-owned balance for credits, the offline robustness of a chip-owned balance for debits, and a clean way to merge the two streams without conflict because each counter has exactly one writer.
+
+\subsection{Consistency versus availability during outages}
+\label{subsec:cap-tradeoff}
+
+The CAP theorem says that during a network partition you have to pick between consistency and availability, and we picked availability. Refusing a payment because the network is bad is not acceptable at a festival, so the chip approves the debit locally and we accept that the server will learn about it later. The risk is that two terminals could in theory approve more than the chip actually has, but because the chip is a single physical object that the customer carries, only one terminal can talk to it at a time. The atomic decrement on the chip itself is what saves us from double-spend, not any kind of distributed consensus.
+
+The price we pay is that the server's view of the balance can lag during an outage, and that there is a small window where a terminal that dies before draining its queue can lose transactions. We discuss this in the next subsection.
+
+\subsection{Lost transactions and operator risk}
+\label{subsec:lost-tx-risk}
+
+The reconciliation model in Section~\ref{sec:reconciliation} is correct as long as terminals eventually sync. If a terminal dies before it can push its queue, the chip subtracted the amount but the server has no record. The gap is detectable, because the chip's \texttt{debit\_counter} is bigger than the server's \texttt{debit\_counter\_seen} plus the count of pending queued transactions, but the actual transaction details are gone with the device.
+
+We treat this as an operational risk, not a correctness bug. The exposure is bounded by how often terminals sync (we sync every few minutes when online) and by how many transactions a single terminal can buffer before its battery dies. The festival absorbs the loss for those transactions, and vendors with local receipts can claim manually. In practice this is the same way cash works at a festival: if a vendor loses their cash box, the festival eats the loss. The difference is that we get a numerical bound on the maximum loss per terminal, which we did not have with cash.
+
+\subsection{Starlink and a redundant topology versus other connectivity options}
+\label{subsec:connectivity-tradeoff}
+
+We chose Starlink as the primary uplink because it gives us a fat pipe that does not depend on the local cellular network being able to handle a sudden density of devices. The Shafiq et al.~\cite{Shafiq2013} study is a good reminder of how badly cellular networks fall over when too many people gather in the same place. Starlink does not have this problem because the bandwidth is shared across a satellite footprint, not a single tower in a field.
+
+The alternatives we considered were a private LTE deployment, an on-site mesh network between vendor terminals, or just relying on the venue's existing Wi-Fi. Private LTE is expensive and requires spectrum that is not always easy to get on short notice. A mesh network between phones is interesting in theory but the moment one device has the only path to the gateway, you get hot spots and weird routing problems. Venue Wi-Fi is rarely good enough for thousands of concurrent connections. Starlink with a redundant topology is not free either, but it is the most predictable option and it does not require the venue to have any infrastructure.
 
 \section{Comparison with Existing Solutions}
 \label{sec:comparison}
 
-% How our approach compares to commercial providers (Tappit, Intellitix, etc.)
-% RFID wristband systems vs mobile app approach
-% What we do better, what commercial systems do better
-% The open architecture advantage: documented, extensible, not proprietary
+\subsection{Commercial festival platforms}
+\label{subsec:commercial-comparison}
+
+Tappit, Intellitix, Weezevent, and Glownet have been deploying cashless systems for years. The architecture is mostly the same across them: RFID wristband, on-site server, vendor terminals on a private network, and a back office that handles top-ups and reporting. They do this at a much bigger scale than what we built, with reliability that has been proven across hundreds of festivals.
+
+Where our approach is different:
+
+\begin{itemize}
+    \item We do not require an on-site server or an IT team at the venue. The backend is a single multi-tenant cloud service. Conversations about the Untold deployment confirmed that even with on-site infrastructure, top-up sync delays of two to four hours were common during the event.
+    \item We treat the wristband as a cache, not a passive token. The balance and the debit counter live on the chip, so the terminal does not need to talk to a local server to authorize a payment.
+    \item The architecture is documented and the code is open. The commercial systems are essentially black boxes in the academic literature, and the failures we know about (Download 2015, the Danish Nets outage in 2024) are reconstructed from press coverage and tweets.
+\end{itemize}
+
+Where the commercial systems are clearly ahead:
+
+\begin{itemize}
+    \item Hardware. They use proper RFID wristbands with a secure element (DESFire EV2 or EV3), authenticated reads and writes, and tamper detection. Our MVP uses a plain NTAG-class chip without a secure element, which is fine for a thesis demo but not for production.
+    \item Operations. They have on-site teams that can swap a broken reader in minutes, handle vendor onboarding at the gate, and deal with the long tail of weird customer issues. We do not have any of this.
+    \item Scale. They have processed tens of millions of transactions across hundreds of events. We have a working prototype that has been tested in a development environment.
+\end{itemize}
+
+The honest summary is that we built a different architectural shape, not a better product. The commercial systems are the result of years of iteration on real festivals, and any open alternative would need a similar amount of time in the field to catch up on the operational side.
+
+\subsection{Transit cards}
+\label{subsec:transit-comparison}
+
+Transit cards (Suica, Octopus, Oyster) are the closest existing system to what we built, in the sense that they also store a balance on a chip and let a terminal make a local decision. The big difference is the credit flow: at a transit station, the credit also happens at a physical machine that writes to the card, so the card is the source of truth for both directions. In a festival the credit happens through Stripe in the app, with no chip nearby, so the server has to be the source of truth for credits.
+
+The other difference is the threat model. Transit fraud at the per-transaction level is small (a few euros), and the operators have built their cryptographic protocols around this. Festival transactions can be larger (a meal, a round of drinks for a group), so the financial incentive to tamper with a chip is bigger, and a production deployment would need a chip with a secure element. The lesson we take from transit is that the on-chip balance pattern works at scale, but the security properties have to be sized for the value that can be moved.
+
+\subsection{Open versus proprietary}
+\label{subsec:open-vs-proprietary}
+
+The main contribution of this thesis is an open, documented architecture for a closed-loop festival payment system. The commercial systems work, but they do not help anyone who wants to understand how to build one, or who wants to deploy a similar system without paying license fees and signing a multi-year contract. Smaller festivals in particular cannot afford the commercial platforms, and they end up either staying on cash or going with a half-broken homegrown solution.
+
+We hope that having an architecture written down, with the trade-offs discussed and the failure modes acknowledged, makes it easier for the next person to build on top of it without repeating the same mistakes.
 
 \section{Limitations}
 \label{sec:limitations-discussion}
 
-% What the current MVP does not cover
-% Single-event scope: not tested across multiple concurrent events
-% Offline duration: the system assumes short outages, not hours of downtime
-% NFC hardware dependency and device compatibility
-% No peer-to-peer transfers between consumers
-% Load testing: theoretical vs real-world performance
-% The refund flow: how unused credits are returned after the event
+\subsection{Hardware: a plain NFC chip is not enough for production}
+\label{subsec:limitation-hardware}
+
+The biggest limitation of the current MVP is that the wristband is a plain NTAG-class NFC chip without a secure element. The hybrid model itself does not depend on chip-side cryptography, but the security properties of the system do. A motivated attacker with a cheap NFC writer can read the balance, write a higher balance, and walk back to the vendor. The server can detect this on the next sync (counters do not line up), but by then the customer has already left with the food. Section~\ref{chap:security} in the security chapter lays out the upgrade path to a DESFire EV2 or EV3 chip with AES-128 mutual authentication, which is what a production deployment should use.
+
+\subsection{Offline duration is assumed to be short}
+\label{subsec:limitation-offline-duration}
+
+The reconciliation model assumes that outages are short, on the order of minutes, not hours. The maximum amount that can be lost from a dead terminal scales with how long the terminal has been offline, and during a multi-hour outage a single terminal could buffer hundreds or thousands of transactions before its battery dies. We did not implement any limit on the queue size or any escalation path for prolonged outages. A production system would need to set a hard cap on offline operation and probably refuse new transactions once the queue gets above some threshold.
+
+\subsection{Single-event scope in testing}
+\label{subsec:limitation-single-event}
+
+The architecture is multi-tenant by design (events are scoped through the \texttt{event\_id} chain), but we only ran end-to-end tests against a single event at a time. We did not test what happens when two events are running simultaneously and share the same backend. The schema should handle it, but the operational side (load isolation, audit log scaling, admin dashboard performance) was not exercised.
+
+\subsection{No peer-to-peer transfers between attendees}
+\label{subsec:limitation-p2p}
+
+The system does not support transfers between attendees. If two friends want to split a meal, one of them has to pay and the other has to send money back through some other channel. We could add it as an online-only operation through the app, but it adds a fraud surface (free money transfer through fake accounts) that we did not want to deal with for the MVP.
+
+\subsection{Refund flow is partial}
+\label{subsec:limitation-refunds}
+
+Refunds for unspent balance at the end of an event are something every commercial system handles, and we only have a basic version of it. The server can credit the balance back to the original Stripe payment method through the standard Stripe refund API, but the policy questions (refund window, partial refunds, fees, refund of cash top-ups) are not implemented and are largely operational decisions that a real festival would have to make.
+
+\subsection{No real load testing}
+\label{subsec:limitation-load-testing}
+
+We argued in Section~\ref{sec:database} that PostgreSQL on Neon should handle a festival comfortably, citing the OpenAI~\cite{OpenAIPostgres2026} numbers. We did not actually run a load test that simulates a realistic festival traffic pattern (sharp peaks at meals and between concerts, thousands of concurrent terminals). The numbers we have are good in theory, but a production deployment should run a load test against a realistic synthetic workload before the first event.
+
+\subsection{Vendor onboarding is a manual review}
+\label{subsec:limitation-vendor-onboarding}
+
+The current onboarding flow is that a vendor submits an application from the app, the admin reviews it manually, and approves or rejects it. This works for a festival with a couple of dozen vendors, but it does not scale to a venue with hundreds. A production system would need an automated vetting flow with KYC, document verification, and probably a tiered approval process.
 
 \section{Further Improvements}
 \label{sec:further-improvements}
 
-% What would need to happen for a production deployment
-% Advanced fraud detection and anomaly monitoring
-% Multi-event support and tenant isolation
-% Better offline strategies: local mesh networking between terminals
-% Analytics dashboard for real-time event insights
-% Integration with other festival systems (access control, scheduling)
-% Vendor settlement and payout automation
+\subsection{Move to authenticated NFC chips}
+\label{subsec:improvement-secure-chip}
+
+The first thing a production deployment should do is move from plain NTAG chips to DESFire EV2 or EV3 with AES-128 mutual authentication. This closes the obvious tampering attack and brings the security level up to what transit systems and commercial festival platforms already have. The hybrid reconciliation model does not change at all, only the read and write paths on the terminal side need to do the cryptographic handshake.
+
+\subsection{Fraud detection on the server}
+\label{subsec:improvement-fraud}
+
+Even with authenticated chips, server-side anomaly detection would catch things that the chip cannot see on its own. Examples: a wristband that suddenly debits at two terminals on opposite sides of the venue within a minute (cloning), a vendor whose ratio of offline to online debits is much higher than the average (possible terminal manipulation), or a sudden spike in average transaction amount on a specific terminal. None of this exists in the MVP and all of it would be valuable in production.
+
+\subsection{Better offline strategies}
+\label{subsec:improvement-offline}
+
+If the festival operator wanted an extra layer of resilience, the vendor terminals could form a mesh network between themselves so that one terminal with connectivity could relay sync traffic for a small group of nearby terminals during an outage. We deliberately did not build this for the MVP because the chip-as-cache model already covers the common case, but for very large venues with patchy coverage it could reduce the worst-case offline duration per terminal.
+
+\subsection{Real-time analytics for the operator}
+\label{subsec:improvement-analytics}
+
+The admin dashboard currently shows transaction volume and basic stats, but it does not have the kind of real-time analytics that festival operators want during the event (top-selling vendors, queue lengths approximated by debit rate, top-up rate per gate, anomaly alerts). A production deployment would need a streaming analytics pipeline (probably something like ClickHouse or Materialize on top of the transaction log) to give operators the visibility they need to make decisions during the event.
+
+\subsection{Multi-event support and tenant isolation}
+\label{subsec:improvement-multi-event}
+
+The schema is multi-tenant but we did not test what happens when two big events run on the same deployment at the same time. Going to production would mean exercising this path: separate audit log streams per event, per-event rate limiting, per-event database quotas, and probably a way to spin up dedicated read replicas for very large events without changing application code.
+
+\subsection{Vendor settlement and payout automation}
+\label{subsec:improvement-settlement}
+
+At the end of an event, vendors expect to get paid based on their sales minus the festival commission. The current system records all transactions with the vendor and commission attached, but the actual payout (computing the totals, deducting fees, sending money to the vendor's bank account through Stripe Connect) is a manual operation. Automating this with Stripe Connect and a settlement run that the admin can review and confirm would close one of the biggest operational gaps.
+
+\subsection{Integration with other festival systems}
+\label{subsec:improvement-integrations}
+
+The wristband is already a piece of hardware that the attendee carries, and it could be used for more than payments: access control at gates, age verification at bars, VIP area access, queue-skip features. The data model already has the wristband as a first-class entity, and adding a permissions layer per wristband would let the same hardware drive several festival systems from a single source of truth. This is what some commercial platforms already do, and it is a natural extension of the current architecture.

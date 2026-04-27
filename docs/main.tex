@@ -18,9 +18,9 @@
 \begin{document}
 
 \specialization{Sisteme informatice avansate}
-\title{A Reliable and Resilient Closed-Loop Payment System with Modular Offline Support for Festival Environments}
+\title{A Cloud-Based Closed-Loop Payment System with Hybrid On-Chip Reconciliation for Festival Environments}
 \author{Tudor Esan}
-\supervisor{Christian Sacarea, Vicerector}
+\supervisor{Assoc. Prof. Christian Sacarea, PhD}
 
 \maketitle
 
@@ -38,8 +38,7 @@ ABSTRACT
 \vspace{0.5cm}
 %\cleardoublepage
 
-This thesis presents the design and implementation of a cloud-based, closed-loop payment system for music festivals and large outdoor events, featuring a modular offline extension for degraded connectivity scenarios. While festival environments are known to suffer from network instability due to mass gatherings, we argue that a fully offline-first architecture introduces unnecessary complexity for the majority of use cases. Instead, we propose an online-default system with real-time transaction processing and centralized wallet management, augmented by a lightweight offline module that can be easily deployed when network conditions require it. The offline extension leverages local balance snapshots, transaction queuing, and batch synchronization to maintain payment availability during connectivity loss, while keeping the core architecture simple and scalable. We explore the challenges that arise at the boundary between online and offline operation particularly regarding balance consistency, double-spend prevention during offline windows, and conflict reconciliation upon reconnection. Also we will be evaluating strategies for minimizing their impact. The proposed architecture is assessed against the specific requirements of festival environments, demonstrating that treating offline capability as a modular add-on rather than a foundational design principle results in a more practical and maintainable system.
-
+This thesis describes a cloud-based closed-loop payment system for music festivals and large outdoor events. The system is online by default and uses the bracelet balance as a fallback when the network goes down. Festivals are known for bad connectivity when a lot of people gather in the same place, but in our view, building the whole system around the assumption that the network will fail brings more complexity than it is worth. We keep things online most of the time using a Starlink uplink and a redundant network topology, and we let the NFC wristband hold the balance as a cache for the rest. When the network is up, transactions go through the server in real time. When it is not, the chip itself stores the balance and a monotonic debit counter, so vendor terminals can approve a payment locally and not let anyone spend money twice. As soon as connectivity comes back, the terminals push their queued transactions to the server in batches, and the server applies them against its own credit counter. Credits are written only by the server and debits are written only by the chip, so the two flows meet again on their own when the network is back. We assess the architecture against what a real festival actually needs and we argue that treating offline as a bounded fallback, and not as the foundation of the system, gives a simpler and more maintainable result.
 
 \tableofcontents
 
