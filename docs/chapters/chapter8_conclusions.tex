@@ -1,10 +1,26 @@
 \chapter{Conclusions}
 \label{chap:conclusions}
 
-% Summarize what the thesis set out to do and what was achieved
-% Revisit each objective (O1 through O6) and state whether it was met
-% Key takeaway: online-default with modular offline is a practical approach
-% The system demonstrates that treating offline as a safety net rather than the core
-%   leads to a simpler and more maintainable architecture
-% Contribution: a documented, open architecture for festival payment systems
-% Final thoughts on the future of cashless payments at events
+This thesis set out to build a closed-loop payment system that stays usable at a festival when the network has a bad moment, without paying the engineering cost of a fully offline architecture. The result is a documented system with a hybrid two-counter reconciliation model at its core, an end-to-end TypeScript stack, and a working reference implementation that has been exercised against a real database through automated tests.
+
+\section{Verdict per objective}
+\label{sec:objectives-verdict}
+
+The verdicts below are the short version of Section~\ref{sec:evaluation}. \textbf{O1} (unified online/offline architecture) is met: the same vendor flow handles both cases, with a single sync endpoint as the convergence point. \textbf{O2} (wallet service) is met for the supported operations; the refund flow is partial and is acknowledged as such. \textbf{O3} (reconciliation model with verification) is met, with serializable transactions on the reconcile and online-charge paths and the model exercised by \texttt{reconciliation.e2e-spec.ts} against a real Postgres. \textbf{O4} (core service) is met as scaffolding; vendor onboarding remains a manual review. \textbf{O5} (client applications) is met against the revised objective: one mobile app that role-switches between attendee and vendor, plus a separate web admin dashboard, instead of the three apps the objective originally listed. \textbf{O6} (evaluation) is delivered qualitatively in Section~\ref{sec:evaluation}; the parts that depend on volume (peak TPS, multi-event load isolation, sustained sync throughput) were not measured and are flagged as future work in Section~\ref{sec:limitations-discussion}.
+
+\section{Contributions}
+\label{sec:contributions}
+
+The contributions of this work are best read as a documented architecture rather than a new theoretical result. They are:
+
+\begin{itemize}
+	\item A hybrid two-counter reconciliation model that splits writers cleanly between the chip (debits) and the server (credits), so the two streams converge without ad-hoc conflict resolution. The model is described in detail in Section~\ref{sec:reconciliation}.
+	\item A working reference implementation: a NestJS backend with Drizzle and Postgres, a React Native vendor terminal with HKDF-derived per-bracelet keys and HMAC-stamped chip blobs, an Expo-based offline queue stored on the device's filesystem, and an end-to-end test suite covering the core reconciliation cases.
+	\item An open and documented account of the design choices, including the ones we deliberately did not make. Local-first as the foundation, CRDTs as the convergence mechanism, an on-site server tied to the venue's Wi-Fi, and a mesh network across vendor terminals were each considered and explicitly rejected for reasons that the thesis records.
+	\item An honest threat model around the cryptographic key chain (Chapter~\ref{chap:security}), including the load-bearing weakness of the master key sitting in the mobile bundle, and the upgrade paths (per-event provisioning, DESFire) that would close it without changing the reconciliation model.
+\end{itemize}
+
+\section{Closing thought}
+\label{sec:closing}
+
+The single sentence the thesis ends on is this: when the network is mostly there, treating offline as a bounded fallback rather than the foundation of the architecture turns out to be both simpler to build and easier to operate, as long as the chip carries enough state to keep the rare offline path safe. The trade is a smaller feature surface during outages in exchange for a much smaller feature surface to maintain during the rest of the time. For a festival, that is the right way around.

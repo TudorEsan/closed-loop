@@ -8,9 +8,19 @@ This chapter describes how the architecture from Chapter~\ref{chap:architecture}
 
 The system is built on three codebases that live in the same monorepo. The backend is a NestJS server in \texttt{backend/}, talking to a Postgres database through Drizzle ORM. The vendor terminal is a React Native application built with Expo, in \texttt{softpos/}, using \texttt{react-native-nfc-manager} for chip reads and writes. The thesis itself lives in \texttt{docs/}.
 
-The whole stack uses TypeScript end to end. This was a deliberate choice. The data shapes that travel between the chip, the terminal, and the server are easy to get wrong, and a single set of types shared between client and server catches most of those mistakes at build time instead of in a tent at three in the morning. Drizzle's schema definitions also act as the source of truth for the database, so the table layout and the application types stay in sync without a separate code generation step.
+The whole stack uses TypeScript end to end. The data shapes that travel between the chip, the terminal, and the server are easy to get wrong, and a single set of types shared between client and server catches most of those mistakes at build time. Drizzle's schema definitions also act as the source of truth for the database, so the table layout and the application types stay in sync without a separate code generation step.
 
-Postgres was picked for the database because the workload is mostly small writes against a single bracelet row at a time, with occasional reporting queries on top. Serializable isolation, which the reconciliation algorithm relies on, is well supported and behaves predictably. The terminal stores its offline queue in AsyncStorage, which is enough for the volumes a single vendor handles between sync windows.
+\subsection{Project layout and libraries}
+\label{subsec:impl-libraries}
+
+The backend is a standard NestJS 11 project: controllers, services, modules, with class-validator on the DTOs and Drizzle for the database. Authentication uses Better Auth with the \texttt{bearer} and \texttt{emailOTP} plugins; there is no custom JWT layer. Stripe integration goes through the official \texttt{stripe} SDK. Postgres access is through the \texttt{postgres} driver.
+
+The terminal is an Expo app. NFC is handled by \texttt{react-native-nfc-manager}. The offline queue is stored in plain JSON files via \texttt{expo-file-system}. Connectivity changes are observed through \texttt{@react-native-community/netinfo}. Cryptography on the chip side (HKDF for key derivation, HMAC-SHA256 for chip integrity) uses \texttt{@noble/hashes}. Bearer tokens for the backend are kept in \texttt{expo-secure-store}, since React Native does not have a cookie jar. HTTP requests go through \texttt{axios} and server state is cached with \texttt{@tanstack/react-query}.
+
+\subsection{Deployment}
+\label{subsec:impl-deployment}
+
+The backend runs on DigitalOcean's App Platform, behind a managed load balancer. The database is a serverless Neon Postgres instance in a European region, accessed through \texttt{@neondatabase/serverless} on the backend side. The choice of region is driven by the latency profile we want for festivals in Romania and the rest of Europe.
 
 \section{Database schema for the hybrid model}
 \label{sec:impl-schema}
@@ -48,12 +58,19 @@ Two tables were dropped entirely. The \texttt{wallets} table is no longer needed
 	\label{tab:schema-changes}
 \end{table}
 
-The end result is a schema that maps cleanly onto how operators think about a festival. A bracelet belongs to an event, the balance lives on that bracelet, and every movement of money against it is logged in \texttt{transactions} with a counter that says whether it was a debit (allocated by the chip) or a credit (allocated by the server).
+The schema also relies on Postgres for two safety nets that the application code does not have to repeat. A check constraint on \texttt{event\_bracelets} requires \texttt{balance >= 0}, so any path that would push a balance negative aborts the transaction at the database layer. Two partial unique indexes scoped on \texttt{status = 'active'} make sure that, for any given event, there is at most one active assignment per wristband UID and at most one active assignment per user. These two indexes are partial on purpose: revoked or replaced rows stay around for audit, but they do not block re-issuing a bracelet to the same person.
+
+The end result is a schema that maps cleanly onto how operators think about a festival. A bracelet belongs to an event, the balance lives on that bracelet, and every movement of money against it is logged in \texttt{transactions} with a counter that says whether it was a debit (allocated by the chip) or a credit (allocated by the server). The full table list is: \texttt{users}, \texttt{sessions}, \texttt{accounts}, \texttt{verifications} (Better Auth), \texttt{events}, \texttt{event\_members}, \texttt{vendor\_members}, \texttt{vendors}, \texttt{event\_bracelets}, \texttt{event\_tickets}, \texttt{transactions}, \texttt{payment\_intents}, and \texttt{audit\_logs}. Every table that belongs to an event is reachable from the event row, either through an \texttt{event\_id} foreign key or through \texttt{event\_bracelets}, which gives the multi-tenant boundary without a tenant column on every table.
+
+\section{Authentication and bearer tokens}
+\label{sec:impl-auth}
+
+Authentication is handled by Better Auth on both sides. The backend declares the auth instance in \texttt{src/common/auth/auth.ts}, with the \texttt{expo}, \texttt{bearer}, and \texttt{emailOTP} plugins. There is no custom JWT layer: the server issues an opaque session and the mobile app sends the session token as \texttt{Authorization: Bearer <token>}. The token itself is kept in \texttt{expo-secure-store}, since React Native does not have a cookie jar to lean on the way a web browser does. Login goes through the email-OTP flow: the user types their email, the backend sends a six-digit code, the app posts the code back, and Better Auth returns the token. Authorization for vendor and admin operations is done through the \texttt{event\_members} and \texttt{vendor\_members} tables rather than a global role on the user row, so the same person can be an attendee at one event and a vendor operator at another without a role change at the user level.
 
 \section{The reconciliation service and sync endpoint}
 \label{sec:impl-sync}
 
-The sync endpoint is the single place where the chip state, the terminal's offline queue, and the server ledger meet. It is exposed by the backend as a single POST per bracelet, and it is intentionally chunky rather than chatty: the terminal sends everything it has for one bracelet, and the server returns everything the terminal needs to write back to the chip and to clean up its local queue.
+The sync endpoint is the single place where the chip state, the terminal's offline queue, and the server ledger meet. It is exposed by the backend as a single POST per bracelet. The terminal sends everything it has for one bracelet, and the server returns everything the terminal needs to write back to the chip and to clean up its local queue.
 
 \begin{verbatim}
 POST /api/v1/events/:eventId/wristbands/:wristbandUid/sync
@@ -89,8 +106,7 @@ Response 200:
   "applied":  ["<idempotencyKey>", ...],
   "rejected": [
     { "idempotencyKey": "...",
-      "reason": "duplicate" | "insufficient_funds"
-              | "counter_gap" | "invalid" }
+      "reason": "duplicate" | "insufficient_funds" }
   ],
   "chipShouldWrite": {
     "balance": <int cents>,
@@ -101,7 +117,7 @@ Response 200:
 
 The terminal does not send the chip's HMAC, because by the time \texttt{pendingDebits} reaches the server those debits have already been written to the chip and the HMAC has been recomputed. What matters at sync time is whether each entry in the queue has actually landed on the server's ledger.
 
-The reconciliation algorithm runs inside a serializable Postgres transaction that locks the bracelet row for the duration of the call. Serializable isolation is important here: two terminals that both held the same bracelet during overlapping offline windows can hit the sync endpoint at the same time, and the database needs to make their effects look like a strict ordering. With a weaker isolation level, a race between two reconciliations could let the same chip counter be applied twice, or could allow the balance to go negative.
+The reconciliation algorithm runs inside a serializable Postgres transaction (\texttt{SET TRANSACTION ISOLATION LEVEL SERIALIZABLE}) that locks the bracelet row for the duration of the call. Serializable isolation matters here: two terminals that both held the same bracelet during overlapping offline windows can hit the sync endpoint at the same time, and the database has to make their effects look like a strict ordering. With a weaker level a race between two reconciliations could let the same chip counter be applied twice or could allow the balance to go negative.
 
 \begin{verbatim}
 1. Open a serializable transaction and lock the bracelet row.
@@ -123,14 +139,14 @@ The reconciliation algorithm runs inside a serializable Postgres transaction tha
 7. Return serverState, applied, rejected, and chipShouldWrite.
 \end{verbatim}
 
-The four rejection reasons cover the cases that can plausibly happen in the field. The \texttt{duplicate} reason is returned when the same debit reaches the server twice, either because the terminal retried after a flaky response or because two terminals scanned the same chip at different points and reported the same counter. Idempotency on \texttt{idempotencyKey} catches the first case, the counter check catches the second. The \texttt{insufficient\_funds} reason fires when the chip view of the world disagrees with the server view, usually after a top-up that has not yet been written back to the chip; the debit was authorized offline based on a stale chip balance, and on reconciliation the server cannot honour it. The \texttt{counter\_gap} reason is reserved for the case where the server expected a contiguous run of debit counters and the queue has a hole, which suggests a debit went missing or was tampered with. The \texttt{invalid} reason is the catch-all for malformed entries.
+The two rejection reasons cover the cases the service produces today. The \texttt{duplicate} reason fires when the same debit reaches the server twice, either because the terminal retried after a flaky response (the \texttt{idempotencyKey} check at step 3a catches it) or because two terminals scanned the same chip at different points and reported the same counter (the \texttt{counter\_value} check at step 3b catches it). The \texttt{insufficient\_funds} reason fires when the chip view of the world disagrees with the server view, usually after a top-up that has not yet been written back to the chip; the debit was authorized offline based on a stale chip balance, and on reconciliation the server cannot honour it. The \texttt{RejectReason} type leaves room for two more categories (\texttt{counter\_gap} for non-contiguous counters and \texttt{invalid} for malformed entries) but the current service does not produce them; they are reserved for future hardening.
 
-The response carries \texttt{chipShouldWrite}, which is the authoritative state the terminal must push to the chip before completing the sync. This usually only changes the chip if a top-up happened in the meantime, but it is computed and returned unconditionally so the terminal logic does not have to branch on whether a credit occurred.
+The response carries \texttt{chipShouldWrite}, the authoritative state the terminal must push to the chip before completing the sync. This usually only changes the chip if a top-up happened in the meantime, but it is computed and returned unconditionally so the terminal logic does not have to branch on whether a credit occurred.
 
-\section{Chip data layout and HMAC}
+\section{Chip data layout, HMAC, and the key chain}
 \label{sec:impl-chip-layout}
 
-The chips used for the bracelets are NTAG class tags, which are cheap and widely available, but do not have the cryptographic features of DESFire. They cannot do mutual authentication on their own, so the security has to come from a signed record written into a single user-memory page. The on-chip layout is small and fixed.
+The chips used for the bracelets are NTAG class tags, which are cheap and widely available, but do not have the cryptographic features of DESFire. They cannot do mutual authentication on their own, so the security has to come from a signed record written into the user-memory pages. The on-chip layout is small and fixed.
 
 \begin{verbatim}
 balance              uint32 little-endian (cents)
@@ -142,15 +158,15 @@ hmac                 bytes(16)  HMAC-SHA256 truncated to 128 bits
 
 The first twelve bytes are the state. The last sixteen bytes are an HMAC computed over those twelve bytes using a per-bracelet symmetric key. Anyone reading the chip can read the state, but only someone who knows the per-bracelet key can produce a record that the terminal will accept.
 
-The per-bracelet key is derived rather than stored. A single master key lives behind the backend, and every bracelet's working key is computed as
+The per-bracelet key is derived rather than stored. The terminal holds a master key and computes the bracelet's working key on the fly with HKDF-SHA256:
 
 \begin{verbatim}
 key = HKDF(masterKey, salt = wristbandUid, info = "bracelet-v1")
 \end{verbatim}
 
-The wristband's UID is read from the chip's read-only manufacturer area, so it cannot be spoofed by simply rewriting the user memory. The \texttt{info} string \texttt{"bracelet-v1"} fences the derivation against reuse if a future version of the layout ever needs to coexist with this one. In production the master key never leaves the festival HSM. For the demo it is provided to the backend through an environment variable, \texttt{BRACELET\_SIGNING\_KEY}, which keeps the development setup simple while leaving room for the HSM-backed deployment to drop in without touching application code.
+The wristband's UID is read from the chip's read-only manufacturer area, so it cannot be spoofed by simply rewriting the user memory. The \texttt{info} string \texttt{"bracelet-v1"} fences the derivation against reuse if a future version of the layout ever needs to coexist with this one.
 
-The threat model around plain NFC, including replay of an old signed record after a top-up and physical cloning of the chip, is discussed in Chapter~\ref{chap:security}. The implementation choices here (the per-bracelet derived key, the inclusion of both counters inside the signed record, and the server-owned \texttt{credit\_counter}) are all in service of the mitigations described there.
+In the current MVP the master key sits on the terminal: it is read from the \texttt{EXPO\_PUBLIC\_BRACELET\_MASTER\_KEY} environment variable at build time, with a hex fallback baked into the source so a fresh checkout still runs. Expo inlines \texttt{EXPO\_PUBLIC\_*} variables into the JavaScript bundle, so anyone with the app binary can extract the master key and derive every per-bracelet key. This is acceptable for a thesis demo but it is not a production posture; Chapter~\ref{chap:security} discusses the trust implications and the upgrade path (per-event keys provisioned through an HSM, or moving to a DESFire chip that holds its own key).
 
 \section{Online debit path}
 \label{sec:impl-online-debit}
@@ -164,19 +180,35 @@ The decision to do server-first online and chip-first offline is intentional. Wh
 \section{Offline debit path and the queue}
 \label{sec:impl-offline-debit}
 
-The offline path starts on the terminal. When connectivity is missing, or when the request to the charge endpoint times out, the terminal falls back to local authorisation. It reads the chip, verifies the HMAC against the per-bracelet key (which the terminal can derive itself, because it knows the master key for the duration of the event), and checks that the balance covers the amount.
+The offline path starts on the terminal. When connectivity is missing, or when the request to the charge endpoint times out, the terminal falls back to local authorisation. It reads the chip, derives the per-bracelet key from the bundled master key with HKDF, verifies the HMAC, and checks that the balance covers the amount.
 
-If the check passes, the terminal performs the debit on the chip atomically inside a single NFC session. The new balance is computed (\texttt{balance - amount}), the debit counter is incremented by one, the credit counter seen is left untouched, the HMAC is recomputed over the three new fields, and all twenty-eight bytes are written back to the chip in one shot. The single-session write is important: if the customer pulls away halfway through, the chip is either fully updated or fully unchanged, never half written, because NTAG page writes are atomic at the page level and the layout was sized to fit cleanly into that constraint.
+If the check passes, the terminal performs the debit on the chip inside a single NFC session. The new balance is computed (\texttt{balance - amount}), the debit counter is incremented by one, the credit counter seen is left untouched, the HMAC is recomputed over the three new fields, and the resulting twenty-eight bytes are written back to the chip. The blob spans seven NTAG pages, which the transport layer writes one page at a time (NTAG WRITE is a per-page command). The multi-page write is therefore not atomic on its own. What makes the chip-side update behave atomically as far as the rest of the system is concerned is the HMAC: a torn write leaves the body bytes inconsistent with the trailing HMAC, and the next read fails verification before any logic acts on the partial state. The terminal is then expected to retry the write or fall back to the queue.
 
-Only once the chip write is acknowledged does the terminal enqueue the pending debit in AsyncStorage. The queue entry carries the same fields the sync request will eventually need: a generated \texttt{idempotencyKey}, the \texttt{amount}, the \texttt{vendorId}, the \texttt{counterValue} that was just written to the chip, the \texttt{deviceId}, and the local timestamp. Storing the entry only after the chip write means the queue can never contain a debit that did not happen; the worst case is a chip update that the terminal forgot, which the next reconciliation will detect through the counter gap.
+To stop concurrent NFC operations from stepping on each other, all chip reads and writes go through a single \texttt{withSession()} helper that chains them through one promise, so that the higher level code can call \texttt{readChip} and \texttt{writeChip} from anywhere without having to think about overlapping sessions.
 
-When connectivity comes back, the terminal posts the queue to the sync endpoint described in Section~\ref{sec:impl-sync}. The server replies with which entries it accepted, which it rejected, and what the chip should hold. The terminal removes the accepted entries from AsyncStorage. Rejected entries are kept and surfaced to the operator with the reason; \texttt{duplicate} is silently dropped, \texttt{insufficient\_funds} and \texttt{counter\_gap} are escalated to a manual review screen because they imply something happened that the automatic logic should not paper over.
+Only once the chip write is acknowledged does the terminal enqueue the pending debit on disk. The queue is stored as plain JSON files under the app's document directory, one file per (event, vendor) pair, written through \texttt{expo-file-system}. Each entry carries the same fields the sync request will eventually need: a generated \texttt{idempotencyKey}, the \texttt{amount}, the \texttt{vendorId}, the \texttt{counterValue} that was just written to the chip, the \texttt{deviceId}, and the local timestamp. Storing the entry only after the chip write means the queue can never contain a debit that did not happen; the worst case is a chip update that the terminal forgot, which the next reconciliation will detect through the counter.
 
-\section{Topup path}
+When connectivity comes back, the terminal posts the queue to the sync endpoint described in Section~\ref{sec:impl-sync}. The server replies with which entries it accepted, which it rejected, and what the chip should hold. The terminal removes the accepted entries from the JSON file. Rejected entries are kept and surfaced to the operator with the reason: \texttt{duplicate} is silently dropped, and \texttt{insufficient\_funds} is escalated to a manual review screen because it implies the chip and the server disagreed in a way the automatic logic should not paper over.
+
+\subsection{Auto-sync on reconnect}
+\label{subsec:impl-autosync}
+
+The terminal does not wait for the operator to re-tap a bracelet before flushing the queue. A subscription to \texttt{@react-native-community/netinfo} watches the connectivity state, and on a transition from offline to online it triggers a queue drain across every (event, vendor) pair the terminal has seen during the session. The drain runs through the same sync endpoint as the manual path. The one operational difference is that the auto-sync code path does not write back to the chip: it pushes the queued debits and updates the local view of the server state, but it does not require the bracelet to be present. A subsequent re-tap, online or offline, picks up any pending \texttt{chipShouldWrite} the next time the chip is in range. This split keeps the queue draining in the background while leaving the chip-side update tied to a real interaction.
+
+\section{Top-up path and the Stripe webhook}
 \label{sec:impl-topup}
 
 Top-ups are the credit side of the system, and they always go through the server because they involve real money moving through Stripe. The terminal (or the attendee's own phone, depending on the flow) creates a Stripe Payment Intent against the backend, which returns the client secret. The user confirms the payment in the Stripe SDK. On success, Stripe sends a \texttt{payment\_intent.succeeded} webhook to the backend.
 
-The webhook handler verifies the Stripe signature, looks up the corresponding \texttt{payment\_intents} row by the intent ID, and runs the credit inside a serializable transaction on the target bracelet. The handler increments \texttt{bracelet.balance} by the topped-up amount, increments \texttt{bracelet.credit\_counter} by one, and inserts a \texttt{transactions} row with that new \texttt{credit\_counter} value and a reference to the payment intent. The serializable isolation level matters here for the same reason it does in the debit path: a webhook retry from Stripe and a manual reconciliation could otherwise both try to apply the same credit. Idempotency is enforced both by the unique constraint on the payment intent ID in \texttt{transactions} and by the counter check on the chip when the next sync happens.
+The backend has \texttt{rawBody} enabled at the application level, so the webhook controller can read \texttt{req.rawBody} and pass it together with the \texttt{Stripe-Signature} header to the Stripe SDK for signature verification. Verifying against the raw body, before any JSON parser has touched it, is the only way the signature will check out; this is why a body parser cannot be turned on globally.
 
-After the credit is committed, the next time the bracelet meets a terminal, the sync response carries a \texttt{chipShouldWrite} that reflects the new balance and the new \texttt{credit\_counter}. The terminal writes this back to the chip, and the chip's \texttt{credit\_counter\_seen} catches up to the server's \texttt{credit\_counter}. From that point on, the chip and the server agree, and the bracelet is ready to be debited again, online or offline.
+Once the signature is valid, the handler looks up the corresponding \texttt{payment\_intents} row by the intent ID and runs the credit inside a Postgres transaction. The transaction does not set an isolation level, so it runs at the default \texttt{read committed} level. The handler increments \texttt{bracelet.balance} by the topped-up amount, increments \texttt{bracelet.credit\_counter} by one, and inserts a \texttt{transactions} row with that new \texttt{credit\_counter} value and a reference to the payment intent.
+
+Idempotency for top-ups does not come from a unique key on the credit transaction. Instead, two layers protect against duplicate credits. The \texttt{payment\_intents} table has a \texttt{UNIQUE} constraint on \texttt{provider\_intent\_id}, so two webhooks for the same Stripe intent cannot create two rows. On top of that, the handler short-circuits if the intent row is already in status \texttt{succeeded}: a webhook retry from Stripe finds the intent already marked as completed, returns immediately, and does not run the credit a second time. The combination is enough to make the webhook handler safe to retry, which Stripe relies on aggressively.
+
+After the credit is committed, the next time the bracelet meets a terminal the sync response carries a \texttt{chipShouldWrite} that reflects the new balance and the new \texttt{credit\_counter}. The terminal writes this back to the chip, and the chip's \texttt{credit\_counter\_seen} catches up to the server's \texttt{credit\_counter}. From that point on the chip and the server agree, and the bracelet is ready to be debited again, online or offline.
+
+\section{Tests}
+\label{sec:impl-tests}
+
+The backend ships with three test suites. \texttt{reconciliation.e2e-spec.ts} drives the sync endpoint against a real Postgres started inside a Testcontainers container, exercising idempotency, counter checks, balance underflow, and the worked example from Section~\ref{subsec:reconciliation-example}. \texttt{bracelets.e2e-spec.ts} covers bracelet assignment, replacement, and the issuance of the short-lived bracelet token used by the terminal during a session, against the same kind of containerised database. \texttt{bracelet-token.spec.ts} is a unit test that exercises the token signing, verification, and expiry logic without touching the database. The terminal does not yet have a test suite of its own; the parts of the chip handling that have a testable surface (the codec, the HKDF derivation) are covered indirectly through the backend-side end-to-end tests.

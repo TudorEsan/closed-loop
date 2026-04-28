@@ -15,11 +15,7 @@ The system has four main components: a backend server, a mobile application for 
 \subsection{The hybrid reconciliation model}
 \label{subsec:hybrid-overview}
 
-The core architectural decision is how the wristband and the server share responsibility for the balance. 
-
-The state is split across the two sides. Each wristband stores three fields per event: \texttt{balance}, \texttt{debit\_counter} (incremented on every chip-side payment), and \texttt{credit\_counter\_seen} (the highest server credit sequence the chip has acknowledged). The server keeps the mirror image: \texttt{balance}, \texttt{debit\_counter\_seen}, and \texttt{credit\_counter}. Balances are event-scoped, so the same person attending two festivals has two independent wallets.
-
-For this thesis demo we use a \textbf{plain NTAG-class NFC chip} without a secure element. The hybrid model does not depend on chip-side cryptography: it only needs the chip to store a few fields, increment a counter atomically, and keep what was last written to it. The security implications and the upgrade path to authenticated chips are discussed in Chapter~\ref{chap:security}.
+The core architectural decision is how the wristband and the server share responsibility for the balance. The state and the rules that keep the two sides convergent are described in detail in Section~\ref{sec:reconciliation}; the threat model around the chip and the upgrade path to authenticated chips are in Chapter~\ref{chap:security}.
 
 \begin{figure}[ht]
 	\centering
@@ -98,15 +94,7 @@ The policy is to trust the chip's balance immediately, wait a configurable grace
 \section{Lessons from related systems and patterns}
 \label{sec:why-architecture}
 
-The hybrid model mixes ideas from transit cards, EMV, and the distributed systems literature.
-
-Transit card systems like Suica and Octopus (Section~\ref{subsec:transit-cards}) prove that an on-chip balance works at scale: the balance lives on the chip and the gate does not call any server. Our wristband borrows this core idea, with the same split as Suica (chip-only on spending, back-office on credit).
-
-From commercial festival systems like Tappit and Intellitix (Section~\ref{subsec:campus-cards}), we mainly learned what to avoid: requiring an IT team and on-site servers. Conversations about the Untold deployment confirmed that even with on-site infrastructure, top-up sync delays of two to four hours were common when Wi-Fi got bad. Our architecture sidesteps this entirely.
-
-The EMV offline authorization model (Section~\ref{subsec:emv}) gave us spending limits as a risk control. The event admin could hypotheticly configure maximum transaction amounts and a maximum total offline spend per wristband, as a safety net for the case where someone tampers with a chip, but this should not be doable with proper secured chips.
-
-From the architectural patterns covered in Section~\ref{sec:offline-first}, the relevant takeaways are: \textbf{local-first software}~\cite{Kleppmann2019} does not fit payment systems because conflicting balance updates cannot just be merged; \textbf{CRDTs}~\cite{Shapiro2011} are overkill because lane separation already solves the convergence problem with two integers; \textbf{event sourcing} is the one pattern we use directly, with every transaction recorded as an immutable event for audit and settlement; and \textbf{edge computing} shows up at two levels, the vendor phones running debit logic locally, and the server deployed in a region close to the festivals it serves.
+The hybrid model borrows from three places: transit cards (Section~\ref{subsec:transit-cards}) for the on-chip balance pattern, EMV (Section~\ref{subsec:emv}) for the idea of bounding offline risk through per-card limits, and the offline-first literature (Section~\ref{sec:offline-first}) for what to take and what to leave. From transit we keep the chip-as-spend-cache idea, with credits handled by the back office instead of by the gate. From EMV we keep the framing that offline always trades availability for some risk that has to be capped explicitly. From the patterns in the literature, local-first~\cite{Kleppmann2019} fits as a read cache rather than as the primary copy because money is conserved; CRDTs~\cite{Shapiro2011} are overkill once each balance lane has a single writer; event sourcing is used directly, since every transaction is an immutable row keyed by an idempotency key; and the vendor terminals act as edge nodes~\cite{Shi2016} that run the debit logic locally when the network is gone. The operational lesson from the Untold conversations is the one that pushed us off the on-site-server pattern: even with dedicated infrastructure at the venue, top-up sync delays of two to four hours were common when Wi-Fi degraded.
 
 \subsection{Offline operation}
 \label{subsec:offline-operation}
@@ -151,41 +139,21 @@ The admin dashboard is a separate web application built in React. Making it a we
 \section{Backend server}
 \label{sec:backend-server}
 
-The backend is built with NestJS, which enforces a clean separation between controllers, services, and repositories, and gives us guards, interceptors, and dependency injection out of the box.
-
-The server is deployed on DigitalOcean, with a serverless Neon PostgreSQL database in the same region. We deploy to a European region to keep latency low for festivals in Romania and the rest of Europe.
-
-The REST API covers four areas: authentication and accounts, event management, vendor management, and sync/reconciliation.
+The backend is a single multi-tenant service. It exposes four families of endpoints (authentication and accounts, event management, vendor management, and sync/reconciliation), is stateless across instances, and runs behind a managed load balancer. The choice of framework, the database, and the deployment target are implementation details that belong to the next chapter (Section~\ref{subsec:impl-deployment}).
 
 \subsection{Multi-tenancy}
 \label{subsec:multi-tenancy}
 
-The server handles all festivals from a single deployment. Every table is scoped by an \texttt{event\_id} column, which acts as the tenant boundary. API calls include the event context (path parameter or token claim), and queries are filtered accordingly. Adding a new festival is just creating a row in the events table.
+The server handles all festivals from a single deployment. Every table that belongs to an event is reachable from the event row, either directly through an \texttt{event\_id} foreign key or through \texttt{event\_bracelets}. API calls include the event context (path parameter or token claim) and queries are filtered accordingly. Adding a new festival is just creating a row in the events table.
 
 \subsection{Horizontal scalability}
 \label{subsec:horizontal-scalability}
 
-The server is stateless: no session data or cached state in memory. Every request gets what it needs from the database and from the JWT token. We can run as many instances as we want behind a load balancer with no sticky sessions or inter-instance communication. For most festivals a single instance is enough, since most transactions happen on the wristband without touching the server.
+The server is stateless: no session data or cached state in memory. Every request gets what it needs from the database and from the bearer token sent by the client. The service can run as many instances as needed behind the load balancer with no sticky sessions or inter-instance communication. For most festivals a single instance is enough, since the majority of payments happen on the wristband without touching the server in real time.
 
-\section{Database: PostgreSQL}
+\section{Database}
 \label{sec:database}
 
-The database is PostgreSQL, running as a single instance with the option to add read replicas later. The schema follows the hybrid model directly:
+The data model follows the hybrid reconciliation model directly. The canonical balance and the two reconciliation counters live on \texttt{event\_bracelets}, every money movement is logged in \texttt{transactions} with the appropriate counter set, and top-up records sit in \texttt{payment\_intents}. The full schema (table list, column purposes, constraints, and the safety nets that Postgres enforces directly) is described in Chapter~\ref{chap:implementation}, Section~\ref{sec:impl-schema}.
 
-\begin{itemize}
-	\item \texttt{users}, \texttt{sessions}, \texttt{accounts}, \texttt{verifications}: identity and auth, managed by Better Auth.
-	\item \texttt{events}: per-event configuration (organizer, status, currency, token rate, dates, location).
-	\item \texttt{event\_members}, \texttt{vendor\_members}: per-event and per-vendor roles. Authority is held here, not on the global \texttt{users.role} column.
-	\item \texttt{vendors}: vendor application per event, with status (\texttt{pending}, \texttt{approved}, \texttt{rejected}, \texttt{suspended}) and commission rate.
-	\item \texttt{event\_bracelets}: the wallet, one row per (event, wristband). Holds the canonical \texttt{balance}, \texttt{debit\_counter\_seen}, and \texttt{credit\_counter}, plus the active token (\texttt{tokenIssuedAt}, \texttt{tokenExpiresAt}, \texttt{tokenVersion}) and the assignment status (\texttt{active}, \texttt{revoked}, \texttt{replaced}). A partial unique index keeps at most one active assignment per (event, wristband) and per (event, user).
-	\item \texttt{event\_tickets}: admin-issued QR invitations that bind a wristband to a user at the gate.
-	\item \texttt{transactions}: one row per money movement, scoped to a bracelet via \texttt{event\_bracelet\_id}. \texttt{type} is \texttt{debit} or \texttt{credit}; \texttt{debit\_counter} or \texttt{credit\_counter} is filled in accordingly. The \texttt{offline} flag and \texttt{idempotency\_key} make sync batches safe to retry.
-	\item \texttt{payment\_intents}: provider-agnostic top-up records. On webhook success the credit lands on the exact bracelet referenced by the intent.
-	\item \texttt{audit\_logs}: append-only trail of admin actions, indexed by event, user, and entity.
-\end{itemize}
-
-Every table that belongs to an event is reachable from the event row, either directly through an \texttt{event\_id} foreign key or through \texttt{event\_bracelets}, which gives us the multi-tenant boundary without a tenant column on every table.
-
-A common worry with using one database for everything is whether it can handle the load. In January 2026, OpenAI published a blog post~\cite{OpenAIPostgres2026} describing how they run ChatGPT, with over 800 million users, on a single primary PostgreSQL on Azure plus around 50 read replicas, processing over a million queries per second at low double-digit millisecond p99 latency. If that setup serves 800 million users, a festival with 50,000 attendees is not what breaks PostgreSQL. Our load is also lighter than a typical web app because most payments happen on the wristband and never touch the database in real time.
-
-If the platform grows to the point where the database becomes a bottleneck, we can follow the same playbook: read replicas, connection pooling (PgBouncer), and table partitioning, all standard techniques that do not require changing application code.
+The choice of a single relational database rather than a sharded or distributed setup is conservative on purpose. Most transactions never touch the database in real time, because they happen on the wristband during normal vendor flow; the database mostly absorbs sync batches and dashboard queries. A recent published reference point~\cite{OpenAIPostgres2026} from OpenAI describes ChatGPT's user-facing workload, with hundreds of millions of users, running on a single primary Postgres with read replicas at low double-digit millisecond p99 latency, which suggests that a festival's volume is well inside what a single relational database handles. If load ever justifies it, the standard scaling path (read replicas, connection pooling, table partitioning) does not require changes to application code.

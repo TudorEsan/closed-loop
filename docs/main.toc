@@ -2,83 +2,94 @@
 \contentsline {chapter}{\numberline {1}Introduction}{1}{chapter.1}%
 \contentsline {section}{\numberline {1.1}Problem Statement}{2}{section.1.1}%
 \contentsline {section}{\numberline {1.2}Objectives}{4}{section.1.2}%
-\contentsline {section}{\numberline {1.3}Related Work}{5}{section.1.3}%
-\contentsline {chapter}{\numberline {2}Background and Related Work}{7}{chapter.2}%
-\contentsline {section}{\numberline {2.1}Closed-Loop Payment Systems}{7}{section.2.1}%
-\contentsline {subsection}{\numberline {2.1.1}Transit Card Systems}{9}{subsection.2.1.1}%
-\contentsline {subsection}{\numberline {2.1.2}Festival Payment Systems}{12}{subsection.2.1.2}%
-\contentsline {subsection}{\numberline {2.1.3}EMV and Offline Authorization}{14}{subsection.2.1.3}%
-\contentsline {section}{\numberline {2.2}Offline-First Architecture Patterns}{15}{section.2.2}%
-\contentsline {subsection}{\numberline {2.2.1}Local-First Software}{16}{subsection.2.2.1}%
-\contentsline {subsection}{\numberline {2.2.2}Conflict-Free Replicated Data Types (CRDTs)}{17}{subsection.2.2.2}%
-\contentsline {subsection}{\numberline {2.2.3}Event Sourcing and CQRS}{18}{subsection.2.2.3}%
-\contentsline {subsection}{\numberline {2.2.4}Edge Computing}{18}{subsection.2.2.4}%
-\contentsline {section}{\numberline {2.3}Conflict Resolution in Distributed Systems}{19}{section.2.3}%
-\contentsline {subsection}{\numberline {2.3.1}The CAP Theorem}{19}{subsection.2.3.1}%
-\contentsline {subsection}{\numberline {2.3.2}Eventual Consistency}{20}{subsection.2.3.2}%
-\contentsline {subsection}{\numberline {2.3.3}Transaction Ordering and Why Timestamps Are Enough}{21}{subsection.2.3.3}%
-\contentsline {chapter}{\numberline {3}System Architecture}{23}{chapter.3}%
-\contentsline {section}{\numberline {3.1}High-level overview}{23}{section.3.1}%
-\contentsline {subsection}{\numberline {3.1.1}The hybrid reconciliation model}{24}{subsection.3.1.1}%
-\contentsline {section}{\numberline {3.2}Balance reconciliation model}{25}{section.3.2}%
-\contentsline {subsection}{\numberline {3.2.1}State on each side}{25}{subsection.3.2.1}%
-\contentsline {subsection}{\numberline {3.2.2}Invariants}{25}{subsection.3.2.2}%
-\contentsline {subsection}{\numberline {3.2.3}The four operations}{26}{subsection.3.2.3}%
-\contentsline {subsection}{\numberline {3.2.4}Worked example}{26}{subsection.3.2.4}%
-\contentsline {subsection}{\numberline {3.2.5}Lost transactions}{27}{subsection.3.2.5}%
-\contentsline {section}{\numberline {3.3}Lessons from related systems and patterns}{27}{section.3.3}%
-\contentsline {subsection}{\numberline {3.3.1}Offline operation}{28}{subsection.3.3.1}%
-\contentsline {subsection}{\numberline {3.3.2}Top-ups: the one thing that needs the network}{28}{subsection.3.3.2}%
-\contentsline {section}{\numberline {3.4}The mobile application}{28}{section.3.4}%
-\contentsline {subsection}{\numberline {3.4.1}Attendee view}{28}{subsection.3.4.1}%
-\contentsline {subsection}{\numberline {3.4.2}Vendor POS mode}{29}{subsection.3.4.2}%
-\contentsline {section}{\numberline {3.5}Admin dashboard}{29}{section.3.5}%
-\contentsline {section}{\numberline {3.6}Backend server}{29}{section.3.6}%
-\contentsline {subsection}{\numberline {3.6.1}Multi-tenancy}{29}{subsection.3.6.1}%
-\contentsline {subsection}{\numberline {3.6.2}Horizontal scalability}{30}{subsection.3.6.2}%
-\contentsline {section}{\numberline {3.7}Database: PostgreSQL}{30}{section.3.7}%
-\contentsline {chapter}{\numberline {4}Implementation}{32}{chapter.4}%
-\contentsline {section}{\numberline {4.1}Implementation overview}{32}{section.4.1}%
-\contentsline {section}{\numberline {4.2}Database schema for the hybrid model}{33}{section.4.2}%
-\contentsline {section}{\numberline {4.3}The reconciliation service and sync endpoint}{34}{section.4.3}%
-\contentsline {section}{\numberline {4.4}Chip data layout and HMAC}{36}{section.4.4}%
-\contentsline {section}{\numberline {4.5}Online debit path}{37}{section.4.5}%
-\contentsline {section}{\numberline {4.6}Offline debit path and the queue}{38}{section.4.6}%
-\contentsline {section}{\numberline {4.7}Topup path}{39}{section.4.7}%
-\contentsline {chapter}{\numberline {5}Security Considerations}{40}{chapter.5}%
-\contentsline {section}{\numberline {5.1}Authentication and Authorization}{40}{section.5.1}%
-\contentsline {section}{\numberline {5.2}Wallet Integrity and Double-Spend Prevention}{40}{section.5.2}%
-\contentsline {subsection}{\numberline {5.2.1}Online Mode}{40}{subsection.5.2.1}%
-\contentsline {subsection}{\numberline {5.2.2}Offline Mode}{40}{subsection.5.2.2}%
-\contentsline {section}{\numberline {5.3}Offline Trust Model}{40}{section.5.3}%
-\contentsline {section}{\numberline {5.4}Stripe and Payment Security}{40}{section.5.4}%
-\contentsline {section}{\numberline {5.5}Data Protection}{40}{section.5.5}%
-\contentsline {chapter}{\numberline {6}Discussion}{41}{chapter.6}%
-\contentsline {section}{\numberline {6.1}Design Trade-offs}{41}{section.6.1}%
-\contentsline {subsection}{\numberline {6.1.1}Online by default, offline as a fallback}{41}{subsection.6.1.1}%
-\contentsline {subsection}{\numberline {6.1.2}Server balance versus chip balance}{42}{subsection.6.1.2}%
-\contentsline {subsection}{\numberline {6.1.3}Consistency versus availability during outages}{42}{subsection.6.1.3}%
-\contentsline {subsection}{\numberline {6.1.4}Lost transactions and operator risk}{43}{subsection.6.1.4}%
-\contentsline {subsection}{\numberline {6.1.5}Starlink and a redundant topology versus other connectivity options}{43}{subsection.6.1.5}%
-\contentsline {section}{\numberline {6.2}Comparison with Existing Solutions}{43}{section.6.2}%
-\contentsline {subsection}{\numberline {6.2.1}Commercial festival platforms}{43}{subsection.6.2.1}%
-\contentsline {subsection}{\numberline {6.2.2}Transit cards}{44}{subsection.6.2.2}%
-\contentsline {subsection}{\numberline {6.2.3}Open versus proprietary}{45}{subsection.6.2.3}%
-\contentsline {section}{\numberline {6.3}Limitations}{45}{section.6.3}%
-\contentsline {subsection}{\numberline {6.3.1}Hardware: a plain NFC chip is not enough for production}{45}{subsection.6.3.1}%
-\contentsline {subsection}{\numberline {6.3.2}Offline duration is assumed to be short}{46}{subsection.6.3.2}%
-\contentsline {subsection}{\numberline {6.3.3}Single-event scope in testing}{46}{subsection.6.3.3}%
-\contentsline {subsection}{\numberline {6.3.4}No peer-to-peer transfers between attendees}{46}{subsection.6.3.4}%
-\contentsline {subsection}{\numberline {6.3.5}Refund flow is partial}{46}{subsection.6.3.5}%
-\contentsline {subsection}{\numberline {6.3.6}No real load testing}{46}{subsection.6.3.6}%
-\contentsline {subsection}{\numberline {6.3.7}Vendor onboarding is a manual review}{47}{subsection.6.3.7}%
-\contentsline {section}{\numberline {6.4}Further Improvements}{47}{section.6.4}%
-\contentsline {subsection}{\numberline {6.4.1}Move to authenticated NFC chips}{47}{subsection.6.4.1}%
-\contentsline {subsection}{\numberline {6.4.2}Fraud detection on the server}{47}{subsection.6.4.2}%
-\contentsline {subsection}{\numberline {6.4.3}Better offline strategies}{47}{subsection.6.4.3}%
-\contentsline {subsection}{\numberline {6.4.4}Real-time analytics for the operator}{48}{subsection.6.4.4}%
-\contentsline {subsection}{\numberline {6.4.5}Multi-event support and tenant isolation}{48}{subsection.6.4.5}%
-\contentsline {subsection}{\numberline {6.4.6}Vendor settlement and payout automation}{48}{subsection.6.4.6}%
-\contentsline {subsection}{\numberline {6.4.7}Integration with other festival systems}{48}{subsection.6.4.7}%
-\contentsline {chapter}{\numberline {7}Conclusions}{49}{chapter.7}%
-\contentsline {chapter}{Bibliography}{50}{chapter*.2}%
+\contentsline {section}{\numberline {1.3}Thesis structure}{5}{section.1.3}%
+\contentsline {chapter}{\numberline {2}Background and Related Work}{6}{chapter.2}%
+\contentsline {section}{\numberline {2.1}Closed-Loop Payment Systems}{6}{section.2.1}%
+\contentsline {subsection}{\numberline {2.1.1}Transit Card Systems}{7}{subsection.2.1.1}%
+\contentsline {subsection}{\numberline {2.1.2}Festival Payment Systems}{7}{subsection.2.1.2}%
+\contentsline {section}{\numberline {2.2}Offline authorization in open-loop systems}{8}{section.2.2}%
+\contentsline {section}{\numberline {2.3}Offline-First Architecture Patterns}{8}{section.2.3}%
+\contentsline {subsection}{\numberline {2.3.1}Local-First Software}{9}{subsection.2.3.1}%
+\contentsline {subsection}{\numberline {2.3.2}Conflict-Free Replicated Data Types}{9}{subsection.2.3.2}%
+\contentsline {subsection}{\numberline {2.3.3}Event Sourcing and CQRS}{9}{subsection.2.3.3}%
+\contentsline {subsection}{\numberline {2.3.4}Edge Computing}{10}{subsection.2.3.4}%
+\contentsline {section}{\numberline {2.4}Conflict Resolution in Distributed Systems}{10}{section.2.4}%
+\contentsline {subsection}{\numberline {2.4.1}The CAP Theorem}{10}{subsection.2.4.1}%
+\contentsline {subsection}{\numberline {2.4.2}Eventual Consistency}{10}{subsection.2.4.2}%
+\contentsline {subsection}{\numberline {2.4.3}Transaction Ordering}{10}{subsection.2.4.3}%
+\contentsline {chapter}{\numberline {3}System Architecture}{12}{chapter.3}%
+\contentsline {section}{\numberline {3.1}High-level overview}{12}{section.3.1}%
+\contentsline {subsection}{\numberline {3.1.1}The hybrid reconciliation model}{13}{subsection.3.1.1}%
+\contentsline {section}{\numberline {3.2}Balance reconciliation model}{13}{section.3.2}%
+\contentsline {subsection}{\numberline {3.2.1}State on each side}{14}{subsection.3.2.1}%
+\contentsline {subsection}{\numberline {3.2.2}Invariants}{14}{subsection.3.2.2}%
+\contentsline {subsection}{\numberline {3.2.3}The four operations}{15}{subsection.3.2.3}%
+\contentsline {subsection}{\numberline {3.2.4}Worked example}{15}{subsection.3.2.4}%
+\contentsline {subsection}{\numberline {3.2.5}Lost transactions}{15}{subsection.3.2.5}%
+\contentsline {section}{\numberline {3.3}Lessons from related systems and patterns}{16}{section.3.3}%
+\contentsline {subsection}{\numberline {3.3.1}Offline operation}{16}{subsection.3.3.1}%
+\contentsline {subsection}{\numberline {3.3.2}Top-ups: the one thing that needs the network}{16}{subsection.3.3.2}%
+\contentsline {section}{\numberline {3.4}The mobile application}{17}{section.3.4}%
+\contentsline {subsection}{\numberline {3.4.1}Attendee view}{17}{subsection.3.4.1}%
+\contentsline {subsection}{\numberline {3.4.2}Vendor POS mode}{17}{subsection.3.4.2}%
+\contentsline {section}{\numberline {3.5}Admin dashboard}{17}{section.3.5}%
+\contentsline {section}{\numberline {3.6}Backend server}{18}{section.3.6}%
+\contentsline {subsection}{\numberline {3.6.1}Multi-tenancy}{18}{subsection.3.6.1}%
+\contentsline {subsection}{\numberline {3.6.2}Horizontal scalability}{18}{subsection.3.6.2}%
+\contentsline {section}{\numberline {3.7}Database}{18}{section.3.7}%
+\contentsline {chapter}{\numberline {4}Implementation}{20}{chapter.4}%
+\contentsline {section}{\numberline {4.1}Implementation overview}{20}{section.4.1}%
+\contentsline {subsection}{\numberline {4.1.1}Project layout and libraries}{20}{subsection.4.1.1}%
+\contentsline {subsection}{\numberline {4.1.2}Deployment}{21}{subsection.4.1.2}%
+\contentsline {section}{\numberline {4.2}Database schema for the hybrid model}{21}{section.4.2}%
+\contentsline {section}{\numberline {4.3}Authentication and bearer tokens}{23}{section.4.3}%
+\contentsline {section}{\numberline {4.4}The reconciliation service and sync endpoint}{23}{section.4.4}%
+\contentsline {section}{\numberline {4.5}Chip data layout, HMAC, and the key chain}{25}{section.4.5}%
+\contentsline {section}{\numberline {4.6}Online debit path}{26}{section.4.6}%
+\contentsline {section}{\numberline {4.7}Offline debit path and the queue}{27}{section.4.7}%
+\contentsline {subsection}{\numberline {4.7.1}Auto-sync on reconnect}{28}{subsection.4.7.1}%
+\contentsline {section}{\numberline {4.8}Top-up path and the Stripe webhook}{28}{section.4.8}%
+\contentsline {section}{\numberline {4.9}Tests}{29}{section.4.9}%
+\contentsline {chapter}{\numberline {5}Security Considerations}{30}{chapter.5}%
+\contentsline {section}{\numberline {5.1}Threat model}{30}{section.5.1}%
+\contentsline {section}{\numberline {5.2}Chip integrity and the per-bracelet key}{30}{section.5.2}%
+\contentsline {section}{\numberline {5.3}Cryptographic key management}{31}{section.5.3}%
+\contentsline {section}{\numberline {5.4}Server-side integrity}{32}{section.5.4}%
+\contentsline {section}{\numberline {5.5}Authentication}{32}{section.5.5}%
+\contentsline {section}{\numberline {5.6}Stripe and PCI scope}{33}{section.5.6}%
+\contentsline {section}{\numberline {5.7}Vendor terminal trust}{33}{section.5.7}%
+\contentsline {section}{\numberline {5.8}Data protection}{33}{section.5.8}%
+\contentsline {section}{\numberline {5.9}Denial of service and availability}{34}{section.5.9}%
+\contentsline {section}{\numberline {5.10}Residual risks}{34}{section.5.10}%
+\contentsline {chapter}{\numberline {6}Discussion}{35}{chapter.6}%
+\contentsline {section}{\numberline {6.1}Design Trade-offs}{35}{section.6.1}%
+\contentsline {subsection}{\numberline {6.1.1}Online by default, offline as a fallback}{35}{subsection.6.1.1}%
+\contentsline {subsection}{\numberline {6.1.2}Server balance versus chip balance}{35}{subsection.6.1.2}%
+\contentsline {subsection}{\numberline {6.1.3}Consistency versus availability during outages}{36}{subsection.6.1.3}%
+\contentsline {subsection}{\numberline {6.1.4}Lost transactions and operator risk}{36}{subsection.6.1.4}%
+\contentsline {subsection}{\numberline {6.1.5}Starlink and a redundant topology versus other connectivity options}{36}{subsection.6.1.5}%
+\contentsline {section}{\numberline {6.2}Comparison with Existing Solutions}{37}{section.6.2}%
+\contentsline {subsection}{\numberline {6.2.1}Commercial festival platforms}{37}{subsection.6.2.1}%
+\contentsline {subsection}{\numberline {6.2.2}Transit cards}{38}{subsection.6.2.2}%
+\contentsline {subsection}{\numberline {6.2.3}Open versus proprietary}{38}{subsection.6.2.3}%
+\contentsline {section}{\numberline {6.3}Limitations}{39}{section.6.3}%
+\contentsline {subsection}{\numberline {6.3.1}Hardware: a plain NFC chip is not enough for production}{39}{subsection.6.3.1}%
+\contentsline {subsection}{\numberline {6.3.2}Offline duration is assumed to be short}{39}{subsection.6.3.2}%
+\contentsline {subsection}{\numberline {6.3.3}Single-event scope in testing}{39}{subsection.6.3.3}%
+\contentsline {subsection}{\numberline {6.3.4}No peer-to-peer transfers between attendees}{39}{subsection.6.3.4}%
+\contentsline {subsection}{\numberline {6.3.5}Refund flow is partial}{40}{subsection.6.3.5}%
+\contentsline {subsection}{\numberline {6.3.6}No real load testing}{40}{subsection.6.3.6}%
+\contentsline {subsection}{\numberline {6.3.7}Vendor onboarding is a manual review}{40}{subsection.6.3.7}%
+\contentsline {section}{\numberline {6.4}Further Improvements}{40}{section.6.4}%
+\contentsline {subsection}{\numberline {6.4.1}Move to authenticated NFC chips}{40}{subsection.6.4.1}%
+\contentsline {subsection}{\numberline {6.4.2}Fraud detection on the server}{41}{subsection.6.4.2}%
+\contentsline {subsection}{\numberline {6.4.3}Real-time analytics for the operator}{41}{subsection.6.4.3}%
+\contentsline {subsection}{\numberline {6.4.4}Multi-event support and tenant isolation}{41}{subsection.6.4.4}%
+\contentsline {subsection}{\numberline {6.4.5}Vendor settlement and payout automation}{41}{subsection.6.4.5}%
+\contentsline {subsection}{\numberline {6.4.6}Integration with other festival systems}{41}{subsection.6.4.6}%
+\contentsline {section}{\numberline {6.5}Evaluation against the objectives}{42}{section.6.5}%
+\contentsline {chapter}{\numberline {7}Conclusions}{44}{chapter.7}%
+\contentsline {section}{\numberline {7.1}Verdict per objective}{44}{section.7.1}%
+\contentsline {section}{\numberline {7.2}Contributions}{44}{section.7.2}%
+\contentsline {section}{\numberline {7.3}Closing thought}{45}{section.7.3}%
+\contentsline {chapter}{Bibliography}{46}{chapter*.2}%
