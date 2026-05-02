@@ -1,11 +1,13 @@
 import { api } from '../api';
 import type { Transaction } from '@/types/api';
+import type { ChipStateWire } from '@/types/sync';
 
 export type ChargeBody = {
   wristbandUid: string;
   amount: number;
   deviceId: string;
   idempotencyKey: string;
+  chipState: ChipStateWire;
 };
 
 export type ChargeResponse = {

@@ -146,9 +146,8 @@ export function VendorHome({ vendor }: { vendor: VendorMembership }) {
             <Pressable
               onPress={() => router.push("/charge")}
               disabled={!isReady}
-              className="rounded-2xl px-6 py-5 flex-row items-center justify-between"
+              className="rounded-2xl px-6 py-5 flex-row items-center justify-between bg-surface"
               style={{
-                backgroundColor: accentColor,
                 opacity: isReady ? 1 : 0.5,
               }}
             >

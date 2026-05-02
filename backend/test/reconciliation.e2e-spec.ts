@@ -201,7 +201,11 @@ describeIfDocker('/API reconciliation', () => {
           `/api/v1/events/${event.id}/wristbands/${bracelet.wristbandUid}/sync`,
         )
         .send({
-          chipState: { balance: 10000, debit_counter: 2, credit_counter_seen: 0 },
+          chipState: {
+            balance: 10000,
+            debit_counter: 2,
+            credit_counter_seen: 0,
+          },
           pendingDebits: debits,
         });
 
@@ -252,7 +256,11 @@ describeIfDocker('/API reconciliation', () => {
           `/api/v1/events/${event.id}/wristbands/${bracelet.wristbandUid}/sync`,
         )
         .send({
-          chipState: { balance: 5000, debit_counter: 1, credit_counter_seen: 0 },
+          chipState: {
+            balance: 5000,
+            debit_counter: 1,
+            credit_counter_seen: 0,
+          },
           pendingDebits: [debit],
         });
       expect(first.status).toBe(201);
@@ -263,7 +271,11 @@ describeIfDocker('/API reconciliation', () => {
           `/api/v1/events/${event.id}/wristbands/${bracelet.wristbandUid}/sync`,
         )
         .send({
-          chipState: { balance: 4000, debit_counter: 1, credit_counter_seen: 0 },
+          chipState: {
+            balance: 4000,
+            debit_counter: 1,
+            credit_counter_seen: 0,
+          },
           pendingDebits: [debit],
         });
       expect(second.status).toBe(201);
@@ -307,7 +319,11 @@ describeIfDocker('/API reconciliation', () => {
           `/api/v1/events/${event.id}/wristbands/${bracelet.wristbandUid}/sync`,
         )
         .send({
-          chipState: { balance: 5000, debit_counter: 3, credit_counter_seen: 0 },
+          chipState: {
+            balance: 5000,
+            debit_counter: 3,
+            credit_counter_seen: 0,
+          },
           pendingDebits: [debit],
         });
 
@@ -355,14 +371,21 @@ describeIfDocker('/API reconciliation', () => {
           `/api/v1/events/${event.id}/wristbands/${bracelet.wristbandUid}/sync`,
         )
         .send({
-          chipState: { balance: 2000, debit_counter: 2, credit_counter_seen: 0 },
+          chipState: {
+            balance: 2000,
+            debit_counter: 2,
+            credit_counter_seen: 0,
+          },
           pendingDebits: debits,
         });
 
       expect(response.status).toBe(201);
       expect(response.body.applied).toEqual([debits[0].idempotencyKey]);
       expect(response.body.rejected).toEqual([
-        { idempotencyKey: debits[1].idempotencyKey, reason: 'insufficient_funds' },
+        {
+          idempotencyKey: debits[1].idempotencyKey,
+          reason: 'insufficient_funds',
+        },
       ]);
       expect(response.body.serverState.balance).toBe(500);
     });
@@ -416,7 +439,11 @@ describeIfDocker('/API reconciliation', () => {
           `/api/v1/events/${event.id}/wristbands/${bracelet.wristbandUid}/sync`,
         )
         .send({
-          chipState: { balance: 10000, debit_counter: 3, credit_counter_seen: 0 },
+          chipState: {
+            balance: 10000,
+            debit_counter: 3,
+            credit_counter_seen: 0,
+          },
           pendingDebits: debits,
         });
 
@@ -441,6 +468,188 @@ describeIfDocker('/API reconciliation', () => {
         });
 
       expect(response.status).toBe(404);
+    });
+  });
+
+  describe('POST /events/:eventId/vendors/:vendorId/transactions/charge', () => {
+    it('uses trusted chip debit state when the chip is ahead of the server', async () => {
+      const admin = await seedUser(testDb, { role: 'super_admin' });
+      const attendee = await seedUser(testDb);
+      const event = await seedEvent(testDb, admin.id);
+      const vendor = await seedVendor(testDb, event.id, admin.id);
+      const bracelet = await seedBracelet(
+        testDb,
+        event.id,
+        attendee.id,
+        admin.id,
+        10000,
+      );
+      actingUser = { id: admin.id, role: admin.role };
+
+      const response = await request(http)
+        .post(
+          `/api/v1/events/${event.id}/vendors/${vendor.id}/transactions/charge`,
+        )
+        .send({
+          wristbandUid: bracelet.wristbandUid,
+          amount: 2000,
+          deviceId: 'pos-1',
+          idempotencyKey: faker.string.uuid(),
+          chipState: {
+            balance: 7000,
+            debit_counter: 1,
+            credit_counter_seen: 0,
+          },
+        });
+
+      expect(response.status).toBe(201);
+      expect(response.body.bracelet.balance).toBe(5000);
+      expect(response.body.bracelet.debit_counter_seen).toBe(2);
+      expect(response.body.chipShouldWrite.balance).toBe(5000);
+
+      const [storedBracelet] = await testDb.drizzle
+        .select()
+        .from(eventBracelets)
+        .where(eq(eventBracelets.id, bracelet.id));
+      expect(storedBracelet.balance).toBe(5000);
+      expect(storedBracelet.debitCounterSeen).toBe(2);
+
+      const [storedTx] = await testDb.drizzle
+        .select()
+        .from(transactions)
+        .where(eq(transactions.eventBraceletId, bracelet.id));
+      expect(storedTx.amount).toBe(2000);
+      expect(storedTx.offline).toBe(false);
+      expect(storedTx.debitCounter).toBe(2);
+      expect(storedTx.metadata).toMatchObject({
+        deviceId: 'pos-1',
+        chipReconciliation: {
+          serverBalanceBefore: 10000,
+          serverDebitCounterSeenBefore: 0,
+          chipBalance: 7000,
+          chipDebitCounter: 1,
+          chipCreditCounterSeen: 0,
+          unseenCreditsApplied: 0,
+        },
+      });
+    });
+
+    it('rejects spend above chip balance when the chip is ahead', async () => {
+      const admin = await seedUser(testDb, { role: 'super_admin' });
+      const attendee = await seedUser(testDb);
+      const event = await seedEvent(testDb, admin.id);
+      const vendor = await seedVendor(testDb, event.id, admin.id);
+      const bracelet = await seedBracelet(
+        testDb,
+        event.id,
+        attendee.id,
+        admin.id,
+        10000,
+      );
+      actingUser = { id: admin.id, role: admin.role };
+
+      const response = await request(http)
+        .post(
+          `/api/v1/events/${event.id}/vendors/${vendor.id}/transactions/charge`,
+        )
+        .send({
+          wristbandUid: bracelet.wristbandUid,
+          amount: 9000,
+          deviceId: 'pos-1',
+          idempotencyKey: faker.string.uuid(),
+          chipState: {
+            balance: 7000,
+            debit_counter: 1,
+            credit_counter_seen: 0,
+          },
+        });
+
+      expect(response.status).toBe(400);
+      expect(response.body.message).toBe('Insufficient funds');
+
+      const [storedBracelet] = await testDb.drizzle
+        .select()
+        .from(eventBracelets)
+        .where(eq(eventBracelets.id, bracelet.id));
+      expect(storedBracelet.balance).toBe(10000);
+      expect(storedBracelet.debitCounterSeen).toBe(0);
+    });
+
+    it('later sync records already absorbed offline debits without mutating balance again', async () => {
+      const admin = await seedUser(testDb, { role: 'super_admin' });
+      const attendee = await seedUser(testDb);
+      const event = await seedEvent(testDb, admin.id);
+      const vendor = await seedVendor(testDb, event.id, admin.id);
+      const bracelet = await seedBracelet(
+        testDb,
+        event.id,
+        attendee.id,
+        admin.id,
+        10000,
+      );
+      actingUser = { id: admin.id, role: admin.role };
+
+      await request(http)
+        .post(
+          `/api/v1/events/${event.id}/vendors/${vendor.id}/transactions/charge`,
+        )
+        .send({
+          wristbandUid: bracelet.wristbandUid,
+          amount: 2000,
+          deviceId: 'pos-1',
+          idempotencyKey: faker.string.uuid(),
+          chipState: {
+            balance: 7000,
+            debit_counter: 1,
+            credit_counter_seen: 0,
+          },
+        })
+        .expect(201);
+
+      const pendingDebit = {
+        idempotencyKey: faker.string.uuid(),
+        amount: 3000,
+        vendorId: vendor.id,
+        counterValue: 1,
+        deviceId: 'pos-1',
+        clientTimestamp: new Date().toISOString(),
+      };
+
+      const sync = await request(http)
+        .post(
+          `/api/v1/events/${event.id}/wristbands/${bracelet.wristbandUid}/sync`,
+        )
+        .send({
+          chipState: {
+            balance: 5000,
+            debit_counter: 2,
+            credit_counter_seen: 0,
+          },
+          pendingDebits: [pendingDebit],
+        });
+
+      expect(sync.status).toBe(201);
+      expect(sync.body.applied).toEqual([pendingDebit.idempotencyKey]);
+      expect(sync.body.rejected).toEqual([]);
+      expect(sync.body.serverState.balance).toBe(5000);
+      expect(sync.body.serverState.debit_counter_seen).toBe(2);
+
+      const stored = await testDb.drizzle
+        .select()
+        .from(transactions)
+        .where(eq(transactions.eventBraceletId, bracelet.id));
+      const historical = stored.find(
+        (tx) => tx.idempotencyKey === pendingDebit.idempotencyKey,
+      );
+      expect(historical).toMatchObject({
+        amount: 3000,
+        offline: true,
+        debitCounter: 1,
+        metadata: {
+          deviceId: 'pos-1',
+          balanceMutation: 'already_absorbed',
+        },
+      });
     });
   });
 });

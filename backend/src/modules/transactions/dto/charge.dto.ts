@@ -1,5 +1,31 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsInt, IsOptional, IsString, IsUUID, Min } from 'class-validator';
+import { Type } from 'class-transformer';
+import {
+  IsInt,
+  IsDefined,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Min,
+  ValidateNested,
+} from 'class-validator';
+
+export class ChargeChipStateDto {
+  @ApiProperty()
+  @IsInt()
+  @Min(0)
+  balance: number;
+
+  @ApiProperty()
+  @IsInt()
+  @Min(0)
+  debit_counter: number;
+
+  @ApiProperty()
+  @IsInt()
+  @Min(0)
+  credit_counter_seen: number;
+}
 
 export class ChargeDto {
   @ApiProperty({ description: 'UID of the wristband to debit' })
@@ -19,4 +45,10 @@ export class ChargeDto {
   @IsString()
   @IsOptional()
   deviceId?: string;
+
+  @ApiProperty({ type: ChargeChipStateDto })
+  @IsDefined()
+  @ValidateNested()
+  @Type(() => ChargeChipStateDto)
+  chipState: ChargeChipStateDto;
 }

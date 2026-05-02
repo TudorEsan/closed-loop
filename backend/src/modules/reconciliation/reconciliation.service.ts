@@ -125,7 +125,24 @@ export class ReconciliationService {
     }
 
     if (debit.counterValue <= bracelet.debitCounterSeen) {
-      return { kind: 'rejected', reason: 'duplicate' };
+      const counterDup = await tx
+        .select({ id: transactions.id })
+        .from(transactions)
+        .where(
+          and(
+            eq(transactions.eventBraceletId, bracelet.id),
+            eq(transactions.type, 'debit'),
+            eq(transactions.debitCounter, debit.counterValue),
+          ),
+        )
+        .limit(1);
+
+      if (counterDup.length > 0) {
+        return { kind: 'rejected', reason: 'duplicate' };
+      }
+
+      await this.insertHistoricalDebit(tx, bracelet, debit);
+      return { kind: 'applied', bracelet };
     }
 
     if (bracelet.balance < debit.amount) {
@@ -156,5 +173,27 @@ export class ReconciliationService {
     });
 
     return { kind: 'applied', bracelet: updated[0] };
+  }
+
+  private async insertHistoricalDebit(
+    tx: Parameters<Parameters<DrizzleClient['transaction']>[0]>[0],
+    bracelet: typeof eventBracelets.$inferSelect,
+    debit: PendingDebitDto,
+  ): Promise<void> {
+    await tx.insert(transactions).values({
+      eventBraceletId: bracelet.id,
+      vendorId: debit.vendorId,
+      type: 'debit',
+      amount: debit.amount,
+      status: 'completed',
+      offline: true,
+      debitCounter: debit.counterValue,
+      idempotencyKey: debit.idempotencyKey,
+      clientTimestamp: new Date(debit.clientTimestamp),
+      metadata: {
+        deviceId: debit.deviceId,
+        balanceMutation: 'already_absorbed',
+      },
+    });
   }
 }

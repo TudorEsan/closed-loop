@@ -6,7 +6,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { SQL, and, desc, eq, lt, sql } from 'drizzle-orm';
+import { SQL, and, desc, eq, gt, lt, lte, sql } from 'drizzle-orm';
 
 import { DRIZZLE } from '@common/database/drizzle.module';
 import { DrizzleClient } from '@common/database/drizzle.client';
@@ -30,10 +30,6 @@ export class TransactionsService {
     private readonly scope: ScopeService,
   ) {}
 
-  // Online charge: terminal is connected, server is the source of truth.
-  // We allocate the new debit_counter, decrement the balance and write
-  // the transaction in one serializable DB transaction. The response
-  // carries the fresh state so the terminal can write it to the chip.
   async charge(
     eventId: string,
     vendorId: string,
@@ -78,16 +74,40 @@ export class TransactionsService {
           );
         }
         const bracelet = rows[0];
+        const chipState = dto.chipState;
+        const chipDebitAhead =
+          chipState.debit_counter > bracelet.debitCounterSeen;
 
-        if (bracelet.balance < dto.amount) {
+        if (chipState.credit_counter_seen > bracelet.creditCounter) {
+          throw new BadRequestException('Chip credit state is ahead of server');
+        }
+
+        const unseenCredits =
+          chipDebitAhead &&
+          chipState.credit_counter_seen < bracelet.creditCounter
+            ? await this.sumCreditsAfterCounter(
+                tx,
+                bracelet.id,
+                chipState.credit_counter_seen,
+                bracelet.creditCounter,
+              )
+            : 0;
+        const effectiveBalance = chipDebitAhead
+          ? Math.min(bracelet.balance, chipState.balance + unseenCredits)
+          : bracelet.balance;
+
+        if (effectiveBalance < dto.amount) {
           throw new BadRequestException('Insufficient funds');
         }
 
-        const newCounter = bracelet.debitCounterSeen + 1;
+        const newCounter = chipDebitAhead
+          ? chipState.debit_counter + 1
+          : bracelet.debitCounterSeen + 1;
+        const newBalance = effectiveBalance - dto.amount;
         const updated = await tx
           .update(eventBracelets)
           .set({
-            balance: bracelet.balance - dto.amount,
+            balance: newBalance,
             debitCounterSeen: newCounter,
             updatedAt: new Date(),
           })
@@ -106,7 +126,14 @@ export class TransactionsService {
             offline: false,
             debitCounter: newCounter,
             idempotencyKey: dto.idempotencyKey,
-            metadata: dto.deviceId ? { deviceId: dto.deviceId } : null,
+            metadata: this.chargeMetadata(dto.deviceId, chipDebitAhead, {
+              serverBalanceBefore: bracelet.balance,
+              serverDebitCounterSeenBefore: bracelet.debitCounterSeen,
+              chipBalance: chipState.balance,
+              chipDebitCounter: chipState.debit_counter,
+              chipCreditCounterSeen: chipState.credit_counter_seen,
+              unseenCreditsApplied: unseenCredits,
+            }),
           })
           .returning();
 
@@ -132,6 +159,47 @@ export class TransactionsService {
       }
       throw err;
     }
+  }
+
+  private async sumCreditsAfterCounter(
+    tx: Parameters<Parameters<DrizzleClient['transaction']>[0]>[0],
+    eventBraceletId: string,
+    afterCounter: number,
+    upToCounter: number,
+  ): Promise<number> {
+    const creditRows = await tx
+      .select({ amount: transactions.amount })
+      .from(transactions)
+      .where(
+        and(
+          eq(transactions.eventBraceletId, eventBraceletId),
+          eq(transactions.type, 'credit'),
+          gt(transactions.creditCounter, afterCounter),
+          lte(transactions.creditCounter, upToCounter),
+        ),
+      );
+
+    return creditRows.reduce((sum, row) => sum + row.amount, 0);
+  }
+
+  private chargeMetadata(
+    deviceId: string | undefined,
+    chipDebitAhead: boolean,
+    chipReconciliation: {
+      serverBalanceBefore: number;
+      serverDebitCounterSeenBefore: number;
+      chipBalance: number;
+      chipDebitCounter: number;
+      chipCreditCounterSeen: number;
+      unseenCreditsApplied: number;
+    },
+  ): Record<string, unknown> | null {
+    const metadata: Record<string, unknown> = {};
+    if (deviceId) metadata.deviceId = deviceId;
+    if (chipDebitAhead) {
+      metadata.chipReconciliation = chipReconciliation;
+    }
+    return Object.keys(metadata).length > 0 ? metadata : null;
   }
 
   async listForVendor(

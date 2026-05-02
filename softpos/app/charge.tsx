@@ -73,7 +73,7 @@ export default function ChargeScreen() {
 
     if (queue.isOnline) {
       let chargeError: string | null = null;
-      const res = await nfc.readWriteBracelet(async (_state, uid) => {
+      const res = await nfc.readWriteBracelet(async (state, uid) => {
         try {
           const resp = await transactionsApi.charge(
             vendor.eventId,
@@ -83,6 +83,11 @@ export default function ChargeScreen() {
               amount: amountCents,
               deviceId: getOrCreateLocalDeviceId(),
               idempotencyKey: newIdempotencyKey(),
+              chipState: {
+                balance: state.balance,
+                debit_counter: state.debitCounter,
+                credit_counter_seen: state.creditCounterSeen,
+              },
             },
           );
           return {
