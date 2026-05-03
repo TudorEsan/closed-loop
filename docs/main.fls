@@ -151,6 +151,14 @@ INPUT /usr/local/texlive/2024/texmf-dist/fonts/vf/adobe/palatino/pplri7t.vf
 INPUT /usr/local/texlive/2024/texmf-dist/fonts/tfm/adobe/palatino/pplri8r.tfm
 INPUT /usr/local/texlive/2024/texmf-dist/fonts/vf/adobe/palatino/pplr7t.vf
 INPUT /usr/local/texlive/2024/texmf-dist/fonts/tfm/adobe/palatino/pplr8r.tfm
+INPUT /usr/local/texlive/2024/texmf-dist/fonts/tfm/public/cm/cmr17.tfm
+INPUT /usr/local/texlive/2024/texmf-dist/fonts/tfm/public/cm/cmmi12.tfm
+INPUT /usr/local/texlive/2024/texmf-dist/fonts/tfm/public/cm/cmmi12.tfm
+INPUT /usr/local/texlive/2024/texmf-dist/fonts/tfm/public/cm/cmsy10.tfm
+INPUT /usr/local/texlive/2024/texmf-dist/fonts/tfm/public/cm/cmsy10.tfm
+INPUT /usr/local/texlive/2024/texmf-dist/fonts/tfm/adobe/palatino/pplb7t.tfm
+INPUT /usr/local/texlive/2024/texmf-dist/fonts/vf/adobe/palatino/pplb7t.vf
+INPUT /usr/local/texlive/2024/texmf-dist/fonts/tfm/adobe/palatino/pplb8r.tfm
 INPUT /usr/local/texlive/2024/texmf-dist/fonts/tfm/adobe/palatino/pplro7t.tfm
 INPUT /usr/local/texlive/2024/texmf-dist/fonts/vf/adobe/palatino/pplr7t.vf
 INPUT /usr/local/texlive/2024/texmf-dist/fonts/tfm/adobe/palatino/pplr8r.tfm
@@ -160,10 +168,8 @@ INPUT main.toc
 INPUT /usr/local/texlive/2024/texmf-dist/fonts/tfm/adobe/palatino/pplb7t.tfm
 INPUT /usr/local/texlive/2024/texmf-dist/fonts/tfm/public/cm/cmr8.tfm
 INPUT /usr/local/texlive/2024/texmf-dist/fonts/tfm/public/cm/cmr6.tfm
-INPUT /usr/local/texlive/2024/texmf-dist/fonts/tfm/public/cm/cmmi12.tfm
 INPUT /usr/local/texlive/2024/texmf-dist/fonts/tfm/public/cm/cmmi8.tfm
 INPUT /usr/local/texlive/2024/texmf-dist/fonts/tfm/public/cm/cmmi6.tfm
-INPUT /usr/local/texlive/2024/texmf-dist/fonts/tfm/public/cm/cmsy10.tfm
 INPUT /usr/local/texlive/2024/texmf-dist/fonts/tfm/public/cm/cmsy8.tfm
 INPUT /usr/local/texlive/2024/texmf-dist/fonts/tfm/public/cm/cmsy6.tfm
 INPUT /usr/local/texlive/2024/texmf-dist/fonts/vf/adobe/palatino/pplb7t.vf

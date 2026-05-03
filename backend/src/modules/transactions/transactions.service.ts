@@ -23,6 +23,8 @@ type DbError = { code?: string };
 const isUniqueViolation = (err: unknown): boolean =>
   typeof err === 'object' && err !== null && (err as DbError).code === '23505';
 
+const MINOR_UNITS_PER_MAJOR_UNIT = 100;
+
 type SummaryBucket = {
   date: string;
   salesVolume: number;
@@ -312,8 +314,8 @@ export class TransactionsService {
       .orderBy(sql`date_trunc('day', ${transactions.createdAt})::date`);
 
     const tokenRate = Number(event.tokenCurrencyRate);
-    const toCurrency = (amount: number | string | null) =>
-      Number(amount ?? 0) * tokenRate;
+    const toCurrency = (amountMinor: number | string | null) =>
+      (Number(amountMinor ?? 0) / MINOR_UNITS_PER_MAJOR_UNIT) * tokenRate;
 
     return {
       salesVolume: toCurrency(totals?.salesVolumeTokens ?? 0),
