@@ -8,6 +8,7 @@ import { extractErrorMessage } from "@/lib/api";
 import { transactionsApi } from "@/lib/api/transactions";
 import { type ChipState } from "@/lib/chip";
 import { getOrCreateLocalDeviceId } from "@/lib/device-id";
+import { formatMoney } from "@/lib/format";
 import { newIdempotencyKey } from "@/lib/idempotency";
 import { useQueue } from "@/lib/offline";
 import { Screen } from "@/components/ui";
@@ -115,7 +116,9 @@ export default function ChargeScreen() {
 
     const res = await nfc.readWriteBracelet((state) => {
       if (state.balance < amountCents) {
-        return { abort: "Insufficient funds on bracelet" };
+        return {
+          abort: `Insufficient balance. Available: ${formatMoney(state.balance)}.`,
+        };
       }
       return {
         balance: state.balance - amountCents,

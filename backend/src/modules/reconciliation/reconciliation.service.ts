@@ -42,8 +42,6 @@ export class ReconciliationService {
     callerRole: string,
     payload: SyncRequestDto,
   ): Promise<SyncResponse> {
-    // Any operator at the event or any vendor cashier at this event can hit
-    // this endpoint, since both run softpos terminals.
     await this.scope.requireEventOrVendorAccess(callerId, callerRole, eventId);
 
     const sortedDebits = [...(payload.pendingDebits ?? [])].sort(

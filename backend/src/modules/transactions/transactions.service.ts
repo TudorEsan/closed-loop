@@ -97,7 +97,9 @@ export class TransactionsService {
           : bracelet.balance;
 
         if (effectiveBalance < dto.amount) {
-          throw new BadRequestException('Insufficient funds');
+          throw new BadRequestException(
+            `Insufficient funds, ${effectiveBalance} available`,
+          );
         }
 
         const newCounter = chipDebitAhead
