@@ -5,11 +5,7 @@ import { toast } from 'sonner';
 import { ArrowLeft, ChevronDown, Pencil, Trash2 } from 'lucide-react';
 
 import type { EventStatus } from '@/types';
-import {
-  eventsService,
-  ticketsService,
-  vendorsService,
-} from '@/services';
+import { eventsService, ticketsService, vendorsService } from '@/services';
 
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -76,6 +72,13 @@ export function EventDetailPage() {
     enabled: !!eventId,
   });
 
+  const { data: transactionSummary } = useQuery({
+    queryKey: ['events', eventId, 'transactions', 'summary'],
+    queryFn: () =>
+      eventsService.getTransactionSummary(eventId!).then((r) => r.data),
+    enabled: !!eventId,
+  });
+
   const { data: members } = useQuery({
     queryKey: ['events', eventId, 'members'],
     queryFn: () => eventsService.listMembers(eventId!).then((r) => r.data),
@@ -138,7 +141,10 @@ export function EventDetailPage() {
             <ArrowLeft className="size-4" />
           </Button>
           <h1 className="text-xl font-semibold">{event.name}</h1>
-          <Badge variant={badgeConfig.variant} className={badgeConfig.className}>
+          <Badge
+            variant={badgeConfig.variant}
+            className={badgeConfig.className}
+          >
             {STATUS_LABELS[event.status]}
           </Badge>
         </div>
@@ -166,17 +172,26 @@ export function EventDetailPage() {
             <Pencil className="size-3.5" />
             Edit
           </Button>
-          <Button variant="destructive" size="sm" onClick={() => setDeleteOpen(true)}>
+          <Button
+            variant="destructive"
+            size="sm"
+            onClick={() => setDeleteOpen(true)}
+          >
             <Trash2 className="size-3.5" />
             Delete
           </Button>
         </div>
       </div>
 
-      <EventStatsCards event={event} vendorCount={vendorCount} memberCount={memberCount} />
+      <EventStatsCards
+        event={event}
+        summary={transactionSummary}
+        vendorCount={vendorCount}
+        memberCount={memberCount}
+      />
 
       <div className="px-4 lg:px-6">
-        <TransactionChart event={event} />
+        <TransactionChart summary={transactionSummary} />
       </div>
 
       <div className="px-4 lg:px-6">
@@ -186,7 +201,10 @@ export function EventDetailPage() {
             <TabsTrigger value="team">
               Team
               {memberCount > 0 && (
-                <Badge variant="secondary" className="ml-1.5 px-1.5 py-0 text-xs">
+                <Badge
+                  variant="secondary"
+                  className="ml-1.5 px-1.5 py-0 text-xs"
+                >
                   {memberCount}
                 </Badge>
               )}
@@ -194,7 +212,10 @@ export function EventDetailPage() {
             <TabsTrigger value="vendors">
               Vendors
               {vendorCount > 0 && (
-                <Badge variant="secondary" className="ml-1.5 px-1.5 py-0 text-xs">
+                <Badge
+                  variant="secondary"
+                  className="ml-1.5 px-1.5 py-0 text-xs"
+                >
                   {vendorCount}
                 </Badge>
               )}
@@ -202,7 +223,10 @@ export function EventDetailPage() {
             <TabsTrigger value="attendees">
               Attendees
               {pendingInviteCount > 0 && (
-                <Badge variant="secondary" className="ml-1.5 px-1.5 py-0 text-xs">
+                <Badge
+                  variant="secondary"
+                  className="ml-1.5 px-1.5 py-0 text-xs"
+                >
                   {pendingInviteCount}
                 </Badge>
               )}
@@ -232,7 +256,11 @@ export function EventDetailPage() {
         </Tabs>
       </div>
 
-      <EditEventDialog event={event} open={editOpen} onOpenChange={setEditOpen} />
+      <EditEventDialog
+        event={event}
+        open={editOpen}
+        onOpenChange={setEditOpen}
+      />
       <DeleteEventDialog
         eventId={event.id}
         eventName={event.name}

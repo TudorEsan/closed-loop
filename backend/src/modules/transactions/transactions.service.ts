@@ -23,6 +23,12 @@ type DbError = { code?: string };
 const isUniqueViolation = (err: unknown): boolean =>
   typeof err === 'object' && err !== null && (err as DbError).code === '23505';
 
+type SummaryBucket = {
+  date: string;
+  salesVolume: number;
+  transactionCount: number;
+};
+
 @Injectable()
 export class TransactionsService {
   constructor(
@@ -247,5 +253,79 @@ export class TransactionsService {
     const items = hasMore ? rows.slice(0, limit) : rows;
     const nextCursor = hasMore ? items[items.length - 1].id : null;
     return { transactions: items, nextCursor };
+  }
+
+  async getEventSummary(eventId: string, callerId: string, callerRole: string) {
+    const { event } = await this.scope.requireEventRole(
+      callerId,
+      callerRole,
+      eventId,
+    );
+
+    const [totals] = await this.db
+      .select({
+        salesVolumeTokens: sql<number>`
+          coalesce(sum(
+            case
+              when ${transactions.type} = 'debit'
+                and ${transactions.status} = 'completed'
+              then ${transactions.amount}
+              else 0
+            end
+          ), 0)
+        `,
+        transactionCount: sql<number>`
+          count(*) filter (where ${transactions.status} = 'completed')
+        `,
+      })
+      .from(transactions)
+      .innerJoin(
+        eventBracelets,
+        eq(eventBracelets.id, transactions.eventBraceletId),
+      )
+      .where(eq(eventBracelets.eventId, eventId));
+
+    const buckets = await this.db
+      .select({
+        date: sql<string>`date_trunc('day', ${transactions.createdAt})::date`,
+        salesVolumeTokens: sql<number>`
+          coalesce(sum(
+            case
+              when ${transactions.type} = 'debit'
+                and ${transactions.status} = 'completed'
+              then ${transactions.amount}
+              else 0
+            end
+          ), 0)
+        `,
+        transactionCount: sql<number>`
+          count(*) filter (where ${transactions.status} = 'completed')
+        `,
+      })
+      .from(transactions)
+      .innerJoin(
+        eventBracelets,
+        eq(eventBracelets.id, transactions.eventBraceletId),
+      )
+      .where(eq(eventBracelets.eventId, eventId))
+      .groupBy(sql`date_trunc('day', ${transactions.createdAt})::date`)
+      .orderBy(sql`date_trunc('day', ${transactions.createdAt})::date`);
+
+    const tokenRate = Number(event.tokenCurrencyRate);
+    const toCurrency = (amount: number | string | null) =>
+      Number(amount ?? 0) * tokenRate;
+
+    return {
+      salesVolume: toCurrency(totals?.salesVolumeTokens ?? 0),
+      transactionCount: Number(totals?.transactionCount ?? 0),
+      currency: event.currency,
+      buckets: buckets.map(
+        (bucket): SummaryBucket => ({
+          date: bucket.date,
+          salesVolume: toCurrency(bucket.salesVolumeTokens),
+          transactionCount: Number(bucket.transactionCount),
+        }),
+      ),
+    };
   }
 }

@@ -83,13 +83,6 @@ export function OverviewTab({
               <dt className="text-muted-foreground">Currency</dt>
               <dd className="font-medium">{event.currency}</dd>
             </div>
-            <Separator />
-            <div className="flex justify-between">
-              <dt className="text-muted-foreground">Token Rate</dt>
-              <dd>
-                1 token = {event.tokenCurrencyRate} {event.currency}
-              </dd>
-            </div>
           </dl>
         </CardContent>
       </Card>

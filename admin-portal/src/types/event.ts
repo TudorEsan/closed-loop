@@ -1,4 +1,9 @@
-export type EventStatus = 'draft' | 'setup' | 'active' | 'settlement' | 'closed';
+export type EventStatus =
+  | 'draft'
+  | 'setup'
+  | 'active'
+  | 'settlement'
+  | 'closed';
 
 export type Event = {
   id: string;
@@ -15,6 +20,19 @@ export type Event = {
   location: string | null;
   createdAt: string;
   updatedAt: string;
+};
+
+export type EventTransactionSummaryBucket = {
+  date: string;
+  salesVolume: number;
+  transactionCount: number;
+};
+
+export type EventTransactionSummary = {
+  salesVolume: number;
+  transactionCount: number;
+  currency: string;
+  buckets: EventTransactionSummaryBucket[];
 };
 
 export type CreateEventDto = {

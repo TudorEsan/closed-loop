@@ -6,6 +6,7 @@ import type {
   PaginatedEvents,
   EventMember,
   EventMemberRole,
+  EventTransactionSummary,
 } from '@/types';
 
 export const eventsService = {
@@ -15,6 +16,12 @@ export const eventsService = {
 
   getById(id: string) {
     return api.get<Event>(`/events/${id}`);
+  },
+
+  getTransactionSummary(id: string) {
+    return api.get<EventTransactionSummary>(
+      `/events/${id}/transactions/summary`
+    );
   },
 
   create(data: CreateEventDto) {
@@ -39,7 +46,7 @@ export const eventsService = {
 
   addMember(
     eventId: string,
-    payload: { userId?: string; email?: string; role: EventMemberRole },
+    payload: { userId?: string; email?: string; role: EventMemberRole }
   ) {
     return api.post<EventMember>(`/events/${eventId}/members`, payload);
   },

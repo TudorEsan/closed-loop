@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Area, AreaChart, CartesianGrid, XAxis } from 'recharts';
 import { ActivityIcon } from 'lucide-react';
 
-import type { Event } from '@/types';
+import type { EventTransactionSummary } from '@/types';
 import {
   Card,
   CardAction,
@@ -26,52 +26,27 @@ import {
 } from '@/components/ui/select';
 import { ToggleGroup, ToggleGroupItem } from '@/components/ui/toggle-group';
 
-export function generateMockChartData(event: Event) {
-  const start = new Date(event.startDate);
-  const end = new Date(event.endDate);
-  const now = new Date();
-  const effectiveEnd = end < now ? end : now;
-
-  if (start > now || event.status === 'draft' || event.status === 'setup') {
-    return [];
-  }
-
-  const data: { date: string; volume: number; transactions: number }[] = [];
-  const current = new Date(start);
-
-  while (current <= effectiveEnd) {
-    const hour = current.getHours();
-    const isDay = hour >= 10 && hour <= 23;
-    const base = isDay ? 150 + Math.random() * 350 : 10 + Math.random() * 40;
-    const txCount = isDay ? 20 + Math.floor(Math.random() * 80) : Math.floor(Math.random() * 10);
-
-    data.push({
-      date: current.toISOString(),
-      volume: Math.round(base * 100) / 100,
-      transactions: txCount,
-    });
-
-    current.setHours(current.getHours() + 4);
-  }
-
-  return data;
-}
-
 const chartConfig = {
-  volume: {
-    label: 'Volume',
+  salesVolume: {
+    label: 'Sales',
     color: 'var(--primary)',
   },
-  transactions: {
+  transactionCount: {
     label: 'Transactions',
     color: 'var(--primary)',
   },
 } satisfies ChartConfig;
 
-export function TransactionChart({ event }: { event: Event }) {
+type ChartMode = 'salesVolume' | 'transactionCount';
+
+export function TransactionChart({
+  summary,
+}: {
+  summary?: EventTransactionSummary;
+}) {
   const [timeRange, setTimeRange] = useState('all');
-  const [chartMode, setChartMode] = useState<'volume' | 'transactions'>('volume');
-  const allData = generateMockChartData(event);
+  const [chartMode, setChartMode] = useState<ChartMode>('salesVolume');
+  const allData = summary?.buckets ?? [];
 
   const filteredData = allData.filter((item) => {
     if (timeRange === 'all') return true;
@@ -89,7 +64,8 @@ export function TransactionChart({ event }: { event: Event }) {
         <CardHeader>
           <CardTitle>Transaction Volume</CardTitle>
           <CardDescription>
-            No transaction data available yet. Data will appear once the event goes live.
+            No transaction data available yet. Data will appear after real
+            payments are recorded.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -108,16 +84,18 @@ export function TransactionChart({ event }: { event: Event }) {
     <Card className="@container/card">
       <CardHeader>
         <CardTitle>
-          {chartMode === 'volume' ? 'Transaction Volume' : 'Number of Transactions'}
+          {chartMode === 'salesVolume'
+            ? 'Sales Volume'
+            : 'Number of Transactions'}
         </CardTitle>
         <CardDescription>
           <span className="hidden @[540px]/card:block">
-            {chartMode === 'volume'
-              ? `Total volume in ${event.currency} over time`
+            {chartMode === 'salesVolume'
+              ? `Completed sales in ${summary?.currency ?? ''} over time`
               : 'Transaction count over time'}
           </span>
           <span className="@[540px]/card:hidden">
-            {chartMode === 'volume' ? event.currency : 'Count'}
+            {chartMode === 'salesVolume' ? summary?.currency : 'Count'}
           </span>
         </CardDescription>
         <CardAction>
@@ -125,14 +103,17 @@ export function TransactionChart({ event }: { event: Event }) {
             <ToggleGroup
               type="single"
               value={chartMode}
-              onValueChange={(v) => v && setChartMode(v as 'volume' | 'transactions')}
+              onValueChange={(v) => v && setChartMode(v as ChartMode)}
               variant="outline"
               className="hidden @[600px]/card:flex"
             >
-              <ToggleGroupItem value="volume" className="px-3 text-xs">
-                Volume
+              <ToggleGroupItem value="salesVolume" className="px-3 text-xs">
+                Sales
               </ToggleGroupItem>
-              <ToggleGroupItem value="transactions" className="px-3 text-xs">
+              <ToggleGroupItem
+                value="transactionCount"
+                className="px-3 text-xs"
+              >
                 Transactions
               </ToggleGroupItem>
             </ToggleGroup>
@@ -148,7 +129,10 @@ export function TransactionChart({ event }: { event: Event }) {
               <ToggleGroupItem value="all">All</ToggleGroupItem>
             </ToggleGroup>
             <Select value={timeRange} onValueChange={setTimeRange}>
-              <SelectTrigger className="flex w-24 @[767px]/card:hidden" size="sm">
+              <SelectTrigger
+                className="flex w-24 @[767px]/card:hidden"
+                size="sm"
+              >
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -161,12 +145,23 @@ export function TransactionChart({ event }: { event: Event }) {
         </CardAction>
       </CardHeader>
       <CardContent className="px-2 pt-4 sm:px-6 sm:pt-6">
-        <ChartContainer config={chartConfig} className="aspect-auto h-[250px] w-full">
+        <ChartContainer
+          config={chartConfig}
+          className="aspect-auto h-[250px] w-full"
+        >
           <AreaChart data={filteredData}>
             <defs>
               <linearGradient id="fillChart" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="var(--color-volume)" stopOpacity={0.8} />
-                <stop offset="95%" stopColor="var(--color-volume)" stopOpacity={0.1} />
+                <stop
+                  offset="5%"
+                  stopColor="var(--color-salesVolume)"
+                  stopOpacity={0.8}
+                />
+                <stop
+                  offset="95%"
+                  stopColor="var(--color-salesVolume)"
+                  stopOpacity={0.1}
+                />
               </linearGradient>
             </defs>
             <CartesianGrid vertical={false} />
@@ -204,7 +199,7 @@ export function TransactionChart({ event }: { event: Event }) {
               dataKey={chartMode}
               type="natural"
               fill="url(#fillChart)"
-              stroke="var(--color-volume)"
+              stroke="var(--color-salesVolume)"
             />
           </AreaChart>
         </ChartContainer>

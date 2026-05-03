@@ -2,7 +2,6 @@ import * as React from "react"
 import { Link } from "react-router-dom"
 
 import { NavMain } from "@/components/nav-main"
-import { NavSecondary } from "@/components/nav-secondary"
 import { NavUser } from "@/components/nav-user"
 import {
   Sidebar,
@@ -15,9 +14,6 @@ import {
 } from "@/components/ui/sidebar"
 import {
   LayoutDashboardIcon,
-  UsersIcon,
-  Settings2Icon,
-  CircleHelpIcon,
   CircleDollarSignIcon,
 } from "lucide-react"
 import { useAuth } from "@/lib/auth-provider"
@@ -27,24 +23,6 @@ const navMain = [
     title: "Dashboard",
     url: "/dashboard",
     icon: <LayoutDashboardIcon />,
-  },
-  {
-    title: "Users",
-    url: "/users",
-    icon: <UsersIcon />,
-  },
-]
-
-const navSecondary = [
-  {
-    title: "Settings",
-    url: "/settings",
-    icon: <Settings2Icon />,
-  },
-  {
-    title: "Help",
-    url: "/help",
-    icon: <CircleHelpIcon />,
   },
 ]
 
@@ -70,7 +48,6 @@ export function AppSidebar({ ...props }: React.ComponentProps<typeof Sidebar>) {
       </SidebarHeader>
       <SidebarContent>
         <NavMain items={navMain} />
-        <NavSecondary items={navSecondary} className="mt-auto" />
       </SidebarContent>
       <SidebarFooter>
         <NavUser

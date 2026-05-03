@@ -10,7 +10,6 @@ import {
   CalendarIcon,
   MapPinIcon,
   ArrowRightIcon,
-  CoinsIcon,
 } from 'lucide-react';
 
 import { eventsService } from '@/services/events.service';
@@ -51,14 +50,6 @@ import {
   FieldGroup,
   FieldLabel,
 } from '@/components/ui/field';
-
-// ---------------------------------------------------------------------------
-// Currencies
-// ---------------------------------------------------------------------------
-
-const CURRENCIES = [
-  { code: 'EUR', label: 'EUR - Euro', symbol: '€' },
-] as const;
 
 // ---------------------------------------------------------------------------
 // Status badge
@@ -280,9 +271,6 @@ function CreateEventDialog({
 // ---------------------------------------------------------------------------
 
 function EventCard({ event }: { event: { id: string; name: string; status: EventStatus; description: string | null; location: string | null; startDate: string; endDate: string; currency: string; tokenCurrencyRate: string } }) {
-  const currencyInfo = CURRENCIES.find((c) => c.code === event.currency);
-  const symbol = currencyInfo?.symbol ?? event.currency;
-
   return (
     <Link to={`/events/${event.id}`} className="group">
       <Card className="transition-all duration-200 hover:shadow-md hover:border-primary/30 group-focus-visible:ring-2 group-focus-visible:ring-ring">
@@ -310,10 +298,6 @@ function EventCard({ event }: { event: { id: string; name: string; status: Event
             <div className="flex items-center gap-2">
               <CalendarIcon className="size-3.5 shrink-0" />
               <span>{formatDate(event.startDate)} — {formatDate(event.endDate)}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <CoinsIcon className="size-3.5 shrink-0" />
-              <span>1 token = {event.tokenCurrencyRate} {symbol}</span>
             </div>
           </div>
         </CardContent>

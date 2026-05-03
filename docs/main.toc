@@ -55,41 +55,41 @@
 \contentsline {section}{\numberline {5.2}Chip integrity and the per-bracelet key}{30}{section.5.2}%
 \contentsline {section}{\numberline {5.3}Cryptographic key management}{31}{section.5.3}%
 \contentsline {section}{\numberline {5.4}Server-side integrity}{32}{section.5.4}%
-\contentsline {section}{\numberline {5.5}Authentication}{32}{section.5.5}%
+\contentsline {section}{\numberline {5.5}Authentication}{33}{section.5.5}%
 \contentsline {section}{\numberline {5.6}Stripe and PCI scope}{33}{section.5.6}%
 \contentsline {section}{\numberline {5.7}Vendor terminal trust}{33}{section.5.7}%
-\contentsline {section}{\numberline {5.8}Data protection}{33}{section.5.8}%
+\contentsline {section}{\numberline {5.8}Data protection}{34}{section.5.8}%
 \contentsline {section}{\numberline {5.9}Denial of service and availability}{34}{section.5.9}%
-\contentsline {section}{\numberline {5.10}Residual risks}{34}{section.5.10}%
-\contentsline {chapter}{\numberline {6}Discussion}{35}{chapter.6}%
-\contentsline {section}{\numberline {6.1}Design Trade-offs}{35}{section.6.1}%
-\contentsline {subsection}{\numberline {6.1.1}Online by default, offline as a fallback}{35}{subsection.6.1.1}%
-\contentsline {subsection}{\numberline {6.1.2}Server balance versus chip balance}{35}{subsection.6.1.2}%
-\contentsline {subsection}{\numberline {6.1.3}Consistency versus availability during outages}{36}{subsection.6.1.3}%
-\contentsline {subsection}{\numberline {6.1.4}Lost transactions and operator risk}{36}{subsection.6.1.4}%
-\contentsline {subsection}{\numberline {6.1.5}Starlink and a redundant topology versus other connectivity options}{36}{subsection.6.1.5}%
-\contentsline {section}{\numberline {6.2}Comparison with Existing Solutions}{37}{section.6.2}%
-\contentsline {subsection}{\numberline {6.2.1}Commercial festival platforms}{37}{subsection.6.2.1}%
-\contentsline {subsection}{\numberline {6.2.2}Transit cards}{38}{subsection.6.2.2}%
-\contentsline {subsection}{\numberline {6.2.3}Open versus proprietary}{38}{subsection.6.2.3}%
-\contentsline {section}{\numberline {6.3}Limitations}{39}{section.6.3}%
-\contentsline {subsection}{\numberline {6.3.1}Hardware: a plain NFC chip is not enough for production}{39}{subsection.6.3.1}%
-\contentsline {subsection}{\numberline {6.3.2}Offline duration is assumed to be short}{39}{subsection.6.3.2}%
-\contentsline {subsection}{\numberline {6.3.3}Single-event scope in testing}{39}{subsection.6.3.3}%
-\contentsline {subsection}{\numberline {6.3.4}No peer-to-peer transfers between attendees}{39}{subsection.6.3.4}%
-\contentsline {subsection}{\numberline {6.3.5}Refund flow is partial}{40}{subsection.6.3.5}%
-\contentsline {subsection}{\numberline {6.3.6}No real load testing}{40}{subsection.6.3.6}%
-\contentsline {subsection}{\numberline {6.3.7}Vendor onboarding is a manual review}{40}{subsection.6.3.7}%
-\contentsline {section}{\numberline {6.4}Further Improvements}{40}{section.6.4}%
-\contentsline {subsection}{\numberline {6.4.1}Move to authenticated NFC chips}{40}{subsection.6.4.1}%
-\contentsline {subsection}{\numberline {6.4.2}Fraud detection on the server}{41}{subsection.6.4.2}%
-\contentsline {subsection}{\numberline {6.4.3}Real-time analytics for the operator}{41}{subsection.6.4.3}%
-\contentsline {subsection}{\numberline {6.4.4}Multi-event support and tenant isolation}{41}{subsection.6.4.4}%
-\contentsline {subsection}{\numberline {6.4.5}Vendor settlement and payout automation}{41}{subsection.6.4.5}%
-\contentsline {subsection}{\numberline {6.4.6}Integration with other festival systems}{41}{subsection.6.4.6}%
-\contentsline {section}{\numberline {6.5}Evaluation against the objectives}{42}{section.6.5}%
-\contentsline {chapter}{\numberline {7}Conclusions}{44}{chapter.7}%
-\contentsline {section}{\numberline {7.1}Verdict per objective}{44}{section.7.1}%
-\contentsline {section}{\numberline {7.2}Contributions}{44}{section.7.2}%
-\contentsline {section}{\numberline {7.3}Closing thought}{45}{section.7.3}%
-\contentsline {chapter}{Bibliography}{46}{chapter*.2}%
+\contentsline {section}{\numberline {5.10}Residual risks}{35}{section.5.10}%
+\contentsline {chapter}{\numberline {6}Discussion}{36}{chapter.6}%
+\contentsline {section}{\numberline {6.1}Design Trade-offs}{36}{section.6.1}%
+\contentsline {subsection}{\numberline {6.1.1}Online by default, offline as a fallback}{36}{subsection.6.1.1}%
+\contentsline {subsection}{\numberline {6.1.2}Server balance versus chip balance}{36}{subsection.6.1.2}%
+\contentsline {subsection}{\numberline {6.1.3}Consistency versus availability during outages}{37}{subsection.6.1.3}%
+\contentsline {subsection}{\numberline {6.1.4}Lost transactions and operator risk}{37}{subsection.6.1.4}%
+\contentsline {subsection}{\numberline {6.1.5}Starlink and a redundant topology versus other connectivity options}{37}{subsection.6.1.5}%
+\contentsline {section}{\numberline {6.2}Comparison with Existing Solutions}{38}{section.6.2}%
+\contentsline {subsection}{\numberline {6.2.1}Commercial festival platforms}{38}{subsection.6.2.1}%
+\contentsline {subsection}{\numberline {6.2.2}Transit cards}{39}{subsection.6.2.2}%
+\contentsline {subsection}{\numberline {6.2.3}Open versus proprietary}{39}{subsection.6.2.3}%
+\contentsline {section}{\numberline {6.3}Limitations}{40}{section.6.3}%
+\contentsline {subsection}{\numberline {6.3.1}Hardware: a plain NFC chip is not enough for production}{40}{subsection.6.3.1}%
+\contentsline {subsection}{\numberline {6.3.2}Offline duration is assumed to be short}{40}{subsection.6.3.2}%
+\contentsline {subsection}{\numberline {6.3.3}Single-event scope in testing}{40}{subsection.6.3.3}%
+\contentsline {subsection}{\numberline {6.3.4}No peer-to-peer transfers between attendees}{40}{subsection.6.3.4}%
+\contentsline {subsection}{\numberline {6.3.5}Refund flow is partial}{41}{subsection.6.3.5}%
+\contentsline {subsection}{\numberline {6.3.6}No real load testing}{41}{subsection.6.3.6}%
+\contentsline {subsection}{\numberline {6.3.7}Vendor onboarding is a manual review}{41}{subsection.6.3.7}%
+\contentsline {section}{\numberline {6.4}Further Improvements}{41}{section.6.4}%
+\contentsline {subsection}{\numberline {6.4.1}Move to authenticated NFC chips}{41}{subsection.6.4.1}%
+\contentsline {subsection}{\numberline {6.4.2}Fraud detection on the server}{42}{subsection.6.4.2}%
+\contentsline {subsection}{\numberline {6.4.3}Real-time analytics for the operator}{42}{subsection.6.4.3}%
+\contentsline {subsection}{\numberline {6.4.4}Multi-event support and tenant isolation}{42}{subsection.6.4.4}%
+\contentsline {subsection}{\numberline {6.4.5}Vendor settlement and payout automation}{42}{subsection.6.4.5}%
+\contentsline {subsection}{\numberline {6.4.6}Integration with other festival systems}{42}{subsection.6.4.6}%
+\contentsline {section}{\numberline {6.5}Evaluation against the objectives}{43}{section.6.5}%
+\contentsline {chapter}{\numberline {7}Conclusions}{45}{chapter.7}%
+\contentsline {section}{\numberline {7.1}Verdict per objective}{45}{section.7.1}%
+\contentsline {section}{\numberline {7.2}Contributions}{45}{section.7.2}%
+\contentsline {section}{\numberline {7.3}Closing thought}{46}{section.7.3}%
+\contentsline {chapter}{Bibliography}{47}{chapter*.2}%

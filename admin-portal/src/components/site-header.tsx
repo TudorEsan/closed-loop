@@ -4,9 +4,6 @@ import { SidebarTrigger } from "@/components/ui/sidebar"
 
 const routeTitles: Record<string, string> = {
   "/dashboard": "Dashboard",
-  "/users": "Users",
-  "/settings": "Settings",
-  "/help": "Help",
 }
 
 export function SiteHeader() {
