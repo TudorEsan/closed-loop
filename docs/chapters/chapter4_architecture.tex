@@ -19,7 +19,7 @@ The core architectural decision is how the wristband and the server share respon
 
 \begin{figure}[ht]
 	\centering
-	\includegraphics[width=0.95\textwidth]{images/system-architecture.png}
+	\includegraphics[width=0.95\textwidth]{figures/high-level-overview.png}
 	\caption{High-level system architecture. Debits happen directly between the vendor device and the NFC wristband. Credits go through the backend, which is also responsible for top-ups, sync, and reporting.}
 	\label{fig:system-architecture}
 \end{figure}
@@ -125,6 +125,26 @@ When an admin has whitelisted a device, the app switches to POS mode on that dev
 
 To become a vendor, the business provides basic information (business name, contact, products). The admin reviews and approves the application, then whitelists specific devices (by device ID) as POS terminals. This whitelisting matters because not just any phone can start accepting payments.
 
+\begin{figure}[ht]
+	\centering
+	\begin{minipage}{0.31\textwidth}
+		\centering
+		\includegraphics[width=\textwidth]{figures/atendee_view.png}
+	\end{minipage}
+	\hfill
+	\begin{minipage}{0.31\textwidth}
+		\centering
+		\includegraphics[width=\textwidth]{figures/vendor_view.png}
+	\end{minipage}
+	\hfill
+	\begin{minipage}{0.31\textwidth}
+		\centering
+		\includegraphics[width=\textwidth]{figures/admin_view.png}
+	\end{minipage}
+	\caption{Role-specific mobile screens in the shared React Native application. The attendee view shows personal balance and spending history, the vendor view turns the phone into a soft POS terminal, and the mobile admin view gives operators quick access to event controls.}
+	\label{fig:mobile-role-views}
+\end{figure}
+
 \section{Admin dashboard}
 \label{sec:admin-dashboard}
 
@@ -135,6 +155,13 @@ The admin dashboard is a separate web application built in React. Making it a we
 \textbf{Vendor management.} Review vendor applications, approve or reject them
 
 \textbf{Monitoring and statistics.} Real-time transaction volume and other stats
+
+\begin{figure}[ht]
+	\centering
+	\includegraphics[width=0.95\textwidth]{figures/admin_portal.png}
+	\caption{Web admin portal for festival operators. The portal gives organizers a browser-based control surface for event configuration, vendor review, payment monitoring, and operational statistics.}
+	\label{fig:admin-portal}
+\end{figure}
 
 \section{Backend server}
 \label{sec:backend-server}

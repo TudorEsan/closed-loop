@@ -88,15 +88,9 @@ export function useDebounce<T>(value: T, delay: number): T {
   return debouncedValue;
 }
 
-export const CURRENCIES = [
-  { code: 'EUR', label: 'EUR - Euro' },
-] as const;
-
 export type EditEventFormData = {
   name: string;
   description: string;
-  currency: string;
-  tokenCurrencyRate: string;
   startDate: string;
   endDate: string;
   timezone: string;

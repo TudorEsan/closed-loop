@@ -45,7 +45,6 @@ import {
 } from '@/components/ui/dialog';
 import {
   Field,
-  FieldDescription,
   FieldError,
   FieldGroup,
   FieldLabel,
@@ -102,12 +101,14 @@ function formatDate(dateString: string) {
 type CreateEventFormValues = {
   name: string;
   description: string;
-  tokenCurrencyRate: string;
   startDate: string;
   endDate: string;
   timezone: string;
   location: string;
 };
+
+const EVENT_CURRENCY = 'EUR';
+const TOKEN_CURRENCY_RATE = 1;
 
 function CreateEventDialog({
   open,
@@ -127,7 +128,6 @@ function CreateEventDialog({
     defaultValues: {
       name: '',
       description: '',
-      tokenCurrencyRate: '',
       startDate: '',
       endDate: '',
       timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
@@ -151,7 +151,8 @@ function CreateEventDialog({
   function onSubmit(values: CreateEventFormValues) {
     const dto: CreateEventDto = {
       name: values.name,
-      tokenCurrencyRate: Number(values.tokenCurrencyRate),
+      currency: EVENT_CURRENCY,
+      tokenCurrencyRate: TOKEN_CURRENCY_RATE,
       startDate: new Date(values.startDate).toISOString(),
       endDate: new Date(values.endDate).toISOString(),
     };
@@ -188,25 +189,6 @@ function CreateEventDialog({
             <Field>
               <FieldLabel htmlFor="description">Description</FieldLabel>
               <Input id="description" placeholder="Short description of the event" {...register('description')} />
-            </Field>
-
-            <Field>
-              <FieldLabel htmlFor="tokenCurrencyRate">Token Rate *</FieldLabel>
-              <Input
-                id="tokenCurrencyRate"
-                type="number"
-                step="any"
-                placeholder="1.00"
-                aria-invalid={!!errors.tokenCurrencyRate}
-                {...register('tokenCurrencyRate', {
-                  required: 'Token rate is required',
-                  validate: (v) => (Number(v) > 0 ? true : 'Token rate must be greater than 0'),
-                })}
-              />
-              <FieldDescription>How many tokens 1 unit buys</FieldDescription>
-              {errors.tokenCurrencyRate && (
-                <FieldError>{errors.tokenCurrencyRate.message}</FieldError>
-              )}
             </Field>
 
             <div className="grid grid-cols-2 gap-4">

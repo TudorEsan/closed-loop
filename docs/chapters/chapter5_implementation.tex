@@ -153,6 +153,13 @@ hmac                 bytes(16)  HMAC-SHA256 truncated to 128 bits
                                 over the 12 bytes above
 \end{verbatim}
 
+\begin{figure}[ht]
+	\centering
+	\includegraphics[width=0.95\textwidth]{figures/nfc_memory_visual.png}
+	\caption{NFC user-memory record used by the prototype. The first twelve bytes carry the mutable balance state and counters; the trailing sixteen bytes store the truncated HMAC that protects the record against unsigned edits.}
+	\label{fig:nfc-memory-layout}
+\end{figure}
+
 The first twelve bytes are the state. The last sixteen bytes are an HMAC computed over those twelve bytes using a per-bracelet symmetric key. Anyone reading the chip can read the state, but only someone who knows the per-bracelet key can produce a record that the terminal will accept.
 
 The per-bracelet key is derived rather than stored. The terminal holds a master key and computes the bracelet's working key on the fly with HKDF-SHA256:

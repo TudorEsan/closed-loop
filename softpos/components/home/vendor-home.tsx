@@ -27,6 +27,7 @@ import {
   ProfileButton,
   ScopeChip,
 } from "@/components/scope/scope-chip";
+import { VendorEventChooser } from "@/components/scope/vendor-event-chooser";
 import { theme } from "@/lib/theme";
 import { formatMoney } from "@/lib/format";
 import type { Transaction, VendorMembership } from "@/types/api";
@@ -204,7 +205,9 @@ export function VendorHome({ vendor }: { vendor: VendorMembership }) {
         scrollY={scrollY}
         title={vendor.businessName}
         left={<ProfileButton />}
-        right={<ScopeChip />}
+        right={
+          <VendorEventChooser vendor={vendor} fallback={<ScopeChip />} />
+        }
       />
     </Screen>
   );

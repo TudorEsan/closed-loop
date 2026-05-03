@@ -9,14 +9,11 @@ import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { useAuthContext } from '@/lib/auth-context';
-import { Avatar, MenuDivider, MenuRow, Screen } from '@/components/ui';
-import { useScope } from '@/hooks/use-scope';
+import { Avatar, MenuRow, Screen } from '@/components/ui';
 import { useQueue } from '@/lib/offline';
-import type { Scope } from '@/types/api';
 
 export default function ProfileScreen() {
   const { user, signOut } = useAuthContext();
-  const { scope } = useScope();
   const queue = useQueue();
   const pendingBadge =
     queue.pendingCount > 0 ? String(queue.pendingCount) : undefined;
@@ -53,10 +50,6 @@ export default function ProfileScreen() {
         },
       ],
     );
-  }
-
-  function notImplemented(label: string) {
-    Alert.alert(label, 'Coming soon.');
   }
 
   const displayName = user?.name || user?.email?.split('@')[0] || 'You';
@@ -97,38 +90,6 @@ export default function ProfileScreen() {
         <View className="px-4">
           <View className="overflow-hidden rounded-2xl bg-surface">
             <MenuRow
-              icon="person-outline"
-              label="Personal info"
-              subtitle={user?.email ?? undefined}
-              onPress={() => notImplemented('Personal info')}
-            />
-            <MenuDivider />
-            <MenuRow
-              icon="wallet-outline"
-              label="Wallet details"
-              subtitle={scopeLabel(scope)}
-              onPress={() => notImplemented('Wallet details')}
-            />
-            <MenuDivider />
-            <MenuRow
-              icon="shield-checkmark-outline"
-              label="Security"
-              onPress={() => notImplemented('Security')}
-            />
-            <MenuDivider />
-            <MenuRow
-              icon="notifications-outline"
-              label="Notifications"
-              onPress={() => notImplemented('Notifications')}
-            />
-            <MenuDivider />
-            <MenuRow
-              icon="help-circle-outline"
-              label="Help"
-              onPress={() => notImplemented('Help')}
-            />
-            <MenuDivider />
-            <MenuRow
               icon="settings-outline"
               label="Settings"
               badge={pendingBadge}
@@ -158,24 +119,4 @@ export default function ProfileScreen() {
       </ScrollView>
     </Screen>
   );
-}
-
-function scopeLabel(scope: Scope | null): string | undefined {
-  if (!scope) return undefined;
-  if (scope.kind === 'attendee') return 'Personal wallet';
-  if (scope.kind === 'event') {
-    const role = scope.event.isOrganizer
-      ? 'Organizer'
-      : scope.event.role === 'admin'
-        ? 'Admin'
-        : 'Operator';
-    return `${role} at ${scope.event.name}`;
-  }
-  const role =
-    scope.vendor.role === 'owner'
-      ? 'Owner'
-      : scope.vendor.role === 'manager'
-        ? 'Manager'
-        : 'Cashier';
-  return `${role} at ${scope.vendor.businessName}`;
 }

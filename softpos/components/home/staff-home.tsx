@@ -1,4 +1,4 @@
-import { Alert, ImageBackground, Pressable, Text, View } from 'react-native';
+import { ImageBackground, Pressable, Text, View } from 'react-native';
 import Animated, {
   useAnimatedScrollHandler,
   useSharedValue,
@@ -94,39 +94,8 @@ export function StaffHome({ event }: { event: EventMembership }) {
               icon="cash-outline"
               title="Cash top-up"
               subtitle="Accept cash, credit a bracelet"
-              onPress={() =>
-                Alert.alert(
-                  'Coming soon',
-                  'Cash top-up at the gate is being wired up. For now, attendees can top up online.',
-                )
-              }
+              onPress={() => router.push('/link-bracelet')}
             />
-            {isAdmin ? (
-              <>
-                <SecondaryAction
-                  icon="people-outline"
-                  title="Members"
-                  subtitle="Operators and admins for this festival"
-                  onPress={() =>
-                    Alert.alert(
-                      'Available in admin portal',
-                      'Manage members from the web admin portal.',
-                    )
-                  }
-                />
-                <SecondaryAction
-                  icon="storefront-outline"
-                  title="Vendors"
-                  subtitle="Onboard and approve vendor stands"
-                  onPress={() =>
-                    Alert.alert(
-                      'Available in admin portal',
-                      'Manage vendors from the web admin portal.',
-                    )
-                  }
-                />
-              </>
-            ) : null}
           </View>
 
           <View className="mt-8">

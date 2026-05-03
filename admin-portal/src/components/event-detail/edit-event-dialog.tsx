@@ -1,5 +1,5 @@
 import { useEffect } from 'react';
-import { Controller, useForm } from 'react-hook-form';
+import { useForm } from 'react-hook-form';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'sonner';
 import { Loader2 } from 'lucide-react';
@@ -17,23 +17,18 @@ import {
 } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select';
-import {
   Field,
   FieldError,
   FieldGroup,
   FieldLabel,
 } from '@/components/ui/field';
 import {
-  CURRENCIES,
   formatDateForInput,
   type EditEventFormData,
 } from './helpers';
+
+const EVENT_CURRENCY = 'EUR';
+const TOKEN_CURRENCY_RATE = 1;
 
 export function EditEventDialog({
   event,
@@ -50,14 +45,11 @@ export function EditEventDialog({
     register,
     handleSubmit,
     reset,
-    control,
     formState: { errors },
   } = useForm<EditEventFormData>({
     defaultValues: {
       name: event.name,
       description: event.description ?? '',
-      currency: event.currency,
-      tokenCurrencyRate: String(event.tokenCurrencyRate),
       startDate: formatDateForInput(event.startDate),
       endDate: formatDateForInput(event.endDate),
       timezone: event.timezone,
@@ -70,8 +62,6 @@ export function EditEventDialog({
       reset({
         name: event.name,
         description: event.description || '',
-        currency: event.currency,
-        tokenCurrencyRate: String(event.tokenCurrencyRate),
         startDate: formatDateForInput(event.startDate),
         endDate: formatDateForInput(event.endDate),
         timezone: event.timezone,
@@ -84,12 +74,12 @@ export function EditEventDialog({
     mutationFn: (data: EditEventFormData) => {
       const payload: Record<string, unknown> = {
         name: data.name,
-        tokenCurrencyRate: Number(data.tokenCurrencyRate),
+        currency: EVENT_CURRENCY,
+        tokenCurrencyRate: TOKEN_CURRENCY_RATE,
         startDate: new Date(data.startDate).toISOString(),
         endDate: new Date(data.endDate).toISOString(),
       };
       if (data.description) payload.description = data.description;
-      if (data.currency) payload.currency = data.currency;
       if (data.timezone) payload.timezone = data.timezone;
       if (data.location) payload.location = data.location;
 
@@ -127,42 +117,6 @@ export function EditEventDialog({
               <FieldLabel htmlFor="edit-description">Description</FieldLabel>
               <Input id="edit-description" {...register('description')} />
             </Field>
-
-            <div className="grid grid-cols-2 gap-3">
-              <Field>
-                <FieldLabel>Currency</FieldLabel>
-                <Controller
-                  name="currency"
-                  control={control}
-                  render={({ field }) => (
-                    <Select value={field.value} onValueChange={field.onChange}>
-                      <SelectTrigger className="w-full">
-                        <SelectValue placeholder="Select currency" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {CURRENCIES.map((c) => (
-                          <SelectItem key={c.code} value={c.code}>
-                            {c.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  )}
-                />
-              </Field>
-              <Field>
-                <FieldLabel htmlFor="edit-tokenRate">Token Rate</FieldLabel>
-                <Input
-                  id="edit-tokenRate"
-                  type="number"
-                  step="any"
-                  {...register('tokenCurrencyRate')}
-                />
-                {errors.tokenCurrencyRate && (
-                  <FieldError>{errors.tokenCurrencyRate.message}</FieldError>
-                )}
-              </Field>
-            </div>
 
             <div className="grid grid-cols-2 gap-3">
               <Field>

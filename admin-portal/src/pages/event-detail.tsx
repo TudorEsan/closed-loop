@@ -127,6 +127,7 @@ export function EventDetailPage() {
   const memberCount = members?.length ?? 0;
   const pendingInviteCount =
     tickets?.filter((t) => t.status === 'pending').length ?? 0;
+  const scopedEventId = eventId!;
 
   return (
     <>
@@ -239,19 +240,19 @@ export function EventDetailPage() {
           </TabsContent>
 
           <TabsContent value="team" className="mt-4">
-            <TeamTab eventId={event.id} />
+            <TeamTab eventId={scopedEventId} />
           </TabsContent>
 
           <TabsContent value="vendors" className="mt-4">
-            <VendorsTab eventId={event.id} />
+            <VendorsTab eventId={scopedEventId} />
           </TabsContent>
 
           <TabsContent value="attendees" className="mt-4">
-            <AttendeesTab eventId={event.id} />
+            <AttendeesTab eventId={scopedEventId} />
           </TabsContent>
 
           <TabsContent value="bracelets" className="mt-4">
-            <BraceletsTab eventId={event.id} />
+            <BraceletsTab eventId={scopedEventId} />
           </TabsContent>
         </Tabs>
       </div>
@@ -262,7 +263,7 @@ export function EventDetailPage() {
         onOpenChange={setEditOpen}
       />
       <DeleteEventDialog
-        eventId={event.id}
+        eventId={scopedEventId}
         eventName={event.name}
         open={deleteOpen}
         onOpenChange={setDeleteOpen}

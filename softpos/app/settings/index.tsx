@@ -2,7 +2,7 @@ import { Pressable, ScrollView, Text, View } from "react-native";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
-import { MenuDivider, MenuRow, Screen } from "@/components/ui";
+import { MenuRow, Screen } from "@/components/ui";
 import { useQueue } from "@/lib/offline";
 
 export default function SettingsScreen() {
@@ -44,13 +44,6 @@ export default function SettingsScreen() {
               }
               badge={pendingBadge}
               onPress={() => router.push("/settings/sync")}
-            />
-            <MenuDivider />
-            <MenuRow
-              icon="information-circle-outline"
-              label="About"
-              onPress={() => router.push("/settings/sync")}
-              showChevron={false}
             />
           </View>
         </View>
