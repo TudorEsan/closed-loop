@@ -1,7 +1,7 @@
 import { Text, View } from "react-native";
 
 import { type ChipState } from "@/lib/chip";
-import { formatAmount } from "./format";
+import { formatMoney } from "@/lib/format";
 
 export function ChipDebug({
   label,
@@ -18,7 +18,7 @@ export function ChipDebug({
       <View className="mt-2 gap-1">
         <ChipDebugRow
           label="Balance"
-          value={`${formatAmount(state.balance / 100)} RON`}
+          value={formatMoney(state.balance)}
         />
         <ChipDebugRow
           label="Debit counter"

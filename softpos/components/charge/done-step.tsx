@@ -3,6 +3,7 @@ import Animated, { FadeIn, ZoomIn } from "react-native-reanimated";
 import { router } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
+import { APP_CURRENCY } from "@/lib/format";
 import { ChipDebug } from "./chip-debug";
 import { formatAmount } from "./format";
 import { type DoneInfo } from "./types";
@@ -40,7 +41,7 @@ export function DoneStep({
       </Animated.Text>
       <View className="mt-2 flex-row items-end gap-1">
         <Text className="text-base text-muted">{formatAmount(info.amount)}</Text>
-        <Text className="text-xs text-muted">RON</Text>
+        <Text className="text-xs text-muted">{APP_CURRENCY}</Text>
       </View>
       {offline ? (
         <Text className="mt-3 text-center text-sm text-muted">

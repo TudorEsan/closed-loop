@@ -70,7 +70,7 @@ Authentication is handled by Better Auth on both sides. The backend declares the
 \section{The reconciliation service and sync endpoint}
 \label{sec:impl-sync}
 
-The sync endpoint is the single place where the chip state, the terminal's offline queue, and the server ledger meet. It is exposed by the backend as a single POST per bracelet. The terminal sends everything it has for one bracelet, and the server returns everything the terminal needs to write back to the chip and to clean up its local queue.
+The terminal sends the queued debits it has for one bracelet, and the server returns the outcome the terminal needs to clean up its local queue.
 
 \begin{verbatim}
 POST /api/v1/events/:eventId/wristbands/:wristbandUid/sync
@@ -79,11 +79,6 @@ Content-Type: application/json
 
 Request:
 {
-  "chipState": {
-    "balance": <int cents>,
-    "debit_counter": <int>,
-    "credit_counter_seen": <int>
-  },
   "pendingDebits": [
     {
       "idempotencyKey": "<uuid>",
@@ -126,7 +121,9 @@ The reconciliation algorithm runs inside a serializable Postgres transaction (\t
      a. If idempotencyKey already exists in transactions,
         record it as duplicate and continue.
      b. If counterValue <= bracelet.debit_counter_seen,
-        record it as duplicate and continue.
+        insert a historical debit if that counter is not
+        already present, without changing bracelet.balance,
+        then continue.
      c. If bracelet.balance < amount,
         record it as insufficient_funds and continue.
      d. Decrement bracelet.balance by amount.
@@ -139,9 +136,9 @@ The reconciliation algorithm runs inside a serializable Postgres transaction (\t
 7. Return serverState, applied, rejected, and chipShouldWrite.
 \end{verbatim}
 
-The two rejection reasons cover the cases the service produces today. The \texttt{duplicate} reason fires when the same debit reaches the server twice, either because the terminal retried after a flaky response (the \texttt{idempotencyKey} check at step 3a catches it) or because two terminals scanned the same chip at different points and reported the same counter (the \texttt{counter\_value} check at step 3b catches it). The \texttt{insufficient\_funds} reason fires when the chip view of the world disagrees with the server view, usually after a top-up that has not yet been written back to the chip; the debit was authorized offline based on a stale chip balance, and on reconciliation the server cannot honour it. The \texttt{RejectReason} type leaves room for two more categories (\texttt{counter\_gap} for non-contiguous counters and \texttt{invalid} for malformed entries) but the current service does not produce them; they are reserved for future hardening.
+The two rejection reasons cover the cases the service produces today. The \texttt{duplicate} reason fires when the same debit reaches the server twice, either because the terminal retried after a flaky response or because a transaction row for the same bracelet counter already exists. The \texttt{insufficient\_funds} reason fires when the queued debit is ahead of the server state and the server cannot honour it from the current balance. A late debit whose counter is already behind \texttt{debit\_counter\_seen} is not rejected automatically: if no row exists for that counter, the service records it as historical itemized vendor data and marks the metadata as already absorbed. The \texttt{RejectReason} type leaves room for two more categories (\texttt{counter\_gap} for non-contiguous counters and \texttt{invalid} for malformed entries) but the current service does not produce them; they are reserved for future hardening.
 
-The response carries \texttt{chipShouldWrite}, the authoritative state the terminal must push to the chip before completing the sync. This usually only changes the chip if a top-up happened in the meantime, but it is computed and returned unconditionally so the terminal logic does not have to branch on whether a credit occurred.
+The response still carries \texttt{chipShouldWrite} for observability and parity with the online charge response, but background sync does not write to the chip. Chip writes happen only during live NFC interactions, especially online charge, where the bracelet is present and the server can compare its state with the database.
 
 \section{Chip data layout, HMAC, and the key chain}
 \label{sec:impl-chip-layout}
@@ -188,12 +185,12 @@ To stop concurrent NFC operations from stepping on each other, all chip reads an
 
 Only once the chip write is acknowledged does the terminal enqueue the pending debit on disk. The queue is stored as plain JSON files under the app's document directory, one file per (event, vendor) pair, written through \texttt{expo-file-system}. Each entry carries the same fields the sync request will eventually need: a generated \texttt{idempotencyKey}, the \texttt{amount}, the \texttt{vendorId}, the \texttt{counterValue} that was just written to the chip, the \texttt{deviceId}, and the local timestamp. Storing the entry only after the chip write means the queue can never contain a debit that did not happen; the worst case is a chip update that the terminal forgot, which the next reconciliation will detect through the counter.
 
-When connectivity comes back, the terminal posts the queue to the sync endpoint described in Section~\ref{sec:impl-sync}. The server replies with which entries it accepted, which it rejected, and what the chip should hold. The terminal removes the accepted entries from the JSON file. Rejected entries are kept and surfaced to the operator with the reason: \texttt{duplicate} is silently dropped, and \texttt{insufficient\_funds} is escalated to a manual review screen because it implies the chip and the server disagreed in a way the automatic logic should not paper over.
+When connectivity comes back, the terminal posts the queue to the sync endpoint described in Section~\ref{sec:impl-sync}. The server replies with which entries it accepted and which it rejected. The terminal removes the accepted entries from the JSON file. Rejected entries are kept and surfaced to the operator with the reason: \texttt{duplicate} is silently dropped, and \texttt{insufficient\_funds} is escalated to a manual review screen because it implies the queued debit and the server balance disagreed in a way the automatic logic should not paper over.
 
 \subsection{Auto-sync on reconnect}
 \label{subsec:impl-autosync}
 
-The terminal does not wait for the operator to re-tap a bracelet before flushing the queue. A subscription to \texttt{@react-native-community/netinfo} watches the connectivity state, and on a transition from offline to online it triggers a queue drain across every (event, vendor) pair the terminal has seen during the session. The drain runs through the same sync endpoint as the manual path. The one operational difference is that the auto-sync code path does not write back to the chip: it pushes the queued debits and updates the local view of the server state, but it does not require the bracelet to be present. A subsequent re-tap, online or offline, picks up any pending \texttt{chipShouldWrite} the next time the chip is in range. This split keeps the queue draining in the background while leaving the chip-side update tied to a real interaction.
+The terminal does not wait for the operator to re-tap a bracelet before flushing the queue. A subscription to \texttt{@react-native-community/netinfo} watches the connectivity state, and on a transition from offline to online it triggers a queue drain across every (event, vendor) pair the terminal has seen during the session. The drain only uploads queued debits; it does not require the bracelet to be present and does not send a stored chip snapshot. A subsequent online charge tap is responsible for bringing the chip back to the server-returned state.
 
 \section{Top-up path and the Stripe webhook}
 \label{sec:impl-topup}
@@ -206,7 +203,7 @@ Once the signature is valid, the handler looks up the corresponding \texttt{paym
 
 Idempotency for top-ups does not come from a unique key on the credit transaction. Instead, two layers protect against duplicate credits. The \texttt{payment\_intents} table has a \texttt{UNIQUE} constraint on \texttt{provider\_intent\_id}, so two webhooks for the same Stripe intent cannot create two rows. On top of that, the handler short-circuits if the intent row is already in status \texttt{succeeded}: a webhook retry from Stripe finds the intent already marked as completed, returns immediately, and does not run the credit a second time. The combination is enough to make the webhook handler safe to retry, which Stripe relies on aggressively.
 
-After the credit is committed, the next time the bracelet meets a terminal the sync response carries a \texttt{chipShouldWrite} that reflects the new balance and the new \texttt{credit\_counter}. The terminal writes this back to the chip, and the chip's \texttt{credit\_counter\_seen} catches up to the server's \texttt{credit\_counter}. From that point on the chip and the server agree, and the bracelet is ready to be debited again, online or offline.
+After the credit is committed, the next online charge tap returns a \texttt{chipShouldWrite} that reflects the new balance and the new \texttt{credit\_counter}. The terminal writes this back to the chip, and the chip's \texttt{credit\_counter\_seen} catches up to the server's \texttt{credit\_counter}. From that point on the chip and the server agree, and the bracelet is ready to be debited again, online or offline.
 
 \section{Tests}
 \label{sec:impl-tests}

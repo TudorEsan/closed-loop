@@ -10,6 +10,7 @@ import { router, useLocalSearchParams } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
 
 import { extractErrorMessage } from "@/lib/api";
+import { APP_CURRENCY } from "@/lib/format";
 import { useTopUp } from "@/hooks";
 import { Button } from "heroui-native";
 
@@ -84,10 +85,10 @@ export default function TopUpScreen() {
   return (
     <View className="flex-1 ">
       <View className="flex-1 items-center justify-center px-6">
-        <View className="flex-row items-end gap-2 relative">
+        <View className="flex-row items-end gap-2">
           <AnimatedAmount value={displayAmount} />
-          <Text className="text-4xl font-bold text-foreground absolute bottom-0 -right-20">
-            RON
+          <Text className="text-4xl font-bold text-foreground">
+            {APP_CURRENCY}
           </Text>
         </View>
 
@@ -147,7 +148,7 @@ export default function TopUpScreen() {
                   : `${MIN_AMOUNT} minimum`}
               </Text>
               <Text className="text-xs font-semibold text-background opacity-80">
-                RON
+                {APP_CURRENCY}
               </Text>
             </View>
           )}
@@ -186,7 +187,7 @@ function SuccessOverlay({ amount }: { amount: string }) {
         className="mt-2 flex-row items-end gap-1"
       >
         <Text className="text-base text-muted">{amount}</Text>
-        <Text className="text-xs text-muted">RON</Text>
+        <Text className="text-xs text-muted">{APP_CURRENCY}</Text>
       </Animated.View>
     </Animated.View>
   );

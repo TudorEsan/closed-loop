@@ -58,23 +58,6 @@ import {
 
 const CURRENCIES = [
   { code: 'EUR', label: 'EUR - Euro', symbol: '€' },
-  { code: 'USD', label: 'USD - US Dollar', symbol: '$' },
-  { code: 'GBP', label: 'GBP - British Pound', symbol: '£' },
-  { code: 'RON', label: 'RON - Romanian Leu', symbol: 'lei' },
-  { code: 'CHF', label: 'CHF - Swiss Franc', symbol: 'Fr' },
-  { code: 'PLN', label: 'PLN - Polish Zloty', symbol: 'zł' },
-  { code: 'CZK', label: 'CZK - Czech Koruna', symbol: 'Kč' },
-  { code: 'HUF', label: 'HUF - Hungarian Forint', symbol: 'Ft' },
-  { code: 'SEK', label: 'SEK - Swedish Krona', symbol: 'kr' },
-  { code: 'NOK', label: 'NOK - Norwegian Krone', symbol: 'kr' },
-  { code: 'DKK', label: 'DKK - Danish Krone', symbol: 'kr' },
-  { code: 'BGN', label: 'BGN - Bulgarian Lev', symbol: 'лв' },
-  { code: 'HRK', label: 'HRK - Croatian Kuna', symbol: 'kn' },
-  { code: 'RSD', label: 'RSD - Serbian Dinar', symbol: 'din' },
-  { code: 'TRY', label: 'TRY - Turkish Lira', symbol: '₺' },
-  { code: 'CAD', label: 'CAD - Canadian Dollar', symbol: 'C$' },
-  { code: 'AUD', label: 'AUD - Australian Dollar', symbol: 'A$' },
-  { code: 'JPY', label: 'JPY - Japanese Yen', symbol: '¥' },
 ] as const;
 
 // ---------------------------------------------------------------------------

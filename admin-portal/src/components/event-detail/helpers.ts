@@ -90,20 +90,6 @@ export function useDebounce<T>(value: T, delay: number): T {
 
 export const CURRENCIES = [
   { code: 'EUR', label: 'EUR - Euro' },
-  { code: 'USD', label: 'USD - US Dollar' },
-  { code: 'GBP', label: 'GBP - British Pound' },
-  { code: 'RON', label: 'RON - Romanian Leu' },
-  { code: 'CHF', label: 'CHF - Swiss Franc' },
-  { code: 'PLN', label: 'PLN - Polish Zloty' },
-  { code: 'CZK', label: 'CZK - Czech Koruna' },
-  { code: 'HUF', label: 'HUF - Hungarian Forint' },
-  { code: 'SEK', label: 'SEK - Swedish Krona' },
-  { code: 'NOK', label: 'NOK - Norwegian Krone' },
-  { code: 'DKK', label: 'DKK - Danish Krone' },
-  { code: 'TRY', label: 'TRY - Turkish Lira' },
-  { code: 'CAD', label: 'CAD - Canadian Dollar' },
-  { code: 'AUD', label: 'AUD - Australian Dollar' },
-  { code: 'JPY', label: 'JPY - Japanese Yen' },
 ] as const;
 
 export type EditEventFormData = {

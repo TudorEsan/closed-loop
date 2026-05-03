@@ -1,6 +1,8 @@
 // Backend stores amounts in minor units (e.g. cents). The app shows them in
 // the major unit with one decimal symbol.
-export function formatMoney(minor: number, currency = 'EUR'): string {
+export const APP_CURRENCY = 'EUR';
+
+export function formatMoney(minor: number, currency = APP_CURRENCY): string {
   const major = minor / 100;
   try {
     return new Intl.NumberFormat('en-IE', {

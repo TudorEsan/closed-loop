@@ -11,7 +11,6 @@ import {
 import { AppState } from "react-native";
 
 import { useScope } from "@/hooks/use-scope";
-import type { ChipState } from "@/lib/chip";
 import type { SyncResponse } from "@/types/sync";
 
 import { getOnline, subscribeOnline } from "./network";
@@ -25,7 +24,6 @@ import {
   runAutoSyncForBracelet,
   runSyncForBracelet,
   uniquePendingBracelets,
-  type SyncDeps,
 } from "./sync-engine";
 import type { LocalDebit, QueueScope, SyncOutcome } from "./types";
 
@@ -43,7 +41,7 @@ export type QueueContextValue = {
   lastSyncError: string | null;
   appendDebit(debit: LocalDebit): Promise<void>;
   refresh(): Promise<void>;
-  syncBracelet(wristbandUid: string, deps: SyncDeps): Promise<SyncOutcome>;
+  syncBracelet(wristbandUid: string): Promise<SyncOutcome>;
   autoSyncAll(): Promise<void>;
   clearAll(): Promise<void>;
   removeRejected(): Promise<void>;
@@ -110,7 +108,7 @@ export function QueueProvider({ children }: { children: ReactNode }) {
   );
 
   const syncBracelet = useCallback(
-    async (wristbandUid: string, deps: SyncDeps): Promise<SyncOutcome> => {
+    async (wristbandUid: string): Promise<SyncOutcome> => {
       if (!queueScope) {
         return { ok: false, error: "No vendor scope active" };
       }
@@ -121,11 +119,7 @@ export function QueueProvider({ children }: { children: ReactNode }) {
       setIsSyncing(true);
       setLastSyncError(null);
       try {
-        const outcome = await runSyncForBracelet(
-          queueScope,
-          wristbandUid,
-          deps,
-        );
+        const outcome = await runSyncForBracelet(queueScope, wristbandUid);
         setLastSyncAt(new Date().toISOString());
         if (outcome.ok) {
           setLastSyncResponse(outcome.response);
@@ -227,6 +221,3 @@ export function useQueue(): QueueContextValue {
   if (!ctx) throw new Error("useQueue must be used inside QueueProvider");
   return ctx;
 }
-
-// Helper for callers that want to build a SyncDeps quickly from a hook.
-export type ChipWriter = (state: ChipState) => Promise<void>;

@@ -67,29 +67,29 @@ As long as these three hold, reconciliation reduces to taking the union of two n
 
 \textbf{Top-up.} Always online. The server checks the payment, increments \texttt{balance} and \texttt{credit\_counter}, writes a transaction row, and acknowledges. The chip is not touched and gets reconciled on the next tap.
 
-\textbf{Online debit.} The terminal reads the chip and forwards the request to the server with the chip's current \texttt{debit\_counter} and \texttt{credit\_counter\_seen}. The server applies any pending credits, validates the debit, and returns the new triple \texttt{(balance, debit\_counter, credit\_counter\_seen)}, which the terminal writes atomically to the chip.
+\textbf{Online debit.} The terminal reads the chip and forwards the request to the server with the chip's current \texttt{balance}, \texttt{debit\_counter}, and \texttt{credit\_counter\_seen}. If the chip's debit counter is ahead of the server, the server trusts the chip as evidence of offline spending that has not synced yet. It reconstructs the spendable balance from the chip state plus any server credits the chip has not seen, caps that value by the server balance, validates the new debit, advances \texttt{debit\_counter\_seen}, and returns the new triple \texttt{(balance, debit\_counter, credit\_counter\_seen)}, which the terminal writes atomically to the chip.
 
 \textbf{Offline debit.} The terminal reads the chip, checks the balance, and performs an atomic decrement on the chip. It generates an idempotency key and queues the transaction locally, draining the queue in the background as connectivity allows.
 
-\textbf{Sync.} When a terminal regains connectivity, it pushes queued transactions to the server in batches. The server applies them idempotently using the per-transaction key, updates \texttt{balance}, and advances \texttt{debit\_counter\_seen} to the highest counter value observed.
+\textbf{Sync.} When a terminal regains connectivity, it pushes queued transactions to the server in batches. The server applies new counters idempotently using the per-transaction key, updates \texttt{balance}, and advances \texttt{debit\_counter\_seen} to the highest counter value observed. If a queued debit arrives later for a counter that the server has already absorbed through an online chip-aware debit, the server still records the transaction row for vendor history and settlement, but does not subtract the amount again.
 
 \subsection{Worked example}
 \label{subsec:reconciliation-example}
 
-Consider a top-up and an offline debit happening at the same time. Starting state: chip \texttt{(balance=50, debit\_counter=0, credit\_counter\_seen=0)} and server \texttt{(balance=50, credit\_counter=0, debit\_counter\_seen=0)}.
+Consider a top-up, an offline debit, and then a later online purchase. Starting state: chip \texttt{(balance=50, debit\_counter=0, credit\_counter\_seen=0)} and server \texttt{(balance=50, credit\_counter=0, debit\_counter\_seen=0)}.
 
-The user pays 10 tokens at an offline terminal. The chip becomes \texttt{(40, 1, 0)} and the terminal queues a debit of 10. In parallel, a 20-token top-up goes through the server, which becomes \texttt{(70, 1, 0)}.
+The user pays 10 tokens at an offline terminal. The chip becomes \texttt{(40, 1, 0)} and the terminal queues a debit of 10 with counter 1. In parallel, a 20-token top-up goes through the server, which becomes \texttt{(70, 1, 0)}.
 
-The user then taps an online terminal. The terminal reads \texttt{(40, 1, 0)} and forwards it to the server. The server sees \texttt{credit\_counter=1 > credit\_counter\_seen=0}, applies the pending 20-token credit, and writes \texttt{(60, 1, 1)} to the chip.
+The user then pays another 5 tokens at an online terminal. The terminal reads \texttt{(40, 1, 0)} and forwards that chip state with the new debit request. The server sees that the chip is one debit ahead of \texttt{debit\_counter\_seen}, and that the chip has not yet seen credit counter 1. It therefore computes the spendable balance as \texttt{40 + 20 = 60}, capped by the server balance of 70. After the 5-token debit, the server stores \texttt{balance=55} and \texttt{debit\_counter\_seen=2}, and the terminal writes \texttt{(55, 2, 1)} to the chip.
 
-When the offline terminal eventually syncs the queued debit, the server applies it: balance goes from 70 to 60, and \texttt{debit\_counter\_seen} advances from 0 to 1. Both sides converge at \texttt{balance=60} with no conflict resolution because the two streams never collided.
+When the offline terminal eventually syncs the queued debit for counter 1, the server does not subtract 10 again, because the online debit already absorbed that missing chip-side spend into the aggregate balance. It inserts the late debit as a historical transaction row for reporting and settlement, marks it as already absorbed, and leaves the balance at 55. Both sides converge without blocking the online purchase on the background sync timing of another vendor device.
 
 \subsection{Lost transactions}
 \label{subsec:reconciliation-lost}
 
-The model does not magically prevent loss. If a terminal dies before draining its queue, the vendor served the customer and the chip subtracted the amount, but the server has no record. The gap is detectable: when \texttt{chip.debit\_counter} exceeds \texttt{debit\_counter\_seen} plus the count of pending queued transactions, the difference represents lost debits.
+The model does not magically prevent loss. If a terminal dies before draining its queue, the vendor served the customer and the chip subtracted the amount, but the server may initially have no itemized transaction row. The online debit path still trusts the chip's lower balance, so the attendee cannot spend the same tokens twice. The missing itemized debit remains detectable as a server transaction-history gap for a counter value below \texttt{debit\_counter\_seen}.
 
-The policy is to trust the chip's balance immediately, wait a configurable grace period for late syncs, and after that reconcile by writing the chip's balance to the server and logging the discrepancy. The festival absorbs the loss for those transactions; vendors with local receipts can claim manually. The exposure is bounded by the sync interval, an operational risk rather than a correctness bug.
+The policy is to trust the chip's balance immediately for authorization, wait a configurable grace period for late syncs to fill in itemized vendor history, and after that log the missing counter range as a discrepancy. The festival absorbs any settlement loss for transactions whose terminal queue never returns; vendors with local receipts can claim manually. The customer balance exposure is bounded because online payments use the chip state when it is ahead of the server.
 
 \section{Lessons from related systems and patterns}
 \label{sec:why-architecture}
@@ -99,7 +99,7 @@ The hybrid model borrows from three places: transit cards (Section~\ref{subsec:t
 \subsection{Offline operation}
 \label{subsec:offline-operation}
 
-During online operation, vendor terminals send each transaction to the server right after it is recorded locally. When the network goes down, the wristband interaction does not change at all. Transactions accumulate in the local queue on the vendor device instead of being sent immediately. Once connectivity returns, the device pushes its queued transactions in a batch. The full convergence mechanics are covered in Section~\ref{sec:reconciliation}.
+During online operation, vendor terminals send each payment request to the server together with the chip state read from the wristband. When the network goes down, the wristband interaction still succeeds locally: the terminal debits the chip and queues the transaction on the vendor device. Once connectivity returns, the device pushes its queued transactions in a background batch. The full convergence mechanics are covered in Section~\ref{sec:reconciliation}.
 
 \subsection{Top-ups: the one thing that needs the network}
 \label{subsec:topups}
@@ -121,7 +121,7 @@ Attendees see a simple screen showing their token balance, a transaction history
 \subsection{Vendor POS mode}
 \label{subsec:vendor-pos}
 
-When an admin has whitelisted a device, the app switches to POS mode on that device. The vendor enters the amount, the customer taps their wristband, the app reads the balance, checks it, deducts the amount, writes the new balance back, and logs the transaction. If online, the transaction is sent to the server immediately; otherwise it goes into the local queue.
+When an admin has whitelisted a device, the app switches to POS mode on that device. The vendor enters the amount and the customer taps their wristband. If online, the app reads the chip state, sends it to the server with the amount, and writes the server's returned state back to the chip. If offline, the app checks the chip balance locally, deducts the amount, increments the chip debit counter, writes the new state back, and stores the debit in the local queue for background sync.
 
 To become a vendor, the business provides basic information (business name, contact, products). The admin reviews and approves the application, then whitelists specific devices (by device ID) as POS terminals. This whitelisting matters because not just any phone can start accepting payments.
 

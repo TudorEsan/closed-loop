@@ -17,7 +17,6 @@ export type PendingDebitWire = {
 };
 
 export type SyncRequest = {
-  chipState: ChipStateWire;
   pendingDebits: PendingDebitWire[];
 };
 

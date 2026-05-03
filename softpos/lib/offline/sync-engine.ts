@@ -1,20 +1,13 @@
 import { extractErrorMessage } from "../api";
 import { reconciliationApi } from "../api/reconciliation";
-import type { ChipState } from "../chip";
-import type { ChipStateWire, SyncResponse } from "@/types/sync";
+import type { SyncResponse } from "@/types/sync";
 
 import { applyServerOutcome, listDebits } from "./queue-store";
 import type { LocalDebit, QueueScope, SyncOutcome } from "./types";
 
 export type AutoSyncOutcome =
   | { ok: true; wristbandUid: string; response: SyncResponse }
-  | { ok: false; wristbandUid: string; error: string }
-  | { ok: false; wristbandUid: string; skipped: "no-chip-snapshot" };
-
-export type SyncDeps = {
-  chipState: ChipState;
-  writeChipBack(state: ChipState): Promise<void>;
-};
+  | { ok: false; wristbandUid: string; error: string };
 
 export async function pendingForBracelet(
   scope: QueueScope,
@@ -29,7 +22,6 @@ export async function pendingForBracelet(
 export async function runSyncForBracelet(
   scope: QueueScope,
   wristbandUid: string,
-  deps: SyncDeps,
 ): Promise<SyncOutcome> {
   const pending = await pendingForBracelet(scope, wristbandUid);
   const sortedWire = [...pending]
@@ -39,7 +31,6 @@ export async function runSyncForBracelet(
   let response: SyncResponse;
   try {
     response = await reconciliationApi.sync(scope.eventId, wristbandUid, {
-      chipState: toWire(deps.chipState),
       pendingDebits: sortedWire,
     });
   } catch (e) {
@@ -47,48 +38,18 @@ export async function runSyncForBracelet(
   }
 
   await applyServerOutcome(scope, response.applied, response.rejected);
-
-  try {
-    await deps.writeChipBack({
-      balance: response.chipShouldWrite.balance,
-      debitCounter: response.serverState.debit_counter_seen,
-      creditCounterSeen: response.chipShouldWrite.credit_counter,
-    });
-  } catch (e) {
-    return {
-      ok: false,
-      error: `Server applied debits but chip write failed: ${extractErrorMessage(e)}`,
-    };
-  }
-
   return { ok: true, response };
 }
 
-function toWire(state: ChipState): ChipStateWire {
-  return {
-    balance: state.balance,
-    debit_counter: state.debitCounter,
-    credit_counter_seen: state.creditCounterSeen,
-  };
-}
-
-// Auto-sync without NFC. Uses the snapshot stored alongside the latest
-// pending debit (the chip state we wrote at debit time). The chip itself
-// is not rewritten here; reconciliation happens on the next charge tap
-// (online charge already writes chipShouldWrite back to the chip).
+// Auto-sync without NFC. The chip itself is not rewritten here;
+// reconciliation happens on the next online charge tap.
 export async function runAutoSyncForBracelet(
   scope: QueueScope,
   wristbandUid: string,
 ): Promise<AutoSyncOutcome> {
   const pending = await pendingForBracelet(scope, wristbandUid);
   if (pending.length === 0) {
-    return { ok: false, wristbandUid, skipped: "no-chip-snapshot" };
-  }
-  const latest = pending.reduce((a, b) =>
-    a.wire.counterValue >= b.wire.counterValue ? a : b,
-  );
-  if (!latest.chipStateAfter) {
-    return { ok: false, wristbandUid, skipped: "no-chip-snapshot" };
+    return { ok: false, wristbandUid, error: "Nothing pending to sync" };
   }
   const sortedWire = [...pending]
     .sort((a, b) => a.wire.counterValue - b.wire.counterValue)
@@ -97,7 +58,6 @@ export async function runAutoSyncForBracelet(
   let response: SyncResponse;
   try {
     response = await reconciliationApi.sync(scope.eventId, wristbandUid, {
-      chipState: latest.chipStateAfter,
       pendingDebits: sortedWire,
     });
   } catch (e) {

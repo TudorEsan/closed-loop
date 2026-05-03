@@ -25,10 +25,10 @@ import {
 } from "@/components/ui";
 import {
   ProfileButton,
-  ScopeBadge,
   ScopeChip,
 } from "@/components/scope/scope-chip";
 import { theme } from "@/lib/theme";
+import { formatMoney } from "@/lib/format";
 import type { Transaction, VendorMembership } from "@/types/api";
 import { useAuth } from "@/hooks";
 
@@ -36,7 +36,6 @@ const HERO_IMAGE = require("@/assets/background.png");
 
 export function VendorHome({ vendor }: { vendor: VendorMembership }) {
   const mutedColor = useThemeColor("muted");
-  const accentColor = useThemeColor("accent");
   const insets = useSafeAreaInsets();
   const auth = useAuth();
   const txQuery = useQuery({
@@ -254,13 +253,7 @@ function filterToday(items: Transaction[]): Transaction[] {
 }
 
 function formatBalance(minor: number): string {
-  const major = minor / 100;
-  const hasDecimals = Math.round(major * 100) % 100 !== 0;
-  const formatted = new Intl.NumberFormat("en-GB", {
-    minimumFractionDigits: hasDecimals ? 2 : 0,
-    maximumFractionDigits: 2,
-  }).format(major);
-  return `${formatted} RON`;
+  return formatMoney(minor);
 }
 
 function formatStatus(status: string): string {

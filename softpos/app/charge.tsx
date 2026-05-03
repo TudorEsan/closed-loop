@@ -143,11 +143,6 @@ export default function ChargeScreen() {
         enqueuedAt: new Date().toISOString(),
         wristbandUid: res.uid,
         status: "pending",
-        chipStateAfter: {
-          balance: res.next.balance,
-          debit_counter: res.next.debitCounter,
-          credit_counter_seen: res.next.creditCounterSeen,
-        },
       });
     } catch (e) {
       setError(extractErrorMessage(e));

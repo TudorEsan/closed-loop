@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.26 (TeX Live 2024) (preloaded format=pdflatex 2024.3.24)  28 APR 2026 09:55
+This is pdfTeX, Version 3.141592653-2.6-1.40.26 (TeX Live 2024) (preloaded format=pdflatex 2024.3.24)  2 MAY 2026 15:13
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -554,21 +554,9 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 (fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
 
 [14]
-Overfull \hbox (13.99648pt too wide) in paragraph at lines 70--71
-\OT1/pcr/m/n/12 (balance, debit[]counter, credit[]counter[]seen)\OT1/ppl/m/n/12
- , which the ter-mi-nal writes
- []
-
-
 Overfull \hbox (7.7573pt too wide) in paragraph at lines 79--80
 \OT1/ppl/m/n/12 chip \OT1/pcr/m/n/12 (balance=50, debit[]counter=0, credit[]cou
 nter[]seen=0) \OT1/ppl/m/n/12 and server
- []
-
-
-Overfull \hbox (37.8041pt too wide) in paragraph at lines 83--84
-\OT1/ppl/m/n/12 wards it to the server. The server sees \OT1/pcr/m/n/12 credit[
-]counter=1 > credit[]counter[]seen=0\OT1/ppl/m/n/12 ,
  []
 
 
@@ -603,7 +591,6 @@ Overfull \hbox (70.24889pt too wide) in paragraph at lines 142--143
 man-age-ment, and sync/reconciliation),
  []
 
-)
 
 Package fancyhdr Warning: \headheight is too small (12.0pt): 
 (fancyhdr)                Make it at least 14.49998pt, for example:
@@ -612,7 +599,7 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 
 (fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
 
-[18] (./chapters/chapter5_implementation.tex
+[18]) (./chapters/chapter5_implementation.tex
 
 Package fancyhdr Warning: \headheight is too small (12.0pt): 
 (fancyhdr)                Make it at least 14.49998pt, for example:
@@ -698,7 +685,7 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 (fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
 
 [23]
-Overfull \hbox (15.68327pt too wide) in paragraph at lines 118--119
+Overfull \hbox (15.68327pt too wide) in paragraph at lines 113--114
 []\OT1/ppl/m/n/12 The ter-mi-nal does not send the chip's HMAC, be-cause by the
  time \OT1/pcr/m/n/12 pendingDebits
  []
@@ -712,27 +699,27 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 (fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
 
 [24]
-Overfull \hbox (26.98207pt too wide) in paragraph at lines 140--140
+Overfull \hbox (26.98207pt too wide) in paragraph at lines 137--137
 []\OT1/pcr/m/n/12 4. Read the current bracelet.balance and bracelet.credit_coun
 ter.[] 
  []
 
 
-Overfull \hbox (5.38208pt too wide) in paragraph at lines 140--140
+Overfull \hbox (5.38208pt too wide) in paragraph at lines 137--137
 []\OT1/pcr/m/n/12 7. Return serverState, applied, rejected, and chipShouldWrite
 .[] 
  []
 
 
-Overfull \hbox (23.459pt too wide) in paragraph at lines 142--143
+Overfull \hbox (23.459pt too wide) in paragraph at lines 139--140
 []\OT1/ppl/m/n/12 The two re-jec-tion rea-sons cover the cases the ser-vice pro
 -duces to-day. The \OT1/pcr/m/n/12 duplicate
  []
 
 
-Overfull \hbox (38.71527pt too wide) in paragraph at lines 142--143
-\OT1/ppl/m/n/12 same counter (the \OT1/pcr/m/n/12 counter[]value \OT1/ppl/m/n/1
-2 check at step 3b catches it). The \OT1/pcr/m/n/12 insufficient[]funds
+Overfull \hbox (26.98207pt too wide) in paragraph at lines 154--154
+[]\OT1/pcr/m/n/12 hmac                 bytes(16)  HMAC-SHA256 truncated to 128 
+bits[] 
  []
 
 
@@ -744,19 +731,13 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 (fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
 
 [25]
-Overfull \hbox (26.98207pt too wide) in paragraph at lines 157--157
-[]\OT1/pcr/m/n/12 hmac                 bytes(16)  HMAC-SHA256 truncated to 128 
-bits[] 
- []
-
-
-Overfull \hbox (19.78207pt too wide) in paragraph at lines 165--165
+Overfull \hbox (19.78207pt too wide) in paragraph at lines 162--162
 []\OT1/pcr/m/n/12 key = HKDF(masterKey, salt = wristbandUid, info = "bracelet-v
 1")[] 
  []
 
 
-Overfull \hbox (36.99825pt too wide) in paragraph at lines 167--168
+Overfull \hbox (36.99825pt too wide) in paragraph at lines 164--165
 \OT1/ppl/m/n/12 can-not be spoofed by sim-ply rewrit-ing the user mem-ory. The 
 \OT1/pcr/m/n/12 info \OT1/ppl/m/n/12 string \OT1/pcr/m/n/12 "bracelet-v1"
  []
@@ -779,7 +760,7 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 (fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
 
 [27]
-Overfull \hbox (33.99524pt too wide) in paragraph at lines 205--206
+Overfull \hbox (33.99524pt too wide) in paragraph at lines 202--203
 []\OT1/ppl/m/n/12 Once the sig-na-ture is valid, the han-dler looks up the cor-
 re-spond-ing \OT1/pcr/m/n/12 payment[]intents
  []
@@ -792,8 +773,26 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 
 (fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
 
-[28])
-Overfull \hbox (63.38702pt too wide) in paragraph at lines 214--58
+[28]
+Overfull \hbox (25.21104pt too wide) in paragraph at lines 206--207
+[]\OT1/ppl/m/n/12 After the credit is com-mit-ted, the next on-line charge tap 
+re-turns a \OT1/pcr/m/n/12 chipShouldWrite
+ []
+
+
+Overfull \hbox (7.53839pt too wide) in paragraph at lines 206--207
+\OT1/ppl/m/n/12 this back to the chip, and the chip's \OT1/pcr/m/n/12 credit[]c
+ounter[]seen \OT1/ppl/m/n/12 catches up to the server's
+ []
+
+
+Overfull \hbox (1.44255pt too wide) in paragraph at lines 206--207
+\OT1/pcr/m/n/12 credit[]counter\OT1/ppl/m/n/12 . From that point on the chip an
+d the server agree, and the bracelet
+ []
+
+)
+Overfull \hbox (63.38702pt too wide) in paragraph at lines 211--58
 \OT1/ppl/m/n/12 dur-ing a ses-sion, against the same kind of con-tainer-ised da
 tabase. \OT1/pcr/m/n/12 bracelet-token.spec.ts
  []
@@ -1047,7 +1046,7 @@ texlive/2024/texmf-dist/fonts/type1/urw/palatino/uplb8a.pfb></usr/local/texlive
 /2024/texmf-dist/fonts/type1/urw/palatino/uplr8a.pfb></usr/local/texlive/2024/t
 exmf-dist/fonts/type1/urw/palatino/uplr8a.pfb></usr/local/texlive/2024/texmf-di
 st/fonts/type1/urw/palatino/uplri8a.pfb>
-Output written on main.pdf (54 pages, 491156 bytes).
+Output written on main.pdf (54 pages, 491829 bytes).
 PDF statistics:
  923 PDF objects out of 1000 (max. 8388607)
  840 compressed objects within 9 object streams

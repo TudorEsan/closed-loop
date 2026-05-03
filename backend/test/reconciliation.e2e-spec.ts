@@ -201,11 +201,6 @@ describeIfDocker('/API reconciliation', () => {
           `/api/v1/events/${event.id}/wristbands/${bracelet.wristbandUid}/sync`,
         )
         .send({
-          chipState: {
-            balance: 10000,
-            debit_counter: 2,
-            credit_counter_seen: 0,
-          },
           pendingDebits: debits,
         });
 
@@ -256,11 +251,6 @@ describeIfDocker('/API reconciliation', () => {
           `/api/v1/events/${event.id}/wristbands/${bracelet.wristbandUid}/sync`,
         )
         .send({
-          chipState: {
-            balance: 5000,
-            debit_counter: 1,
-            credit_counter_seen: 0,
-          },
           pendingDebits: [debit],
         });
       expect(first.status).toBe(201);
@@ -271,11 +261,6 @@ describeIfDocker('/API reconciliation', () => {
           `/api/v1/events/${event.id}/wristbands/${bracelet.wristbandUid}/sync`,
         )
         .send({
-          chipState: {
-            balance: 4000,
-            debit_counter: 1,
-            credit_counter_seen: 0,
-          },
           pendingDebits: [debit],
         });
       expect(second.status).toBe(201);
@@ -286,7 +271,7 @@ describeIfDocker('/API reconciliation', () => {
       expect(second.body.serverState.balance).toBe(4000);
     });
 
-    it('counter gap (counterValue <= debit_counter_seen) is rejected as duplicate', async () => {
+    it('late counter is recorded as historical without mutating balance', async () => {
       const admin = await seedUser(testDb, { role: 'super_admin' });
       const attendee = await seedUser(testDb);
       const event = await seedEvent(testDb, admin.id);
@@ -319,17 +304,12 @@ describeIfDocker('/API reconciliation', () => {
           `/api/v1/events/${event.id}/wristbands/${bracelet.wristbandUid}/sync`,
         )
         .send({
-          chipState: {
-            balance: 5000,
-            debit_counter: 3,
-            credit_counter_seen: 0,
-          },
           pendingDebits: [debit],
         });
 
       expect(response.status).toBe(201);
-      expect(response.body.applied).toEqual([]);
-      expect(response.body.rejected[0].reason).toBe('duplicate');
+      expect(response.body.applied).toEqual([debit.idempotencyKey]);
+      expect(response.body.rejected).toEqual([]);
       expect(response.body.serverState.balance).toBe(5000);
     });
 
@@ -371,11 +351,6 @@ describeIfDocker('/API reconciliation', () => {
           `/api/v1/events/${event.id}/wristbands/${bracelet.wristbandUid}/sync`,
         )
         .send({
-          chipState: {
-            balance: 2000,
-            debit_counter: 2,
-            credit_counter_seen: 0,
-          },
           pendingDebits: debits,
         });
 
@@ -439,11 +414,6 @@ describeIfDocker('/API reconciliation', () => {
           `/api/v1/events/${event.id}/wristbands/${bracelet.wristbandUid}/sync`,
         )
         .send({
-          chipState: {
-            balance: 10000,
-            debit_counter: 3,
-            credit_counter_seen: 0,
-          },
           pendingDebits: debits,
         });
 
@@ -463,7 +433,6 @@ describeIfDocker('/API reconciliation', () => {
           `/api/v1/events/${event.id}/wristbands/${fakeWristbandUid()}/sync`,
         )
         .send({
-          chipState: { balance: 0, debit_counter: 0, credit_counter_seen: 0 },
           pendingDebits: [],
         });
 
@@ -620,11 +589,6 @@ describeIfDocker('/API reconciliation', () => {
           `/api/v1/events/${event.id}/wristbands/${bracelet.wristbandUid}/sync`,
         )
         .send({
-          chipState: {
-            balance: 5000,
-            debit_counter: 2,
-            credit_counter_seen: 0,
-          },
           pendingDebits: [pendingDebit],
         });
 

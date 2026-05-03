@@ -1,7 +1,6 @@
 import type { ReactNode } from 'react';
 import {
   ImageBackground,
-  Pressable,
   RefreshControl,
   Text,
   View,
@@ -30,6 +29,7 @@ import {
   useRecentTransactions,
 } from '@/hooks';
 import { useAuthContext } from '@/lib/auth-context';
+import { formatMoney } from '@/lib/format';
 import type { Transaction } from '@/types/api';
 import type { MyBraceletRow } from '@/lib/api/bracelets';
 
@@ -155,12 +155,6 @@ export function AttendeeHome() {
             <Text className="text-xl font-semibold text-foreground">
               Recent activity
             </Text>
-            <Pressable
-              onPress={() => router.push('/transactions')}
-              hitSlop={6}
-            >
-              <Text className="text-sm font-medium">View all</Text>
-            </Pressable>
           </View>
 
           {txQuery.isLoading ? (
@@ -242,11 +236,7 @@ function iconStyleFor(tx: Transaction): IconStyle {
   if (tx.type === 'credit') {
     return { bg: '#dcfce7', fg: '#15803d', icon: 'add' };
   }
-  const meta = tx.metadata as { vendorName?: string } | null;
-  const seed = (meta?.vendorName ?? tx.id).charCodeAt(0) % 2;
-  return seed === 0
-    ? { bg: '#16a34a', fg: '#ffffff', icon: 'beer-outline' }
-    : { bg: '#7c3aed', fg: '#ffffff', icon: 'bag-handle-outline' };
+  return { bg: '#16a34a', fg: '#ffffff', icon: 'beer-outline' }
 }
 
 function AttendeeTxRow({ tx }: { tx: Transaction }) {
@@ -279,13 +269,7 @@ function activitySubtitle(tx: Transaction): string {
 }
 
 function formatBalance(minor: number): string {
-  const major = minor / 100;
-  const hasDecimals = Math.round(major * 100) % 100 !== 0;
-  const formatted = new Intl.NumberFormat('en-GB', {
-    minimumFractionDigits: hasDecimals ? 2 : 0,
-    maximumFractionDigits: 2,
-  }).format(major);
-  return `${formatted} RON`;
+  return formatMoney(minor);
 }
 
 function formatTimestamp(iso: string): string {

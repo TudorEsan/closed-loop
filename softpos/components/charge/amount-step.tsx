@@ -7,6 +7,7 @@ import Animated, {
 import { Ionicons } from "@expo/vector-icons";
 import { Button } from "heroui-native";
 
+import { APP_CURRENCY } from "@/lib/format";
 import { formatAmount, formatWithCommas } from "./format";
 import { MIN_AMOUNT } from "./types";
 
@@ -31,10 +32,10 @@ export function AmountStep({
   return (
     <View className="flex-1">
       <View className="flex-1 items-center justify-center px-6">
-        <View className="flex-row items-end gap-2 relative">
+        <View className="flex-row items-end gap-2">
           <AnimatedAmount value={display} />
-          <Text className="text-3xl font-bold text-foreground absolute bottom-0 -right-16">
-            RON
+          <Text className="text-3xl font-bold text-foreground">
+            {APP_CURRENCY}
           </Text>
         </View>
         {error ? (
@@ -84,7 +85,7 @@ export function AmountStep({
                 : `${MIN_AMOUNT} minimum`}
             </Text>
             <Text className="text-xs font-semibold text-background opacity-80">
-              RON
+              {APP_CURRENCY}
             </Text>
           </View>
         </Button>

@@ -25,18 +25,18 @@
 \contentsline {subsection}{\numberline {3.2.2}Invariants}{14}{subsection.3.2.2}%
 \contentsline {subsection}{\numberline {3.2.3}The four operations}{15}{subsection.3.2.3}%
 \contentsline {subsection}{\numberline {3.2.4}Worked example}{15}{subsection.3.2.4}%
-\contentsline {subsection}{\numberline {3.2.5}Lost transactions}{15}{subsection.3.2.5}%
+\contentsline {subsection}{\numberline {3.2.5}Lost transactions}{16}{subsection.3.2.5}%
 \contentsline {section}{\numberline {3.3}Lessons from related systems and patterns}{16}{section.3.3}%
-\contentsline {subsection}{\numberline {3.3.1}Offline operation}{16}{subsection.3.3.1}%
-\contentsline {subsection}{\numberline {3.3.2}Top-ups: the one thing that needs the network}{16}{subsection.3.3.2}%
+\contentsline {subsection}{\numberline {3.3.1}Offline operation}{17}{subsection.3.3.1}%
+\contentsline {subsection}{\numberline {3.3.2}Top-ups: the one thing that needs the network}{17}{subsection.3.3.2}%
 \contentsline {section}{\numberline {3.4}The mobile application}{17}{section.3.4}%
 \contentsline {subsection}{\numberline {3.4.1}Attendee view}{17}{subsection.3.4.1}%
 \contentsline {subsection}{\numberline {3.4.2}Vendor POS mode}{17}{subsection.3.4.2}%
-\contentsline {section}{\numberline {3.5}Admin dashboard}{17}{section.3.5}%
+\contentsline {section}{\numberline {3.5}Admin dashboard}{18}{section.3.5}%
 \contentsline {section}{\numberline {3.6}Backend server}{18}{section.3.6}%
 \contentsline {subsection}{\numberline {3.6.1}Multi-tenancy}{18}{subsection.3.6.1}%
-\contentsline {subsection}{\numberline {3.6.2}Horizontal scalability}{18}{subsection.3.6.2}%
-\contentsline {section}{\numberline {3.7}Database}{18}{section.3.7}%
+\contentsline {subsection}{\numberline {3.6.2}Horizontal scalability}{19}{subsection.3.6.2}%
+\contentsline {section}{\numberline {3.7}Database}{19}{section.3.7}%
 \contentsline {chapter}{\numberline {4}Implementation}{20}{chapter.4}%
 \contentsline {section}{\numberline {4.1}Implementation overview}{20}{section.4.1}%
 \contentsline {subsection}{\numberline {4.1.1}Project layout and libraries}{20}{subsection.4.1.1}%

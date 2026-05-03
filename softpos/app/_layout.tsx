@@ -20,7 +20,6 @@ import { queryClient } from "@/lib/query";
 import { theme } from "@/lib/theme";
 import { config } from "@/lib/config";
 import { applyDMSansAsDefault, dmSansFontMap } from "@/lib/fonts";
-import { SymbolView } from "expo-symbols";
 import { Ionicons } from "@expo/vector-icons";
 
 applyDMSansAsDefault();
@@ -87,10 +86,6 @@ export default function RootLayout() {
                           </Pressable>
                         ),
                       }}
-                    />
-                    <Stack.Screen
-                      name="transactions"
-                      options={{ headerShown: true, title: "Transactions" }}
                     />
                     <Stack.Screen name="select-scope" />
                     <Stack.Screen name="charge" />

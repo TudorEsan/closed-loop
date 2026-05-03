@@ -5,9 +5,9 @@ import { Ionicons } from "@expo/vector-icons";
 
 import { Screen } from "@/components/ui";
 import { useNfc } from "@/hooks/use-nfc";
+import { formatMoney } from "@/lib/format";
 import { useQueue } from "@/lib/offline";
 import type { LocalDebit } from "@/lib/offline";
-import type { ChipState } from "@/lib/chip";
 import type { RejectReason, SyncResponse } from "@/types/sync";
 
 export default function SyncDebugScreen() {
@@ -42,49 +42,7 @@ export default function SyncDebugScreen() {
       setActionError("Nothing pending to sync");
       return;
     }
-    const hasSnapshot = queue.debits.some(
-      (d) => d.status === "pending" && d.chipStateAfter,
-    );
-    if (!hasSnapshot) {
-      setActionError(
-        "Pending debits are missing chip snapshots (legacy queue). Clear the queue and re-create them.",
-      );
-      return;
-    }
     await queue.autoSyncAll();
-  }
-
-  async function handleSyncWithChip() {
-    setActionError(null);
-    setDiagnostic(null);
-    if (!queue.scope) {
-      setActionError("Pick a vendor scope first");
-      return;
-    }
-    if (!queue.isOnline) {
-      setActionError("Cannot sync while offline");
-      return;
-    }
-    const read = await nfc.readBracelet();
-    if (read.kind === "canceled") return;
-    if (read.kind === "error") {
-      setActionError(read.error);
-      return;
-    }
-    if (read.kind === "blank") {
-      setActionError(`Bracelet not initialized (${read.reason})`);
-      return;
-    }
-    const writeChipBack = async (state: ChipState) => {
-      const r = await nfc.writeChipState(read.uid, state);
-      if (r.kind === "error") throw new Error(r.error);
-      if (r.kind === "canceled") throw new Error("Chip write canceled");
-    };
-    const outcome = await queue.syncBracelet(read.uid, {
-      chipState: read.chipState,
-      writeChipBack,
-    });
-    if (!outcome.ok) setActionError(outcome.error);
   }
 
   async function handleReadChip() {
@@ -102,7 +60,7 @@ export default function SyncDebugScreen() {
     }
     setDiagnostic(
       `UID ${read.uid}\n` +
-        `Balance ${formatCents(read.chipState.balance)} RON\n` +
+        `Balance ${formatMoney(read.chipState.balance)}\n` +
         `Debit counter ${read.chipState.debitCounter}\n` +
         `Credit counter seen ${read.chipState.creditCounterSeen}`,
     );
@@ -194,14 +152,6 @@ export default function SyncDebugScreen() {
               !queue.scope || !queue.isOnline || queue.isSyncing || pendingCount === 0
             }
             onPress={handleSyncNow}
-          />
-          <ActionButton
-            label="Sync with chip tap"
-            tone="surface"
-            disabled={
-              !queue.scope || !queue.isOnline || queue.isSyncing || nfc.isBusy
-            }
-            onPress={handleSyncWithChip}
           />
           <ActionButton
             label="Read chip"
@@ -436,7 +386,7 @@ function DebitRow({ debit }: { debit: LocalDebit }) {
     <View className="flex-row items-center justify-between py-2 px-1">
       <View className="flex-1">
         <Text className="text-sm font-medium text-foreground">
-          {formatCents(debit.wire.amount)} RON
+          {formatMoney(debit.wire.amount)}
         </Text>
         <Text className="text-xs text-muted">
           counter #{debit.wire.counterValue} - {relativeTime(debit.enqueuedAt)}
@@ -459,7 +409,7 @@ function SyncResponseSummary({ response }: { response: SyncResponse }) {
     <View className="gap-2">
       <KV
         label="Server balance"
-        value={`${formatCents(response.serverState.balance)} RON`}
+        value={formatMoney(response.serverState.balance)}
       />
       <KV
         label="Debit counter seen"
@@ -506,12 +456,6 @@ function groupByWristband(
     map[d.wristbandUid].push(d);
   }
   return map;
-}
-
-function formatCents(cents: number): string {
-  const value = cents / 100;
-  if (Number.isInteger(value)) return value.toString();
-  return value.toFixed(2);
 }
 
 function relativeTime(iso: string): string {

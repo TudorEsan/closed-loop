@@ -35,6 +35,8 @@ const VALID_TRANSITIONS: Record<string, string[]> = {
   closed: [],
 };
 
+const EVENT_CURRENCY = 'EUR';
+
 @Injectable()
 export class EventsService {
   constructor(
@@ -52,7 +54,7 @@ export class EventsService {
         slug,
         description: dto.description,
         organizerId: userId,
-        currency: dto.currency ?? 'EUR',
+        currency: EVENT_CURRENCY,
         tokenCurrencyRate: String(dto.tokenCurrencyRate),
         startDate: dto.startDate,
         endDate: dto.endDate,
@@ -173,7 +175,7 @@ export class EventsService {
     const updateData: Record<string, unknown> = { updatedAt: new Date() };
     if (dto.name !== undefined) updateData.name = dto.name;
     if (dto.description !== undefined) updateData.description = dto.description;
-    if (dto.currency !== undefined) updateData.currency = dto.currency;
+    if (dto.currency !== undefined) updateData.currency = EVENT_CURRENCY;
     if (dto.tokenCurrencyRate !== undefined)
       updateData.tokenCurrencyRate = String(dto.tokenCurrencyRate);
     if (dto.startDate !== undefined) updateData.startDate = dto.startDate;
