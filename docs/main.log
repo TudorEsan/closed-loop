@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.141592653-2.6-1.40.26 (TeX Live 2024) (preloaded format=pdflatex 2024.3.24)  11 JUN 2026 16:22
+This is pdfTeX, Version 3.141592653-2.6-1.40.26 (TeX Live 2024) (preloaded format=pdflatex 2024.3.24)  11 JUN 2026 16:35
 entering extended mode
  restricted \write18 enabled.
  %&-line parsing enabled.
@@ -445,11 +445,6 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 (fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
 
 [3]
-Overfull \hbox (3.22641pt too wide) in paragraph at lines 39--40
-[]\OT1/ppl/b/n/12 O1: \OT1/ppl/m/n/12 De-sign a pay-ment ar-chi-tec-ture that k
-eeps a closed-loop wal-let us-able through
- []
-
 
 Package fancyhdr Warning: \headheight is too small (12.0pt): 
 (fancyhdr)                Make it at least 14.49998pt, for example:
@@ -458,7 +453,13 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 
 (fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
 
-[4]) (./chapters/chapter2.tex
+[4]
+Overfull \hbox (3.22641pt too wide) in paragraph at lines 39--40
+[]\OT1/ppl/b/n/12 O1: \OT1/ppl/m/n/12 De-sign a pay-ment ar-chi-tec-ture that k
+eeps a closed-loop wal-let us-able through
+ []
+
+) (./chapters/chapter2.tex
 
 Package fancyhdr Warning: \headheight is too small (12.0pt): 
 (fancyhdr)                Make it at least 14.49998pt, for example:
@@ -563,11 +564,6 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 (fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
 
 [14]
-Overfull \hbox (7.7573pt too wide) in paragraph at lines 79--80
-\OT1/ppl/m/n/12 chip \OT1/pcr/m/n/12 (balance=50, debit[]counter=0, credit[]cou
-nter[]seen=0) \OT1/ppl/m/n/12 and server
- []
-
 
 Package fancyhdr Warning: \headheight is too small (12.0pt): 
 (fancyhdr)                Make it at least 14.49998pt, for example:
@@ -595,33 +591,22 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 (fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
 
 [17]
-<figures/atendee_view.png, id=663, 1174.3875pt x 2541.495pt>
+<figures/atendee_view.png, id=665, 1174.3875pt x 2541.495pt>
 File: figures/atendee_view.png Graphic file (type png)
 <use figures/atendee_view.png>
 Package pdftex.def Info: figures/atendee_view.png  used on input line 132.
 (pdftex.def)             Requested size: 136.71442pt x 295.85294pt.
-<figures/vendor_view.png, id=664, 1174.3875pt x 2541.495pt>
+<figures/vendor_view.png, id=666, 1174.3875pt x 2541.495pt>
 File: figures/vendor_view.png Graphic file (type png)
 <use figures/vendor_view.png>
 Package pdftex.def Info: figures/vendor_view.png  used on input line 137.
 (pdftex.def)             Requested size: 136.71442pt x 295.85294pt.
-<figures/admin_view.png, id=665, 1174.3875pt x 2541.495pt>
+<figures/admin_view.png, id=667, 1174.3875pt x 2541.495pt>
 File: figures/admin_view.png Graphic file (type png)
 <use figures/admin_view.png>
 Package pdftex.def Info: figures/admin_view.png  used on input line 142.
 (pdftex.def)             Requested size: 136.71442pt x 295.85294pt.
-
-
-Package fancyhdr Warning: \headheight is too small (12.0pt): 
-(fancyhdr)                Make it at least 14.49998pt, for example:
-(fancyhdr)                \setlength{\headheight}{14.49998pt}.
-(fancyhdr)                You might also make \topmargin smaller to compensate:
-
-(fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
-
-[18 <./figures/atendee_view.png> <./figures/vendor_view.png> <./figures/admin_v
-iew.png>]
-<figures/admin_portal.png, id=675, 1604.99625pt x 1009.7725pt>
+<figures/admin_portal.png, id=668, 1604.99625pt x 1009.7725pt>
 File: figures/admin_portal.png Graphic file (type png)
 <use figures/admin_portal.png>
 Package pdftex.def Info: figures/admin_portal.png  used on input line 161.
@@ -640,7 +625,7 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 
 (fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
 
-[19 <./figures/admin_portal.png>]) (./chapters/chapter5_implementation.tex
+[18]
 
 Package fancyhdr Warning: \headheight is too small (12.0pt): 
 (fancyhdr)                Make it at least 14.49998pt, for example:
@@ -649,7 +634,26 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 
 (fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
 
-[20]
+[19 <./figures/atendee_view.png> <./figures/vendor_view.png> <./figures/admin_v
+iew.png>])
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 14.49998pt, for example:
+(fancyhdr)                \setlength{\headheight}{14.49998pt}.
+(fancyhdr)                You might also make \topmargin smaller to compensate:
+
+(fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
+
+[20 <./figures/admin_portal.png>] (./chapters/chapter5_implementation.tex
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 14.49998pt, for example:
+(fancyhdr)                \setlength{\headheight}{14.49998pt}.
+(fancyhdr)                You might also make \topmargin smaller to compensate:
+
+(fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
+
+[21]
 Chapter 4.
 
 Overfull \hbox (4.64389pt too wide) in paragraph at lines 18--19
@@ -664,7 +668,7 @@ arer to-kens for the back-end are kept in \OT1/pcr/m/n/12 expo-secure-store\OT1
 /ppl/m/n/12 ,
  []
 
-[21
+[22
 
 ]
 Overfull \hbox (34.5367pt too wide) in paragraph at lines 32--33
@@ -687,7 +691,7 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 
 (fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
 
-[22]
+[23]
 Overfull \hbox (64.35983pt too wide) in paragraph at lines 34--35
 \OT1/ppl/m/n/12 one. The re-main-ing mem-ber-ship ta-bles (\OT1/pcr/m/n/12 even
 t[]tickets\OT1/ppl/m/n/12 , \OT1/pcr/m/n/12 event[]members\OT1/ppl/m/n/12 , \OT
@@ -716,7 +720,7 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 
 (fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
 
-[23]
+[24]
 
 Package fancyhdr Warning: \headheight is too small (12.0pt): 
 (fancyhdr)                Make it at least 14.49998pt, for example:
@@ -725,7 +729,7 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 
 (fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
 
-[24]
+[25]
 Overfull \hbox (15.68327pt too wide) in paragraph at lines 113--114
 []\OT1/ppl/m/n/12 The ter-mi-nal does not send the chip's HMAC, be-cause by the
  time \OT1/pcr/m/n/12 pendingDebits
@@ -739,7 +743,7 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 
 (fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
 
-[25]
+[26]
 Overfull \hbox (26.98207pt too wide) in paragraph at lines 137--137
 []\OT1/pcr/m/n/12 4. Read the current bracelet.balance and bracelet.credit_coun
 ter.[] 
@@ -763,7 +767,7 @@ Overfull \hbox (26.98207pt too wide) in paragraph at lines 154--154
 bits[] 
  []
 
-<figures/nfc_memory_visual.png, id=715, 770.88pt x 140.525pt>
+<figures/nfc_memory_visual.png, id=721, 770.88pt x 140.525pt>
 File: figures/nfc_memory_visual.png Graphic file (type png)
 <use figures/nfc_memory_visual.png>
 Package pdftex.def Info: figures/nfc_memory_visual.png  used on input line 158.
@@ -777,7 +781,7 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 
 (fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
 
-[26]
+[27]
 Overfull \hbox (19.78207pt too wide) in paragraph at lines 169--169
 []\OT1/pcr/m/n/12 key = HKDF(masterKey, salt = wristbandUid, info = "bracelet-v
 1")[] 
@@ -797,7 +801,7 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 
 (fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
 
-[27 <./figures/nfc_memory_visual.png>]
+[28 <./figures/nfc_memory_visual.png>]
 Overfull \hbox (6.51833pt too wide) in paragraph at lines 189--190
 \OT1/ppl/m/n/12 new of-fline pay-ments once the lo-cal queue al-ready holds \OT
 1/pcr/m/n/12 OFFLINE[]QUEUE[]CAP \OT1/ppl/m/n/12 pend-
@@ -811,7 +815,7 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 
 (fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
 
-[28]
+[29]
 
 Package fancyhdr Warning: \headheight is too small (12.0pt): 
 (fancyhdr)                Make it at least 14.49998pt, for example:
@@ -820,7 +824,7 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 
 (fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
 
-[29]
+[30]
 Overfull \hbox (33.99524pt too wide) in paragraph at lines 211--212
 []\OT1/ppl/m/n/12 Once the sig-na-ture is valid, the han-dler looks up the cor-
 re-spond-ing \OT1/pcr/m/n/12 payment[]intents
@@ -859,9 +863,9 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 
 (fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
 
-[30]
+[31]
 Chapter 5.
-[31
+[32
 
 ]
 
@@ -872,7 +876,7 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 
 (fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
 
-[32]
+[33]
 Overfull \hbox (59.90356pt too wide) in paragraph at lines 38--39
 []\OT1/ppl/m/n/12 The schema also pins two in-vari-ants di-rectly in Post-gres.
  The \OT1/pcr/m/n/12 event[]bracelets.balance
@@ -892,7 +896,7 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 
 (fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
 
-[33]
+[34]
 Overfull \hbox (51.58833pt too wide) in paragraph at lines 47--48
 []\OT1/ppl/m/n/12 Authority for ven-dor and ad-min ac-tions is held in \OT1/pcr
 /m/n/12 event[]members \OT1/ppl/m/n/12 and \OT1/pcr/m/n/12 vendor[]members
@@ -906,7 +910,7 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 
 (fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
 
-[34]
+[35]
 
 Package fancyhdr Warning: \headheight is too small (12.0pt): 
 (fancyhdr)                Make it at least 14.49998pt, for example:
@@ -915,7 +919,7 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 
 (fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
 
-[35]) (./chapters/chapter7_discussion.tex
+[36]) (./chapters/chapter7_discussion.tex
 
 Package fancyhdr Warning: \headheight is too small (12.0pt): 
 (fancyhdr)                Make it at least 14.49998pt, for example:
@@ -924,9 +928,9 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 
 (fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
 
-[36]
+[37]
 Chapter 6.
-[37
+[38
 
 ]
 
@@ -937,21 +941,7 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 
 (fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
 
-[38]
-
-Package fancyhdr Warning: \headheight is too small (12.0pt): 
-(fancyhdr)                Make it at least 14.49998pt, for example:
-(fancyhdr)                \setlength{\headheight}{14.49998pt}.
-(fancyhdr)                You might also make \topmargin smaller to compensate:
-
-(fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
-
 [39]
-Overfull \hbox (1.46529pt too wide) in paragraph at lines 72--73
-\OT1/ppl/m/n/12 The main con-tri-bu-tion of this the-sis is an open, doc-u-ment
-ed ar-chi-tec-ture for a closed-
- []
-
 
 Package fancyhdr Warning: \headheight is too small (12.0pt): 
 (fancyhdr)                Make it at least 14.49998pt, for example:
@@ -961,6 +951,11 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 (fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
 
 [40]
+Overfull \hbox (1.46529pt too wide) in paragraph at lines 72--73
+\OT1/ppl/m/n/12 The main con-tri-bu-tion of this the-sis is an open, doc-u-ment
+ed ar-chi-tec-ture for a closed-
+ []
+
 
 Package fancyhdr Warning: \headheight is too small (12.0pt): 
 (fancyhdr)                Make it at least 14.49998pt, for example:
@@ -996,7 +991,7 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 
 (fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
 
-[44]) (./chapters/chapter8_conclusions.tex
+[44]
 
 Package fancyhdr Warning: \headheight is too small (12.0pt): 
 (fancyhdr)                Make it at least 14.49998pt, for example:
@@ -1005,9 +1000,18 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 
 (fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
 
-[45]
+[45]) (./chapters/chapter8_conclusions.tex
+
+Package fancyhdr Warning: \headheight is too small (12.0pt): 
+(fancyhdr)                Make it at least 14.49998pt, for example:
+(fancyhdr)                \setlength{\headheight}{14.49998pt}.
+(fancyhdr)                You might also make \topmargin smaller to compensate:
+
+(fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
+
+[46]
 Chapter 7.
-[46
+[47
 
 ]) (./main.bbl
 
@@ -1018,13 +1022,13 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 
 (fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
 
-[47]
+[48]
 Underfull \hbox (badness 2221) in paragraph at lines 18--22
 \OT1/ppl/m/n/12 ment sys-tem.  []$\OT1/pcr/m/n/12 https : / / www . efestivals 
 . co . uk / news / 16 /
  []
 
-[48
+[49
 
 ]
 Underfull \hbox (badness 1769) in paragraph at lines 74--78
@@ -1068,8 +1072,8 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 
 (fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
 
-[49]
-Underfull \hbox (badness 4403) in paragraph at lines 149--154
+[50]
+Underfull \hbox (badness 4403) in paragraph at lines 150--155
 []\OT1/ppl/m/n/12 Greg Young.  CQRS doc-u-ments.  []$\OT1/pcr/m/n/12 https : / 
 / cqrs . files .
  []
@@ -1083,17 +1087,17 @@ Package fancyhdr Warning: \headheight is too small (12.0pt):
 
 (fancyhdr)                \addtolength{\topmargin}{-2.49998pt}.
 
-[50] (./main.aux)
+[51] (./main.aux)
  ***********
 LaTeX2e <2023-11-01> patch level 1
 L3 programming layer <2024-02-20>
  ***********
 Package rerunfilecheck Info: File `main.out' has not changed.
-(rerunfilecheck)             Checksum: FB33B3281291BA29E370153494A517FF;17768.
+(rerunfilecheck)             Checksum: 1211EBD57FA391E8173814C2A047D070;17768.
  ) 
 Here is how much of TeX's memory you used:
- 10975 strings out of 474116
- 175841 string characters out of 5743682
+ 10978 strings out of 474116
+ 175868 string characters out of 5743682
  1941187 words of memory out of 5000000
  32985 multiletter control sequences out of 15000+600000
  574083 words of font info for 74 fonts, out of 8000000 for 9000
@@ -1107,10 +1111,10 @@ texlive/2024/texmf-dist/fonts/type1/urw/palatino/uplb8a.pfb></usr/local/texlive
 /2024/texmf-dist/fonts/type1/urw/palatino/uplr8a.pfb></usr/local/texlive/2024/t
 exmf-dist/fonts/type1/urw/palatino/uplr8a.pfb></usr/local/texlive/2024/texmf-di
 st/fonts/type1/urw/palatino/uplri8a.pfb>
-Output written on main.pdf (57 pages, 2158720 bytes).
+Output written on main.pdf (58 pages, 2161194 bytes).
 PDF statistics:
- 952 PDF objects out of 1000 (max. 8388607)
- 856 compressed objects within 9 object streams
- 182 named destinations out of 1000 (max. 500000)
+ 958 PDF objects out of 1000 (max. 8388607)
+ 861 compressed objects within 9 object streams
+ 185 named destinations out of 1000 (max. 500000)
  783 words of extra memory for PDF output out of 10000 (max. 10000000)
 

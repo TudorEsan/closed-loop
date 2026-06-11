@@ -8,7 +8,7 @@ Warning--I'm ignoring PSD2015's extra "note" field
 Warning--empty institution in Kleppmann2017json
 You've used 24 entries,
             2543 wiz_defined-function locations,
-            716 strings with 8786 characters,
+            717 strings with 8884 characters,
 and the built_in function-call counts, 9830 in all, are:
 = -- 979
 > -- 454
