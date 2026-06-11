@@ -1,13 +1,13 @@
 # Fdb version 4
-["bibtex main"] 1777796877.67773 "main.aux" "main.bbl" "main" 1777796878.83007 0
+["bibtex main"] 1781184157.52733 "main.aux" "main.bbl" "main" 1781184159.14575 0
   "./references.bib" 1777795637.62978 7943 a8960636a0ffd86ccd78c586f86d5a42 ""
   "/usr/local/texlive/2024/texmf-dist/bibtex/bst/base/alpha.bst" 1292289607 23907 a5f93555796fb564b924339521f10a7c ""
-  "main.aux" 1777796878.55042 23725 c0a1f5f565fab335f6d0601d5c7643d5 "pdflatex"
+  "main.aux" 1781184158.94699 25577 84c64c8b18689066acdf7b3c9f26dd50 "pdflatex"
   (generated)
   "main.bbl"
   "main.blg"
   (rewritten before read)
-["pdflatex"] 1777796877.75954 "main.tex" "main.pdf" "main" 1777796878.8302 0
+["pdflatex"] 1781184157.60209 "main.tex" "main.pdf" "main" 1781184159.14588 0
   "/usr/local/texlive/2024/texmf-dist/fonts/enc/dvips/base/8r.enc" 1165713224 4850 80dc9bab7f31fb78a000ccfed0e27cab ""
   "/usr/local/texlive/2024/texmf-dist/fonts/map/fontname/texfonts.map" 1577235249 3524 cb3e574dea2d1052e39280babc910dc8 ""
   "/usr/local/texlive/2024/texmf-dist/fonts/tfm/adobe/courier/pcrr7t.tfm" 1136768653 960 379cc0019370a9e0208a0a3f949f847a ""
@@ -105,19 +105,24 @@
   "/usr/local/texlive/2024/texmf-var/fonts/map/pdftex/updmap/pdftex.map" 1711288088.95725 5467645 128b85b7cde5f5edc5cb7f1dd7ff8736 ""
   "/usr/local/texlive/2024/texmf-var/web2c/pdftex/pdflatex.fmt" 1711287972 8221429 3110089c70952e18d158065e84f94aa9 ""
   "/usr/local/texlive/2024/texmf.cnf" 1710266656 577 e590dabc9e28c5b61546e15f63eebcdf ""
-  "chapters/chapter1_introduction.tex" 1777310644.9952 13243 2f65c7200949ecd41a05c75f78810ae5 ""
+  "chapters/chapter1_introduction.tex" 1781183699.61983 13341 5b900c979f1584eaafa83470df4e2930 ""
   "chapters/chapter2.tex" 1777310750.58984 12708 8709502e37614e1840e7e5faec8ba873 ""
-  "chapters/chapter4_architecture.tex" 1777723684.76933 17325 28192423a78eafafb1ec1c11c9442aad ""
-  "chapters/chapter5_implementation.tex" 1777723994.82794 23869 381121a78a47426877830dc6459c9455 ""
-  "chapters/chapter6_security.tex" 1777794719.00251 13172 7cc6540c66bf4c46b7631694948f164d ""
-  "chapters/chapter7_discussion.tex" 1777794808.09598 21396 5afeac6c0a29dbf831ac1876654e09d6 ""
+  "chapters/chapter4_architecture.tex" 1777798024.18437 18405 77e5bd427d018fc547b2778d3f36efe3 ""
+  "chapters/chapter5_implementation.tex" 1781184112.82049 24945 726b58c2bf9ac931dca2ffa133a86784 ""
+  "chapters/chapter6_security.tex" 1781183712.87105 13326 3a8bab397b645d06681694d42cabdd4d ""
+  "chapters/chapter7_discussion.tex" 1781184140.89308 22663 ec67de63225c61c868135ff4f86af56e ""
   "chapters/chapter8_conclusions.tex" 1777310989.38048 3687 01cf3153cd41df6a3ba5c13646c28c7e ""
-  "images/system-architecture.png" 1775288309.2856 302265 758c61d441afb88d81df5f94aabf3ba6 ""
-  "main.aux" 1777796878.55042 23725 c0a1f5f565fab335f6d0601d5c7643d5 "pdflatex"
-  "main.bbl" 1777796877.7575 5919 5a7824ff080244e0caf299615b1d5c80 "bibtex main"
-  "main.out" 1777796878.55247 17768 fb33b3281291ba29e370153494a517ff "pdflatex"
+  "figures/admin_portal.png" 1777797070.08945 468406 bb70b1f27d6a02be3a0e41221e795ab6 ""
+  "figures/admin_view.png" 1777794960.29436 527218 76cbe8f2b972de49e92a0f60e70e7615 ""
+  "figures/atendee_view.png" 1777794931.92035 526176 79011734df45536452eb6cadd274050e ""
+  "figures/high-level-overview.png" 1777797881.05557 146455 7e7ff6d145f76c71c9b07693c17eb1c4 ""
+  "figures/nfc_memory_visual.png" 1777797414.71074 30373 c6703e0c237265d354f6d31e16a45659 ""
+  "figures/vendor_view.png" 1777794988.65564 651670 bed8656ed45a2c435da5529fbaa6171b ""
+  "main.aux" 1781184158.94699 25577 84c64c8b18689066acdf7b3c9f26dd50 "pdflatex"
+  "main.bbl" 1781184157.60007 5919 5a7824ff080244e0caf299615b1d5c80 "bibtex main"
+  "main.out" 1781184158.94893 17768 fb33b3281291ba29e370153494a517ff "pdflatex"
   "main.tex" 1777796873.0658 2800 83fda134f645e53dca1512031cf1743b ""
-  "main.toc" 1777796878.55287 8497 ee40cb8a33cbbd9148aba15f04b18e7a "pdflatex"
+  "main.toc" 1781184158.94911 8497 e85bc6ab46ada6c34cb6f7ea01e67de6 "pdflatex"
   "style.sty" 1777796869.83542 3892 1824c9bcd235c4bbb5a557202b26d172 ""
   (generated)
   "main.aux"

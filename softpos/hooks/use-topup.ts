@@ -25,13 +25,6 @@ type TopUpResult =
       intent: Awaited<ReturnType<typeof paymentsApi.createTopupIntent>>;
     };
 
-// Topup flow has two phases packed into one mutation:
-// 1. ask the backend to create a payment intent for a specific bracelet
-// 2. open the payment sheet with that intent
-// The bracelet balance gets credited by the backend webhook, so when the
-// sheet returns we just refetch to see the new balance.
-// Cancel is handled as a normal resolved result, not an error, so the
-// mutation goes back to idle and the button does not stay stuck loading.
 export function useTopUp({ onSuccess, onCanceled, onError }: TopUpOptions = {}) {
   const qc = useQueryClient();
   const { initPaymentSheet, presentPaymentSheet } = useStripe();

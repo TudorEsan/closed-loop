@@ -10,7 +10,11 @@ import { type ChipState } from "@/lib/chip";
 import { getOrCreateLocalDeviceId } from "@/lib/device-id";
 import { formatMoney } from "@/lib/format";
 import { newIdempotencyKey } from "@/lib/idempotency";
-import { useQueue } from "@/lib/offline";
+import {
+  OFFLINE_MAX_AMOUNT_CENTS,
+  OFFLINE_QUEUE_CAP,
+  useQueue,
+} from "@/lib/offline";
 import { Screen } from "@/components/ui";
 import {
   AmountStep,
@@ -111,6 +115,23 @@ export default function ChargeScreen() {
       queryClient.invalidateQueries({
         queryKey: ["vendor-tx", vendor.eventId, vendor.vendorId],
       });
+      return;
+    }
+
+    // Both checks run before the chip write so a refused offline payment
+    // never decrements the bracelet.
+    if (queue.pendingCount >= OFFLINE_QUEUE_CAP) {
+      setError(
+        "The offline queue is full. Sync this terminal before taking more offline payments.",
+      );
+      setStep("error");
+      return;
+    }
+    if (amountCents > OFFLINE_MAX_AMOUNT_CENTS) {
+      setError(
+        `Offline payments are limited to ${formatMoney(OFFLINE_MAX_AMOUNT_CENTS)}. Reconnect to charge larger amounts.`,
+      );
+      setStep("error");
       return;
     }
 
