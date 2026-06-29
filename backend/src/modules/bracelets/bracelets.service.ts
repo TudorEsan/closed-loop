@@ -15,6 +15,7 @@ import {
   events,
   transactions,
   users,
+  vendors,
 } from '@common/database/schemas';
 import { LinkBraceletDto } from './dto/link-bracelet.dto';
 import { ReplaceBraceletDto } from './dto/replace-bracelet.dto';
@@ -431,6 +432,7 @@ export class BraceletsService {
         transaction: transactions,
         eventId: events.id,
         eventName: events.name,
+        vendorName: vendors.businessName,
       })
       .from(transactions)
       .innerJoin(
@@ -438,6 +440,7 @@ export class BraceletsService {
         eq(eventBracelets.id, transactions.eventBraceletId),
       )
       .innerJoin(events, eq(events.id, eventBracelets.eventId))
+      .leftJoin(vendors, eq(vendors.id, transactions.vendorId))
       .where(and(...conditions))
       .orderBy(desc(transactions.createdAt))
       .limit(limit + 1);
@@ -453,6 +456,7 @@ export class BraceletsService {
         ...r.transaction,
         eventId: r.eventId,
         eventName: r.eventName,
+        vendorName: r.vendorName,
       })),
       nextCursor,
     };

@@ -79,6 +79,8 @@ export type Transaction = {
   // Filled in by /me/transactions, the event the bracelet belongs to.
   eventId?: string;
   eventName?: string;
+  // Filled in by /me/transactions, the merchant that charged the bracelet.
+  vendorName?: string | null;
 };
 
 export type VendorStatus = 'pending' | 'approved' | 'rejected' | 'suspended';

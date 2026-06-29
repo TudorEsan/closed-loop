@@ -258,8 +258,7 @@ function AttendeeTxRow({ tx }: { tx: Transaction }) {
 
 function activityTitle(tx: Transaction): string {
   if (tx.type === 'credit') return 'Top-up';
-  const meta = tx.metadata as { vendorName?: string } | null;
-  return meta?.vendorName ?? 'Payment';
+  return tx.vendorName ?? 'Payment';
 }
 
 function activitySubtitle(tx: Transaction): string {
