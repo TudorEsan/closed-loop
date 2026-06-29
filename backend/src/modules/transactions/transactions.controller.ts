@@ -4,6 +4,7 @@ import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { CurrentUser } from '@common/decorators/current-user.decorator';
 import { TransactionsService } from './transactions.service';
 import { ChargeDto } from './dto/charge.dto';
+import { CashTopupDto } from './dto/cash-topup.dto';
 import { ListVendorTransactionsDto } from './dto/list-transactions.dto';
 
 @ApiTags('Transactions')
@@ -32,6 +33,18 @@ export class TransactionsController {
     @CurrentUser() user: { id: string; role: string },
   ) {
     return this.transactions.charge(eventId, vendorId, user.id, user.role, dto);
+  }
+
+  @Post('events/:eventId/transactions/cash-topup')
+  @ApiOperation({
+    summary: 'Cash top-up: an operator credits a bracelet against cash taken',
+  })
+  async cashTopup(
+    @Param('eventId') eventId: string,
+    @Body() dto: CashTopupDto,
+    @CurrentUser() user: { id: string; role: string },
+  ) {
+    return this.transactions.cashTopup(eventId, user.id, user.role, dto);
   }
 
   @Get('events/:eventId/vendors/:vendorId/transactions')

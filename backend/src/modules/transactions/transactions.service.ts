@@ -18,6 +18,7 @@ import {
 } from '@common/database/schemas';
 
 import { ChargeDto } from './dto/charge.dto';
+import { CashTopupDto } from './dto/cash-topup.dto';
 
 type DbError = { code?: string };
 const isUniqueViolation = (err: unknown): boolean =>
@@ -47,6 +48,7 @@ export class TransactionsService {
   ) {
     await this.scope.requireVendorRole(callerId, callerRole, vendorId);
 
+    // check if the vendor was approved in the admin portal
     const vendorRows = await this.db
       .select()
       .from(vendors)
@@ -65,6 +67,8 @@ export class TransactionsService {
       return await this.db.transaction(async (tx) => {
         await tx.execute(sql`SET TRANSACTION ISOLATION LEVEL SERIALIZABLE`);
 
+
+        // find the bracelet with the given UID, also it needs to be active
         const rows = await tx
           .select()
           .from(eventBracelets)
@@ -90,6 +94,7 @@ export class TransactionsService {
           throw new BadRequestException('Chip credit state is ahead of server');
         }
 
+        // check how many credits I need to apply to the bracelet
         const unseenCredits =
           chipDebitAhead &&
           chipState.credit_counter_seen < bracelet.creditCounter
@@ -100,6 +105,8 @@ export class TransactionsService {
                 bracelet.creditCounter,
               )
             : 0;
+
+        // check what the good balance is, either use the server balance or the chip balance + unseen credits, the min is just used as a defensive against potential bugs
         const effectiveBalance = chipDebitAhead
           ? Math.min(bracelet.balance, chipState.balance + unseenCredits)
           : bracelet.balance;
@@ -113,6 +120,8 @@ export class TransactionsService {
         const newCounter = chipDebitAhead
           ? chipState.debit_counter + 1
           : bracelet.debitCounterSeen + 1;
+
+
         const newBalance = effectiveBalance - dto.amount;
         const updated = await tx
           .update(eventBracelets)
@@ -169,6 +178,154 @@ export class TransactionsService {
       }
       throw err;
     }
+  }
+
+  // Cash top-up: an event operator collects physical cash and credits the
+  // bracelet on the spot by tapping the wristband. This is the credit-mirror of
+  // `charge` and reuses the exact same chip reconciliation so an offline-debited
+  // chip is not silently given its money back. Online-only by design: crediting
+  // a chip without a confirmed server record would mint funds out of thin air.
+  async cashTopup(
+    eventId: string,
+    callerId: string,
+    callerRole: string,
+    dto: CashTopupDto,
+  ) {
+    await this.scope.requireEventRole(callerId, callerRole, eventId);
+
+    try {
+      return await this.db.transaction(async (tx) => {
+        await tx.execute(sql`SET TRANSACTION ISOLATION LEVEL SERIALIZABLE`);
+
+        const rows = await tx
+          .select()
+          .from(eventBracelets)
+          .where(
+            and(
+              eq(eventBracelets.eventId, eventId),
+              eq(eventBracelets.wristbandUid, dto.wristbandUid),
+              eq(eventBracelets.status, 'active'),
+            ),
+          )
+          .limit(1);
+        if (rows.length === 0) {
+          throw new NotFoundException(
+            'No active bracelet for this UID at this event',
+          );
+        }
+        const bracelet = rows[0];
+        const chipState = dto.chipState;
+        const chipDebitAhead =
+          chipState.debit_counter > bracelet.debitCounterSeen;
+
+        if (chipState.credit_counter_seen > bracelet.creditCounter) {
+          throw new BadRequestException('Chip credit state is ahead of server');
+        }
+
+        // Same reconciliation as `charge`: when the chip carries offline debits
+        // the server has not yet seen, the chip balance (plus any credits it has
+        // not absorbed) is the authoritative current balance, so the credit
+        // lands on top of the real, already-spent amount.
+        const unseenCredits =
+          chipDebitAhead &&
+          chipState.credit_counter_seen < bracelet.creditCounter
+            ? await this.sumCreditsAfterCounter(
+                tx,
+                bracelet.id,
+                chipState.credit_counter_seen,
+                bracelet.creditCounter,
+              )
+            : 0;
+
+        const effectiveBalance = chipDebitAhead
+          ? Math.min(bracelet.balance, chipState.balance + unseenCredits)
+          : bracelet.balance;
+
+        const newBalance = effectiveBalance + dto.amount;
+        const newCreditCounter = bracelet.creditCounter + 1;
+        // Advance the debit watermark to the chip when it is ahead, absorbing the
+        // offline debits into the server balance just like `charge` does. The
+        // detailed debit rows still arrive later through sync and are recorded as
+        // historical (balance already absorbed).
+        const newDebitCounterSeen = chipDebitAhead
+          ? chipState.debit_counter
+          : bracelet.debitCounterSeen;
+
+        const updated = await tx
+          .update(eventBracelets)
+          .set({
+            balance: newBalance,
+            creditCounter: newCreditCounter,
+            debitCounterSeen: newDebitCounterSeen,
+            updatedAt: new Date(),
+          })
+          .where(eq(eventBracelets.id, bracelet.id))
+          .returning();
+
+        const [inserted] = await tx
+          .insert(transactions)
+          .values({
+            eventBraceletId: bracelet.id,
+            operatorId: callerId,
+            type: 'credit',
+            amount: dto.amount,
+            status: 'completed',
+            offline: false,
+            creditCounter: newCreditCounter,
+            idempotencyKey: dto.idempotencyKey,
+            metadata: this.cashTopupMetadata(dto.deviceId, chipDebitAhead, {
+              serverBalanceBefore: bracelet.balance,
+              serverDebitCounterSeenBefore: bracelet.debitCounterSeen,
+              chipBalance: chipState.balance,
+              chipDebitCounter: chipState.debit_counter,
+              chipCreditCounterSeen: chipState.credit_counter_seen,
+              unseenCreditsApplied: unseenCredits,
+            }),
+          })
+          .returning();
+
+        return {
+          transaction: inserted,
+          bracelet: {
+            id: updated[0].id,
+            balance: updated[0].balance,
+            debit_counter_seen: updated[0].debitCounterSeen,
+            credit_counter: updated[0].creditCounter,
+          },
+          chipShouldWrite: {
+            balance: updated[0].balance,
+            credit_counter: updated[0].creditCounter,
+          },
+        };
+      });
+    } catch (err) {
+      if (isUniqueViolation(err)) {
+        throw new ConflictException(
+          'A transaction with this idempotency key already exists',
+        );
+      }
+      throw err;
+    }
+  }
+
+  private cashTopupMetadata(
+    deviceId: string | undefined,
+    chipDebitAhead: boolean,
+    chipReconciliation: {
+      serverBalanceBefore: number;
+      serverDebitCounterSeenBefore: number;
+      chipBalance: number;
+      chipDebitCounter: number;
+      chipCreditCounterSeen: number;
+      unseenCreditsApplied: number;
+    },
+  ): Record<string, unknown> | null {
+    const metadata: Record<string, unknown> = { source: 'cash' };
+    if (deviceId) metadata.deviceId = deviceId;
+    if (chipDebitAhead) {
+      metadata.chipReconciliation = chipReconciliation;
+    }
+    return metadata;
   }
 
   private async sumCreditsAfterCounter(

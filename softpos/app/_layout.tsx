@@ -67,7 +67,6 @@ export default function RootLayout() {
                     <Stack.Screen
                       name="topup"
                       options={{
-                        presentation: "formSheet",
                         headerShown: true,
                         headerTransparent: true,
                         headerTitle: "Top-Up Account",
@@ -87,6 +86,7 @@ export default function RootLayout() {
                         ),
                       }}
                     />
+                    <Stack.Screen name="cash-topup" />
                     <Stack.Screen name="select-scope" />
                     <Stack.Screen name="charge" />
                     <Stack.Screen name="settings" />

@@ -94,7 +94,7 @@ export function StaffHome({ event }: { event: EventMembership }) {
               icon="cash-outline"
               title="Cash top-up"
               subtitle="Accept cash, credit a bracelet"
-              onPress={() => router.push('/link-bracelet')}
+              onPress={() => router.push('/cash-topup')}
             />
           </View>
 

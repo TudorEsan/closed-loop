@@ -24,6 +24,14 @@ export type ChargeResponse = {
   };
 };
 
+export type CashTopupBody = {
+  wristbandUid: string;
+  amount: number;
+  deviceId: string;
+  idempotencyKey: string;
+  chipState: ChipStateWire;
+};
+
 export const transactionsApi = {
   async charge(
     eventId: string,
@@ -32,6 +40,17 @@ export const transactionsApi = {
   ): Promise<ChargeResponse> {
     const res = await api.post<ChargeResponse>(
       `/events/${eventId}/vendors/${vendorId}/transactions/charge`,
+      body,
+    );
+    return res.data;
+  },
+
+  async cashTopup(
+    eventId: string,
+    body: CashTopupBody,
+  ): Promise<ChargeResponse> {
+    const res = await api.post<ChargeResponse>(
+      `/events/${eventId}/transactions/cash-topup`,
       body,
     );
     return res.data;

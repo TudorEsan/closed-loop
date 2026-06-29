@@ -113,6 +113,10 @@ export class ReconciliationService {
     | { kind: 'applied'; bracelet: typeof eventBracelets.$inferSelect }
     | { kind: 'rejected'; reason: RejectReason }
   > {
+    // Dedup check 1: same idempotency key.
+    // Catches the exact same record arriving twice, e.g. we applied the debit
+    // but the sync response was lost, so the device resends it from its pending
+    // queue with the same key. Cheap early-out for the common retry case.
     const dup = await tx
       .select({ id: transactions.id })
       .from(transactions)
@@ -122,7 +126,16 @@ export class ReconciliationService {
       return { kind: 'rejected', reason: 'duplicate' };
     }
 
+    // The counter is behind the server watermark: this debit claims a chip
+    // counter value we have already advanced past, so it is not a fresh spend.
     if (debit.counterValue <= bracelet.debitCounterSeen) {
+      // Dedup check 2: same chip counter slot, regardless of idempotency key.
+      // The idempotency key is client-generated, so a buggy device (lost/
+      // regenerated its key) or two devices reading the same chip offline can
+      // submit a DIFFERENT record that reuses an already-consumed counter value.
+      // The chip enforces the counter monotonically, so it is the authoritative
+      // "this slot was spent once" guarantee; the key check above cannot catch
+      // this because the key differs. This is the security-relevant rejection.
       const counterDup = await tx
         .select({ id: transactions.id })
         .from(transactions)
@@ -139,6 +152,11 @@ export class ReconciliationService {
         return { kind: 'rejected', reason: 'duplicate' };
       }
 
+      // New counter slot but below the watermark: a genuinely new debit that
+      // arrived late (out of order across devices/syncs). Record it for audit,
+      // but do not touch the balance — the chip already decremented its own
+      // balance offline, and that is reconciled through the authoritative chip
+      // balance on the normal charge/sync path. See insertHistoricalDebit.
       await this.insertHistoricalDebit(tx, bracelet, debit);
       return { kind: 'applied', bracelet };
     }

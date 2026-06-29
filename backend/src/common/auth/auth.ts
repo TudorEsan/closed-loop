@@ -13,10 +13,10 @@ const db = drizzle({ client, schema });
 const resend = new Resend(process.env.RESEND_API_KEY);
 
 const REVIEWER_OTPS: Record<string, string> = {
-  'user@tudor.esan': '111111',
-  'admin@tudor.esan': '111112',
-  'untold@tudor.esan': '111113',
-  'burger@tudor.esan': '111114',
+  'user@tudor.esan': '111111', // normal user
+  'admin@tudor.esan': '111112', // admin
+  'untold@tudor.esan': '111113', // can link bracelets to tickets
+  'burger@tudor.esan': '111114', // can take payments
 };
 
 export const auth = betterAuth({
