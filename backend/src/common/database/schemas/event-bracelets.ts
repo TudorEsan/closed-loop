@@ -43,12 +43,12 @@ export const eventBracelets = pgTable(
     revokedBy: text('revoked_by').references(() => users.id),
     revokeReason: text('revoke_reason'),
     replacedByAssignmentId: text('replaced_by_assignment_id'),
-    // tokenIssuedAt: timestamp('token_issued_at', { withTimezone: true })
-    //   .notNull()
-    //   .defaultNow(),
-    // tokenExpiresAt: timestamp('token_expires_at', {
-    //   withTimezone: true,
-    // }).notNull(),
+    tokenIssuedAt: timestamp('token_issued_at', { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+    tokenExpiresAt: timestamp('token_expires_at', {
+      withTimezone: true,
+    }).notNull(),
     tokenVersion: integer('token_version').notNull().default(1),
     createdAt: timestamp('created_at', { withTimezone: true })
       .notNull()
